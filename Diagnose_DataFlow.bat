@@ -13,19 +13,41 @@ echo.
 set "APP_DIR=%~dp0"
 set "APP_EXE=%APP_DIR%AntigravityDataFlow.exe"
 
-:: Detect Python if running in development mode
-set "PYTHON_EXE=python"
-if exist "%USERPROFILE%\anaconda3\python.exe" (
-    set "PYTHON_EXE=%USERPROFILE%\anaconda3\python.exe"
-)
-
 if exist "%APP_EXE%" (
     "%APP_EXE%" --diagnose
-) else (
-    echo [INFO] Running in development mode using Python interpreter...
-    "%PYTHON_EXE%" "%APP_DIR%desktop_app.py" --diagnose
+    goto POST_DIAG
 )
 
+:: Read saved Python interpreter if available
+set "PYTHON_EXE="
+if exist "%APP_DIR%.python_env.bat" (
+    call "%APP_DIR%.python_env.bat"
+)
+if not defined PYTHON_EXE where python >nul 2>&1 && set "PYTHON_EXE=python"
+if not defined PYTHON_EXE where py >nul 2>&1 && set "PYTHON_EXE=py -3"
+if not defined PYTHON_EXE (
+    for %%V in (313 312 311 310 39) do (
+        if not defined PYTHON_EXE (
+            if exist "%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" (
+                set "PYTHON_EXE=%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe"
+            )
+        )
+    )
+)
+if not defined PYTHON_EXE (
+    if exist "%USERPROFILE%\anaconda3\python.exe" set "PYTHON_EXE=%USERPROFILE%\anaconda3\python.exe"
+)
+
+if not defined PYTHON_EXE (
+    echo [ERROR] Python not found on system. Run Install_DataFlow.bat to install or locate Python.
+    pause
+    exit /b 1
+)
+
+echo [INFO] Running in development mode using Python interpreter: !PYTHON_EXE!
+!PYTHON_EXE! "%APP_DIR%desktop_app.py" --diagnose
+
+:POST_DIAG
 echo.
 set "LOG_PATH=%LOCALAPPDATA%\AntigravityDataFlow\logs\launch.log"
 if exist "%LOG_PATH%" (
