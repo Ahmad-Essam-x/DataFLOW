@@ -66,7 +66,8 @@ def get_icon_path() -> str:
 def launch_edge_app_mode(url: str):
     """
     Tier 2 Fallback: Launches Microsoft Edge in standalone chromeless application mode.
-    Returns subprocess.Popen instance if launched, or None if Edge is not available.
+    Uses a dedicated isolated profile directory and disables background mode and startup boost
+    so that Edge processes terminate cleanly when the window is closed and never block port reuse.
     """
     import subprocess
     edge_paths = [
@@ -75,13 +76,30 @@ def launch_edge_app_mode(url: str):
         os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
         "msedge"
     ]
+
+    profile_dir = os.path.join(
+        os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+        "AntigravityDataFlow",
+        "EdgeAppProfile"
+    )
+    try:
+        os.makedirs(profile_dir, exist_ok=True)
+    except Exception:
+        pass
+
+    edge_args = [
+        f"--app={url}",
+        f"--user-data-dir={profile_dir}",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-mode",
+        "--disable-features=msEdgeStartupBoost",
+        "--window-size=1440,900"
+    ]
+
     for edge in edge_paths:
         try:
-            proc = subprocess.Popen([
-                edge,
-                f"--app={url}",
-                "--window-size=1440,900"
-            ])
+            proc = subprocess.Popen([edge] + edge_args)
             return proc
         except (FileNotFoundError, OSError):
             continue
@@ -243,7 +261,16 @@ def main() -> int:
         proc = launch_edge_app_mode(app_url)
         if proc:
             logger.info(f"Tier 2 (Edge App Mode) started successfully (PID {proc.pid}).")
-            proc.wait()
+            try:
+                proc.wait()
+            except KeyboardInterrupt:
+                pass
+            finally:
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=2.0)
+                except Exception:
+                    pass
             logger.info("Edge App Mode window closed by user.")
         else:
             # Tier 3: Default Web Browser

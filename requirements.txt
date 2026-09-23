@@ -8,3 +8,4 @@ openpyxl>=3.1.0
 python-calamine>=0.8.0
 pyarrow>=14.0.0
 jinja2>=3.1.0
+pywebview>=5.0.0

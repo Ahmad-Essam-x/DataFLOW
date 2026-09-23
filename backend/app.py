@@ -1705,6 +1705,7 @@ def find_available_port(start_port=5000, max_tries=20):
     for p in range(start_port, start_port + max_tries):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 s.bind(('127.0.0.1', p))
                 return p
             except OSError:
