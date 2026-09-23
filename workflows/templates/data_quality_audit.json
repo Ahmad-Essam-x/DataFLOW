@@ -1,0 +1,248 @@
+{
+  "name": "Data Quality Audit",
+  "description": "Profiles a dataset for nulls, type inconsistencies, duplicates, and outliers. Separates clean records from flagged ones and produces a quality audit summary report.",
+  "category": "data_quality",
+  "tags": [
+    "data quality",
+    "profiling",
+    "nulls",
+    "duplicates",
+    "audit",
+    "validation"
+  ],
+  "difficulty": "beginner",
+  "containers": [
+    {
+      "id": "ctr_dq1",
+      "title": "Step 1 - Ingest & Type Inference",
+      "x": 60,
+      "y": 60,
+      "width": 480,
+      "height": 300,
+      "color": "rgba(16,185,129,0.07)",
+      "headerColor": "#10b981",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_dq2",
+      "title": "Step 2 - Flag Quality Issues",
+      "x": 590,
+      "y": 60,
+      "width": 460,
+      "height": 300,
+      "color": "rgba(245,158,11,0.07)",
+      "headerColor": "#f59e0b",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_dq3",
+      "title": "Step 3 - Separate & Report",
+      "x": 1100,
+      "y": 60,
+      "width": 720,
+      "height": 300,
+      "color": "rgba(16,185,129,0.07)",
+      "headerColor": "#10b981",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_dq1",
+      "text": "### Data Quality Audit Pipeline\n- **Auto Field**: Detects and corrects data types automatically\n- **Formula**: Adds `HasNullKey`, `IsDuplicate` flag columns\n- **Unique**: Separates duplicate records from unique ones\n- **Filter**: Routes flagged records to review queue\n- **Summarize**: Counts issues by type for the audit summary\n\n> Replace `KeyColumn` in the filter conditions with your actual primary key column name.",
+      "x": 60,
+      "y": 380,
+      "width": 500,
+      "height": 180,
+      "color": "#10b981"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_dq_in",
+      "type": "input_data",
+      "name": "Input Dataset (CSV or Excel)",
+      "x": 100,
+      "y": 170,
+      "config": {
+        "file_path": "your_data.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_dq_af",
+      "type": "auto_field",
+      "name": "Auto Detect Types",
+      "x": 300,
+      "y": 170,
+      "config": {
+        "fields": []
+      }
+    },
+    {
+      "id": "node_dq_formula",
+      "type": "formula",
+      "name": "Flag Null & Issue Records",
+      "x": 630,
+      "y": 170,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "QualityScore",
+            "type": "integer",
+            "expression": "1"
+          },
+          {
+            "output_field": "IssueFlag",
+            "type": "string",
+            "expression": "\"OK\""
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_dq_unique",
+      "type": "unique",
+      "name": "Identify Duplicates",
+      "x": 840,
+      "y": 170,
+      "config": {
+        "columns": []
+      }
+    },
+    {
+      "id": "node_dq_filter",
+      "type": "filter",
+      "name": "Separate Clean Records",
+      "x": 1140,
+      "y": 170,
+      "config": {
+        "mode": "basic",
+        "logical_op": "AND",
+        "conditions": [
+          {
+            "column": "IssueFlag",
+            "operator": "=",
+            "value": "OK"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_dq_out_clean",
+      "type": "output_data",
+      "name": "Export Clean Records",
+      "x": 1360,
+      "y": 120,
+      "config": {
+        "filename": "clean_records",
+        "format": "csv",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_dq_summarize",
+      "type": "summarize",
+      "name": "Audit Summary by Issue Type",
+      "x": 1360,
+      "y": 260,
+      "config": {
+        "actions": [
+          {
+            "field": "IssueFlag",
+            "action": "GroupBy",
+            "output_name": "IssueType"
+          },
+          {
+            "field": "IssueFlag",
+            "action": "Count",
+            "output_name": "RecordCount"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_dq_out_report",
+      "type": "output_data",
+      "name": "Export Quality Report",
+      "x": 1580,
+      "y": 260,
+      "config": {
+        "filename": "data_quality_audit_report",
+        "format": "xlsx",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_dq_browse",
+      "type": "browse",
+      "name": "Preview Quality Summary",
+      "x": 1580,
+      "y": 370,
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "cdq1",
+      "source": "node_dq_in",
+      "sourceHandle": "O",
+      "target": "node_dq_af",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq2",
+      "source": "node_dq_af",
+      "sourceHandle": "O",
+      "target": "node_dq_formula",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq3",
+      "source": "node_dq_formula",
+      "sourceHandle": "O",
+      "target": "node_dq_unique",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq4",
+      "source": "node_dq_unique",
+      "sourceHandle": "U",
+      "target": "node_dq_filter",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq5",
+      "source": "node_dq_filter",
+      "sourceHandle": "T",
+      "target": "node_dq_out_clean",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq6",
+      "source": "node_dq_filter",
+      "sourceHandle": "F",
+      "target": "node_dq_summarize",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq7",
+      "source": "node_dq_summarize",
+      "sourceHandle": "O",
+      "target": "node_dq_out_report",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq8",
+      "source": "node_dq_summarize",
+      "sourceHandle": "O",
+      "target": "node_dq_browse",
+      "targetHandle": "I"
+    }
+  ]
+}

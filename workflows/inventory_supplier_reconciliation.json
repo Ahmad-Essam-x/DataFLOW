@@ -1,0 +1,247 @@
+{
+  "name": "Inventory & Supplier Reconciliation",
+  "description": "Splits composite warehouse SKUs, deduplicates counts, reconciles stock levels with supplier lead times via Join, cross-appends holding parameters, and generates audit ledger tracking IDs.",
+  "containers": [
+    {
+      "id": "container_inv_1",
+      "title": "Supply Chain & Warehouse Audit Ledger",
+      "x": 60,
+      "y": 60,
+      "width": 1480,
+      "height": 420,
+      "color": "rgba(168, 85, 247, 0.08)",
+      "headerColor": "#9333ea",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_inv_1",
+      "text": "### Inventory Audit Protocol\n- Excel stock counts are parsed with Text to Columns into Supplier, Category, and Batch.\n- Unique separates distinct stock counts from duplicate entries.\n- Join matches warehouse quantities against Supplier contract terms.\n- Append Fields cross-appends corporate holding cost benchmarks.",
+      "x": 60,
+      "y": 500,
+      "width": 460,
+      "height": 140,
+      "color": "#eab308"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_inv_in",
+      "type": "input_data",
+      "name": "Input Warehouse Stock (Excel)",
+      "x": 100,
+      "y": 160,
+      "config": {
+        "file_path": "warehouse_inventory.xlsx",
+        "file_type": "excel",
+        "sheet_name": "Inventory",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_inv_split",
+      "type": "text_to_columns",
+      "name": "Split Batch Code",
+      "x": 280,
+      "y": 160,
+      "config": {
+        "column": "CompositeBatchCode",
+        "delimiters": "-",
+        "split_type": "columns",
+        "num_columns": 3,
+        "root_name": "BatchPart_",
+        "extra_characters": "last"
+      }
+    },
+    {
+      "id": "node_inv_unique",
+      "type": "unique",
+      "name": "Deduplicate Stock Counts",
+      "x": 460,
+      "y": 160,
+      "config": {
+        "columns": [
+          "SKU",
+          "WarehouseLocation"
+        ]
+      }
+    },
+    {
+      "id": "node_suppliers_input",
+      "type": "text_input",
+      "name": "Supplier Reference Catalog",
+      "x": 460,
+      "y": 320,
+      "config": {
+        "columns": [
+          "SupplierID",
+          "SupplierName",
+          "LeadTimeDays",
+          "Rating"
+        ],
+        "data": [
+          [
+            "SUP101",
+            "Acme Electronics Corp",
+            5,
+            "A"
+          ],
+          [
+            "SUP102",
+            "Global Mech Systems",
+            12,
+            "A+"
+          ],
+          [
+            "SUP103",
+            "Apex Chemical Industries",
+            8,
+            "B"
+          ],
+          [
+            "SUP104",
+            "Pacific Packaging Co",
+            3,
+            "A"
+          ],
+          [
+            "SUP105",
+            "Titan Tooling Works",
+            15,
+            "B+"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "node_inv_join",
+      "type": "join",
+      "name": "Join Stock with Suppliers",
+      "x": 680,
+      "y": 200,
+      "config": {
+        "join_mode": "specific_fields",
+        "join_keys": [
+          {
+            "left_key": "BatchPart_1",
+            "right_key": "SupplierID"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_inv_params",
+      "type": "text_input",
+      "name": "Audit Rate Parameters",
+      "x": 680,
+      "y": 340,
+      "config": {
+        "columns": [
+          "HoldingRate",
+          "Currency"
+        ],
+        "data": [
+          [
+            0.085,
+            "USD"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "node_inv_append",
+      "type": "append_fields",
+      "name": "Append Financial Parameters",
+      "x": 900,
+      "y": 220,
+      "config": {
+        "cartesian_mode": "error_16",
+        "source_prefix": "Param_"
+      }
+    },
+    {
+      "id": "node_inv_recid",
+      "type": "record_id",
+      "name": "Generate Audit Ledger ID",
+      "x": 1120,
+      "y": 220,
+      "config": {
+        "column_name": "AuditTrackingID",
+        "start_value": 1001,
+        "position": "first"
+      }
+    },
+    {
+      "id": "node_inv_out",
+      "type": "output_data",
+      "name": "Export Audit Ledger",
+      "x": 1320,
+      "y": 220,
+      "config": {
+        "filename": "inventory_audit_ledger",
+        "format": "csv",
+        "write_mode": "overwrite"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "ci1",
+      "source": "node_inv_in",
+      "sourceHandle": "O",
+      "target": "node_inv_split",
+      "targetHandle": "I"
+    },
+    {
+      "id": "ci2",
+      "source": "node_inv_split",
+      "sourceHandle": "O",
+      "target": "node_inv_unique",
+      "targetHandle": "I"
+    },
+    {
+      "id": "ci3",
+      "source": "node_inv_unique",
+      "sourceHandle": "U",
+      "target": "node_inv_join",
+      "targetHandle": "L"
+    },
+    {
+      "id": "ci4",
+      "source": "node_suppliers_input",
+      "sourceHandle": "O",
+      "target": "node_inv_join",
+      "targetHandle": "R"
+    },
+    {
+      "id": "ci5",
+      "source": "node_inv_join",
+      "sourceHandle": "J",
+      "target": "node_inv_append",
+      "targetHandle": "T"
+    },
+    {
+      "id": "ci6",
+      "source": "node_inv_params",
+      "sourceHandle": "O",
+      "target": "node_inv_append",
+      "targetHandle": "S"
+    },
+    {
+      "id": "ci7",
+      "source": "node_inv_append",
+      "sourceHandle": "O",
+      "target": "node_inv_recid",
+      "targetHandle": "I"
+    },
+    {
+      "id": "ci8",
+      "source": "node_inv_recid",
+      "sourceHandle": "O",
+      "target": "node_inv_out",
+      "targetHandle": "I"
+    }
+  ]
+}

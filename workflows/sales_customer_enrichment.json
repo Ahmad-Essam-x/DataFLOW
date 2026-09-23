@@ -1,0 +1,280 @@
+{
+  "name": "Customer Sales Analysis",
+  "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
+  "containers": [
+    {
+      "id": "container_sales_1",
+      "title": "Sales Performance & Customer Enrichment",
+      "x": 60,
+      "y": 60,
+      "width": 1840,
+      "height": 380,
+      "color": "rgba(34, 197, 94, 0.08)",
+      "headerColor": "#16a34a",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_sales_1",
+      "text": "### Executive Sales KPIs\n- Auto Field optimizes incoming types automatically.\n- Data Clean trims whitespace and title-cases region names.\n- DateTime normalizes dates into ISO format.\n- Formula calculates Net Revenue after discounts.\n- High-value transactions (> $500) are aggregated by Region and Segment.\n- Multi-Row Formula calculates running cumulative revenues across segments.",
+      "x": 60,
+      "y": 460,
+      "width": 420,
+      "height": 140,
+      "color": "#eab308"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_sales_in",
+      "type": "input_data",
+      "name": "Input Sales Orders (CSV)",
+      "x": 100,
+      "y": 180,
+      "config": {
+        "file_path": "sales_orders.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_sales_autofield",
+      "type": "auto_field",
+      "name": "Auto Field Types",
+      "x": 280,
+      "y": 180,
+      "config": {
+        "fields": []
+      }
+    },
+    {
+      "id": "node_sales_clean",
+      "type": "clean",
+      "name": "Clean Text & Region",
+      "x": 460,
+      "y": 180,
+      "config": {
+        "columns": [
+          "CustomerNotes",
+          "Region"
+        ],
+        "trim_whitespace": true,
+        "case_transformation": "title",
+        "remove_empty_rows": false
+      }
+    },
+    {
+      "id": "node_sales_dt",
+      "type": "date_time",
+      "name": "Parse OrderDate",
+      "x": 640,
+      "y": 180,
+      "config": {
+        "column": "OrderDate",
+        "conversion_type": "string_to_date",
+        "format_template": "yyyy-MM-dd",
+        "output_column": "OrderDate_ISO"
+      }
+    },
+    {
+      "id": "node_sales_formula",
+      "type": "formula",
+      "name": "Calculate Net Revenue",
+      "x": 820,
+      "y": 180,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "GrossAmount",
+            "type": "float",
+            "expression": "[Quantity] * [UnitPrice]"
+          },
+          {
+            "output_field": "NetAmount",
+            "type": "float",
+            "expression": "[GrossAmount] * (1.0 - [Discount])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sales_filter",
+      "type": "filter",
+      "name": "Filter Orders > $500",
+      "x": 1000,
+      "y": 180,
+      "config": {
+        "mode": "basic",
+        "logical_op": "AND",
+        "conditions": [
+          {
+            "column": "NetAmount",
+            "operator": ">",
+            "value": "500"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sales_summarize",
+      "type": "summarize",
+      "name": "Summarize by Region & Segment",
+      "x": 1200,
+      "y": 140,
+      "config": {
+        "actions": [
+          {
+            "field": "Region",
+            "action": "GroupBy",
+            "output_name": "Region"
+          },
+          {
+            "field": "Segment",
+            "action": "GroupBy",
+            "output_name": "Segment"
+          },
+          {
+            "field": "NetAmount",
+            "action": "Sum",
+            "output_name": "TotalRevenue"
+          },
+          {
+            "field": "NetAmount",
+            "action": "Average",
+            "output_name": "AvgOrderValue"
+          },
+          {
+            "field": "OrderID",
+            "action": "Count",
+            "output_name": "HighValueOrderCount"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sort_1",
+      "type": "sort",
+      "name": "Sort Revenue Desc",
+      "x": 1380,
+      "y": 140,
+      "config": {
+        "sort_by": [
+          {
+            "column": "TotalRevenue",
+            "ascending": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sales_multirow",
+      "type": "multi_row_formula",
+      "name": "Cumulative Sales Total",
+      "x": 1560,
+      "y": 140,
+      "config": {
+        "output_field": "CumulativeRevenue",
+        "is_new_field": true,
+        "output_type": "float",
+        "values_for_rows_not_exist": "0",
+        "group_by_fields": [],
+        "expression": "[Row-1:CumulativeRevenue] + [TotalRevenue]"
+      }
+    },
+    {
+      "id": "node_sales_out",
+      "type": "output_data",
+      "name": "Export Sales Summary",
+      "x": 1740,
+      "y": 140,
+      "config": {
+        "filename": "regional_sales_summary",
+        "format": "csv",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_sales_browse",
+      "type": "browse",
+      "name": "Browse Sales Profile",
+      "x": 1740,
+      "y": 260,
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "source": "node_sales_in",
+      "sourceHandle": "O",
+      "target": "node_sales_autofield",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c1_b",
+      "source": "node_sales_autofield",
+      "sourceHandle": "O",
+      "target": "node_sales_clean",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c2",
+      "source": "node_sales_clean",
+      "sourceHandle": "O",
+      "target": "node_sales_dt",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c3",
+      "source": "node_sales_dt",
+      "sourceHandle": "O",
+      "target": "node_sales_formula",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c4",
+      "source": "node_sales_formula",
+      "sourceHandle": "O",
+      "target": "node_sales_filter",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c5",
+      "source": "node_sales_filter",
+      "sourceHandle": "T",
+      "target": "node_sales_summarize",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c6",
+      "source": "node_sales_summarize",
+      "sourceHandle": "O",
+      "target": "node_sort_1",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c7",
+      "source": "node_sort_1",
+      "sourceHandle": "O",
+      "target": "node_sales_multirow",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c8",
+      "source": "node_sales_multirow",
+      "sourceHandle": "O",
+      "target": "node_sales_out",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c9",
+      "source": "node_sales_multirow",
+      "sourceHandle": "O",
+      "target": "node_sales_browse",
+      "targetHandle": "I"
+    }
+  ]
+}

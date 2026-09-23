@@ -1,0 +1,272 @@
+{
+  "name": "Customer RFM Segmentation",
+  "description": "Computes RFM (Recency, Frequency, Monetary) scores from order history to segment customers into High Value, At Risk, Lost, and New categories for targeted marketing.",
+  "category": "sales",
+  "tags": [
+    "sales",
+    "segmentation",
+    "rfm",
+    "customer",
+    "marketing",
+    "retention"
+  ],
+  "difficulty": "intermediate",
+  "containers": [
+    {
+      "id": "ctr_rfm1",
+      "title": "Step 1 - Load & Prepare Order Data",
+      "x": 60,
+      "y": 60,
+      "width": 680,
+      "height": 300,
+      "color": "rgba(59,130,246,0.07)",
+      "headerColor": "#3b82f6",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_rfm2",
+      "title": "Step 2 - Compute RFM Scores",
+      "x": 790,
+      "y": 60,
+      "width": 580,
+      "height": 300,
+      "color": "rgba(34,197,94,0.07)",
+      "headerColor": "#16a34a",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_rfm3",
+      "title": "Step 3 - Assign Segments & Export",
+      "x": 1420,
+      "y": 60,
+      "width": 500,
+      "height": 300,
+      "color": "rgba(245,158,11,0.07)",
+      "headerColor": "#f59e0b",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_rfm1",
+      "text": "### RFM Segmentation Pipeline\n- **Input CSV**: Expects columns: CustomerID, OrderDate, OrderValue\n- **DateTime**: Normalizes OrderDate to ISO format\n- **Summarize**: Aggregates per customer: last order date, order count, total spend\n- **Formula**: Scores R (recency), F (frequency), M (monetary) on 1-5 scale\n- **Segments**: High Value (RF>=8), At Risk (R<3, F>=3), Lost (R<3, F<3), New (F<3, R>=4)",
+      "x": 60,
+      "y": 380,
+      "width": 540,
+      "height": 180,
+      "color": "#f59e0b"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_rfm_in",
+      "type": "input_data",
+      "name": "Input Order History (CSV)",
+      "x": 100,
+      "y": 170,
+      "config": {
+        "file_path": "orders.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_rfm_af",
+      "type": "auto_field",
+      "name": "Auto Field Types",
+      "x": 280,
+      "y": 170,
+      "config": {
+        "fields": []
+      }
+    },
+    {
+      "id": "node_rfm_dt",
+      "type": "date_time",
+      "name": "Parse Order Date",
+      "x": 460,
+      "y": 170,
+      "config": {
+        "column": "OrderDate",
+        "conversion_type": "string_to_date",
+        "format_template": "yyyy-MM-dd",
+        "output_column": "OrderDate_ISO"
+      }
+    },
+    {
+      "id": "node_rfm_sum",
+      "type": "summarize",
+      "name": "Aggregate per Customer",
+      "x": 830,
+      "y": 170,
+      "config": {
+        "actions": [
+          {
+            "field": "CustomerID",
+            "action": "GroupBy",
+            "output_name": "CustomerID"
+          },
+          {
+            "field": "OrderDate_ISO",
+            "action": "Max",
+            "output_name": "LastOrderDate"
+          },
+          {
+            "field": "OrderValue",
+            "action": "Count",
+            "output_name": "OrderCount"
+          },
+          {
+            "field": "OrderValue",
+            "action": "Sum",
+            "output_name": "TotalSpend"
+          },
+          {
+            "field": "OrderValue",
+            "action": "Average",
+            "output_name": "AvgOrderValue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_rfm_formula",
+      "type": "formula",
+      "name": "Compute RFM Scores",
+      "x": 1040,
+      "y": 170,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "FrequencyScore",
+            "type": "integer",
+            "expression": "IF([OrderCount] >= 10, 5, IF([OrderCount] >= 6, 4, IF([OrderCount] >= 3, 3, IF([OrderCount] >= 2, 2, 1))))"
+          },
+          {
+            "output_field": "MonetaryScore",
+            "type": "integer",
+            "expression": "IF([TotalSpend] >= 5000, 5, IF([TotalSpend] >= 2000, 4, IF([TotalSpend] >= 1000, 3, IF([TotalSpend] >= 500, 2, 1))))"
+          },
+          {
+            "output_field": "RFM_Score",
+            "type": "integer",
+            "expression": "[FrequencyScore] + [MonetaryScore]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_rfm_seg",
+      "type": "formula",
+      "name": "Assign Segment Label",
+      "x": 1460,
+      "y": 170,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "Segment",
+            "type": "string",
+            "expression": "IF([RFM_Score] >= 8, \"High Value\", IF([FrequencyScore] >= 3, \"At Risk\", IF([FrequencyScore] < 3 AND [MonetaryScore] >= 3, \"Promising\", \"Needs Attention\")))"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_rfm_sort",
+      "type": "sort",
+      "name": "Sort by RFM Score",
+      "x": 1660,
+      "y": 130,
+      "config": {
+        "sort_by": [
+          {
+            "column": "RFM_Score",
+            "ascending": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_rfm_out",
+      "type": "output_data",
+      "name": "Export Customer Segments",
+      "x": 1840,
+      "y": 130,
+      "config": {
+        "filename": "customer_rfm_segments",
+        "format": "xlsx",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_rfm_browse",
+      "type": "browse",
+      "name": "Preview Segments",
+      "x": 1840,
+      "y": 260,
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "crf1",
+      "source": "node_rfm_in",
+      "sourceHandle": "O",
+      "target": "node_rfm_af",
+      "targetHandle": "I"
+    },
+    {
+      "id": "crf2",
+      "source": "node_rfm_af",
+      "sourceHandle": "O",
+      "target": "node_rfm_dt",
+      "targetHandle": "I"
+    },
+    {
+      "id": "crf3",
+      "source": "node_rfm_dt",
+      "sourceHandle": "O",
+      "target": "node_rfm_sum",
+      "targetHandle": "I"
+    },
+    {
+      "id": "crf4",
+      "source": "node_rfm_sum",
+      "sourceHandle": "O",
+      "target": "node_rfm_formula",
+      "targetHandle": "I"
+    },
+    {
+      "id": "crf5",
+      "source": "node_rfm_formula",
+      "sourceHandle": "O",
+      "target": "node_rfm_seg",
+      "targetHandle": "I"
+    },
+    {
+      "id": "crf6",
+      "source": "node_rfm_seg",
+      "sourceHandle": "O",
+      "target": "node_rfm_sort",
+      "targetHandle": "I"
+    },
+    {
+      "id": "crf7",
+      "source": "node_rfm_sort",
+      "sourceHandle": "O",
+      "target": "node_rfm_out",
+      "targetHandle": "I"
+    },
+    {
+      "id": "crf8",
+      "source": "node_rfm_sort",
+      "sourceHandle": "O",
+      "target": "node_rfm_browse",
+      "targetHandle": "I"
+    }
+  ]
+}

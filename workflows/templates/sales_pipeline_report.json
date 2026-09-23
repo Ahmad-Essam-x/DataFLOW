@@ -1,0 +1,282 @@
+{
+  "name": "Sales Pipeline Report",
+  "description": "Reads a CRM export, calculates deal stage conversion rates and weighted revenue by sales rep, filters active deals, and produces a ranked performance summary.",
+  "category": "sales",
+  "tags": [
+    "sales",
+    "crm",
+    "pipeline",
+    "revenue",
+    "conversion",
+    "reporting"
+  ],
+  "difficulty": "beginner",
+  "containers": [
+    {
+      "id": "ctr_sp1",
+      "title": "Step 1 - Ingest & Normalize CRM Data",
+      "x": 60,
+      "y": 60,
+      "width": 840,
+      "height": 300,
+      "color": "rgba(59,130,246,0.07)",
+      "headerColor": "#3b82f6",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_sp2",
+      "title": "Step 2 - Summarize & Rank by Rep",
+      "x": 950,
+      "y": 60,
+      "width": 780,
+      "height": 300,
+      "color": "rgba(34,197,94,0.07)",
+      "headerColor": "#16a34a",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_sp1",
+      "text": "### Sales Pipeline Report\n- **Input CSV**: Expects columns: DealID, SalesRep, Stage, DealValue, CloseDate, IsWon\n- **Formula**: Computes WeightedRevenue based on stage probability\n- **Filter**: Only active or won deals (excludes Lost/Cancelled)\n- **Summarize**: Groups by SalesRep, sums DealValue and counts wins\n- **Multi-Row Formula**: Running cumulative revenue across reps",
+      "x": 60,
+      "y": 380,
+      "width": 500,
+      "height": 160,
+      "color": "#3b82f6"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_sp_in",
+      "type": "input_data",
+      "name": "Input CRM Pipeline (CSV)",
+      "x": 100,
+      "y": 170,
+      "config": {
+        "file_path": "crm_pipeline.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_sp_af",
+      "type": "auto_field",
+      "name": "Auto Field Types",
+      "x": 280,
+      "y": 170,
+      "config": {
+        "fields": []
+      }
+    },
+    {
+      "id": "node_sp_clean",
+      "type": "clean",
+      "name": "Normalize Stage Names",
+      "x": 460,
+      "y": 170,
+      "config": {
+        "columns": [
+          "Stage",
+          "SalesRep"
+        ],
+        "trim_whitespace": true,
+        "case_transformation": "title",
+        "remove_empty_rows": true
+      }
+    },
+    {
+      "id": "node_sp_formula",
+      "type": "formula",
+      "name": "Calculate Weighted Revenue",
+      "x": 660,
+      "y": 170,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "StageProbability",
+            "type": "float",
+            "expression": "IF([Stage] = \"Won\", 1.0, IF([Stage] = \"Proposal\", 0.7, IF([Stage] = \"Qualified\", 0.4, IF([Stage] = \"Discovery\", 0.2, 0.05))))"
+          },
+          {
+            "output_field": "WeightedRevenue",
+            "type": "float",
+            "expression": "[DealValue] * [StageProbability]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sp_filter",
+      "type": "filter",
+      "name": "Exclude Lost Deals",
+      "x": 990,
+      "y": 170,
+      "config": {
+        "mode": "basic",
+        "logical_op": "AND",
+        "conditions": [
+          {
+            "column": "Stage",
+            "operator": "!=",
+            "value": "Lost"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sp_sum",
+      "type": "summarize",
+      "name": "Summarize by Sales Rep",
+      "x": 1190,
+      "y": 130,
+      "config": {
+        "actions": [
+          {
+            "field": "SalesRep",
+            "action": "GroupBy",
+            "output_name": "SalesRep"
+          },
+          {
+            "field": "DealValue",
+            "action": "Sum",
+            "output_name": "TotalPipelineValue"
+          },
+          {
+            "field": "WeightedRevenue",
+            "action": "Sum",
+            "output_name": "WeightedPipelineValue"
+          },
+          {
+            "field": "DealID",
+            "action": "Count",
+            "output_name": "TotalDeals"
+          },
+          {
+            "field": "IsWon",
+            "action": "Sum",
+            "output_name": "ClosedWonCount"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sp_sort",
+      "type": "sort",
+      "name": "Sort by Weighted Revenue",
+      "x": 1410,
+      "y": 130,
+      "config": {
+        "sort_by": [
+          {
+            "column": "WeightedPipelineValue",
+            "ascending": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_sp_cumulative",
+      "type": "multi_row_formula",
+      "name": "Running Cumulative Revenue",
+      "x": 1590,
+      "y": 130,
+      "config": {
+        "output_field": "CumulativeRevenue",
+        "is_new_field": true,
+        "output_type": "float",
+        "values_for_rows_not_exist": "0",
+        "group_by_fields": [],
+        "expression": "[Row-1:CumulativeRevenue] + [WeightedPipelineValue]"
+      }
+    },
+    {
+      "id": "node_sp_out",
+      "type": "output_data",
+      "name": "Export Pipeline Report",
+      "x": 1780,
+      "y": 130,
+      "config": {
+        "filename": "sales_pipeline_report",
+        "format": "xlsx",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_sp_browse",
+      "type": "browse",
+      "name": "Preview Ranked Reps",
+      "x": 1780,
+      "y": 260,
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "csp1",
+      "source": "node_sp_in",
+      "sourceHandle": "O",
+      "target": "node_sp_af",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp2",
+      "source": "node_sp_af",
+      "sourceHandle": "O",
+      "target": "node_sp_clean",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp3",
+      "source": "node_sp_clean",
+      "sourceHandle": "O",
+      "target": "node_sp_formula",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp4",
+      "source": "node_sp_formula",
+      "sourceHandle": "O",
+      "target": "node_sp_filter",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp5",
+      "source": "node_sp_filter",
+      "sourceHandle": "T",
+      "target": "node_sp_sum",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp6",
+      "source": "node_sp_sum",
+      "sourceHandle": "O",
+      "target": "node_sp_sort",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp7",
+      "source": "node_sp_sort",
+      "sourceHandle": "O",
+      "target": "node_sp_cumulative",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp8",
+      "source": "node_sp_cumulative",
+      "sourceHandle": "O",
+      "target": "node_sp_out",
+      "targetHandle": "I"
+    },
+    {
+      "id": "csp9",
+      "source": "node_sp_cumulative",
+      "sourceHandle": "O",
+      "target": "node_sp_browse",
+      "targetHandle": "I"
+    }
+  ]
+}

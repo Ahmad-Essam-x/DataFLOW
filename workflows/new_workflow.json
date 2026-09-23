@@ -1,0 +1,242 @@
+{
+  "name": "new_workflow",
+  "description": "",
+  "metadata": {
+    "description": "",
+    "author": "",
+    "version": "2.1.0",
+    "created_at": "2026-09-15T03:56:34",
+    "updated_at": "2026-09-15T03:56:34"
+  },
+  "viewport": {
+    "zoom": 2.5,
+    "panX": -2455.6007149407974,
+    "panY": -1042.0851617795415
+  },
+  "nodes": [
+    {
+      "id": "node_1789432945539_316",
+      "type": "input_data",
+      "name": "spotify_history.csv",
+      "x": 352,
+      "y": 336,
+      "config": {
+        "file_path": "d5d81240_spotify_history.csv",
+        "original_file_name": "spotify_history.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true,
+        "start_row": 1,
+        "columns": [
+          "spotify_track_uri",
+          "ts",
+          "platform",
+          "ms_played",
+          "track_name",
+          "artist_name",
+          "album_name",
+          "reason_start",
+          "reason_end",
+          "shuffle",
+          "skipped"
+        ],
+        "row_count": 149860
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1789433024431_384",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 576,
+      "y": 336,
+      "config": {
+        "actions": [
+          {
+            "field": "platform",
+            "action": "GroupBy",
+            "output_name": "platform"
+          },
+          {
+            "field": "platform",
+            "action": "Count",
+            "output_name": "Count_platform"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1789433109238_414",
+      "type": "clean",
+      "name": "Data Clean",
+      "x": 576,
+      "y": 496,
+      "config": {
+        "columns": [
+          "track_name",
+          "artist_name"
+        ],
+        "remove_tabs_linebreaks": true,
+        "case_transformation": "title",
+        "case_mode": "title"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1789433207027_351",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 752,
+      "y": 496,
+      "config": {
+        "actions": [
+          {
+            "field": "artist_name",
+            "action": "GroupBy",
+            "output_name": "artist_name"
+          },
+          {
+            "field": "ms_played",
+            "action": "Sum",
+            "output_name": "Sum_ms_played"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1789433257247_401",
+      "type": "formula",
+      "name": "Formula",
+      "x": 864,
+      "y": 496,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "Hrs played",
+            "expression": "[Sum_ms_played]/1000/60/60",
+            "type": "float"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": true
+    },
+    {
+      "id": "node_1789433329783_163",
+      "type": "sort",
+      "name": "Sort",
+      "x": 992,
+      "y": 496,
+      "config": {
+        "sort_by": [
+          {
+            "column": "Hrs played",
+            "ascending": false
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1789433670288_249",
+      "type": "join",
+      "name": "Join",
+      "x": 1280,
+      "y": 416,
+      "config": {
+        "select_fields": [
+          {
+            "field": "artist_name",
+            "source": "L",
+            "selected": true,
+            "rename": "artist_name"
+          },
+          {
+            "field": "Sum_ms_played",
+            "source": "L",
+            "selected": true,
+            "rename": "Sum_ms_played"
+          },
+          {
+            "field": "Hrs played",
+            "source": "L",
+            "selected": true,
+            "rename": "Hrs played"
+          }
+        ],
+        "join_keys": [
+          {
+            "left_key": "artist_name",
+            "right_key": "artist_name"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_1789433025942_645",
+      "source": "node_1789432945539_316",
+      "sourceHandle": "O",
+      "target": "node_1789433024431_384",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1789433110845_203",
+      "source": "node_1789432945539_316",
+      "sourceHandle": "O",
+      "target": "node_1789433109238_414",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1789433229484_188",
+      "source": "node_1789433109238_414",
+      "sourceHandle": "O",
+      "target": "node_1789433207027_351",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1789433258600_613",
+      "source": "node_1789433207027_351",
+      "sourceHandle": "O",
+      "target": "node_1789433257247_401",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1789433331722_571",
+      "source": "node_1789433257247_401",
+      "sourceHandle": "O",
+      "target": "node_1789433329783_163",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1789433676876_33",
+      "source": "node_1789433329783_163",
+      "sourceHandle": "O",
+      "target": "node_1789433670288_249",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_1789433698652_96",
+      "source": "node_1789432945539_316",
+      "sourceHandle": "O",
+      "target": "node_1789433670288_249",
+      "targetHandle": "R"
+    }
+  ],
+  "containers": [],
+  "comments": [],
+  "cached_node_ids": [
+    "node_1789433257247_401"
+  ],
+  "auto_cache_upstream": false
+}

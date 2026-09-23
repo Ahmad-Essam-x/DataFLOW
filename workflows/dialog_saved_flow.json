@@ -1,0 +1,31 @@
+{
+  "connections": [],
+  "name": "Dialog Saved Workflow",
+  "nodes": [
+    {
+      "id": "n_d1",
+      "type": "Sort",
+      "name": "Sort",
+      "x": 10,
+      "y": 10,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-09-24T00:31:32",
+    "updated_at": "2026-09-24T00:31:32",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": ""
+  },
+  "description": "",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "containers": [],
+  "comments": []
+}

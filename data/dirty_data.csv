@@ -1,0 +1,501 @@
+RecordID,RawCity,Score,Status,Notes
+REC-001,chicago,76.0,Pending,  Customer record with note 1  
+REC-002, Seattle,81.0,Active,  Customer record with note 2  
+REC-003,Chicago ,,Active,  Customer record with note 3  
+REC-004,boston,90.0,Active,  Customer record with note 4  
+REC-005,Austin,,,  Customer record with note 5  
+REC-006,Chicago ,83.0,Active,  Customer record with note 6  
+REC-007,san francisco,99.0,Active,  Customer record with note 7  
+REC-008,san francisco,87.0,,  Customer record with note 8  
+REC-009,Chicago ,97.0,Closed,  Customer record with note 9  
+REC-010,SAN FRANCISCO,46.0,Closed,  Customer record with note 10  
+REC-011,SAN FRANCISCO,46.0,Active,  Customer record with note 11  
+REC-012,,49.0,Closed,  Customer record with note 12  
+REC-013,san francisco,91.0,,  Customer record with note 13  
+REC-014,Austin,94.0,Closed,  Customer record with note 14  
+REC-015,,59.0,Pending,  Customer record with note 15  
+REC-016,,98.0,Active,  Customer record with note 16  
+REC-017,chicago,56.0,Active,  Customer record with note 17  
+REC-018, Seattle,,Pending,  Customer record with note 18  
+REC-019, New York ,59.0,Active,  Customer record with note 19  
+REC-020,san francisco,,Pending,  Customer record with note 20  
+REC-021,Chicago ,76.0,Active,  Customer record with note 21  
+REC-022,san francisco,87.0,Pending,  Customer record with note 22  
+REC-023,,58.0,Active,  Customer record with note 23  
+REC-024, Seattle,91.0,Active,  Customer record with note 24  
+REC-025,boston,76.0,Pending,  Customer record with note 25  
+REC-026,Austin,65.0,Pending,  Customer record with note 26  
+REC-027, New York ,83.0,Closed,  Customer record with note 27  
+REC-028,Austin,72.0,Pending,  Customer record with note 28  
+REC-029,SAN FRANCISCO,76.0,Active,  Customer record with note 29  
+REC-030,chicago,51.0,Pending,  Customer record with note 30  
+REC-031,Chicago ,,Pending,  Customer record with note 31  
+REC-032,SAN FRANCISCO,82.0,Active,  Customer record with note 32  
+REC-033,,83.0,Active,  Customer record with note 33  
+REC-034,,77.0,Pending,  Customer record with note 34  
+REC-035,chicago,,Closed,  Customer record with note 35  
+REC-036,boston,,Active,  Customer record with note 36  
+REC-037, New York ,48.0,Active,  Customer record with note 37  
+REC-038,SAN FRANCISCO,41.0,Active,  Customer record with note 38  
+REC-039,Austin,73.0,Pending,  Customer record with note 39  
+REC-040,chicago,54.0,Closed,  Customer record with note 40  
+REC-041,san francisco,48.0,Active,  Customer record with note 41  
+REC-042,chicago,83.0,Closed,  Customer record with note 42  
+REC-043,san francisco,,Closed,  Customer record with note 43  
+REC-044,Austin,,Closed,  Customer record with note 44  
+REC-045,chicago,61.0,Active,  Customer record with note 45  
+REC-046,san francisco,56.0,,  Customer record with note 46  
+REC-047,Chicago ,76.0,Closed,  Customer record with note 47  
+REC-048,san francisco,68.0,Pending,  Customer record with note 48  
+REC-049,chicago,,Active,  Customer record with note 49  
+REC-050,boston,58.0,Closed,  Customer record with note 50  
+REC-051, Seattle,97.0,Closed,  Customer record with note 51  
+REC-052,boston,59.0,Closed,  Customer record with note 52  
+REC-053,san francisco,98.0,Pending,  Customer record with note 53  
+REC-054, Seattle,67.0,Active,  Customer record with note 54  
+REC-055,Chicago ,68.0,Closed,  Customer record with note 55  
+REC-056,chicago,78.0,Pending,  Customer record with note 56  
+REC-057,san francisco,90.0,Active,  Customer record with note 57  
+REC-058,san francisco,95.0,Active,  Customer record with note 58  
+REC-059,,61.0,Closed,  Customer record with note 59  
+REC-060,SAN FRANCISCO,77.0,,  Customer record with note 60  
+REC-061,chicago,52.0,Active,  Customer record with note 61  
+REC-062,SAN FRANCISCO,69.0,Pending,  Customer record with note 62  
+REC-063,boston,63.0,Active,  Customer record with note 63  
+REC-064,chicago,63.0,Active,  Customer record with note 64  
+REC-065,san francisco,95.0,Active,  Customer record with note 65  
+REC-066,chicago,76.0,Active,  Customer record with note 66  
+REC-067, Seattle,59.0,Pending,  Customer record with note 67  
+REC-068, Seattle,51.0,Closed,  Customer record with note 68  
+REC-069,,,Closed,  Customer record with note 69  
+REC-070,chicago,56.0,Pending,  Customer record with note 70  
+REC-071, Seattle,78.0,Active,  Customer record with note 71  
+REC-072,SAN FRANCISCO,40.0,Pending,  Customer record with note 72  
+REC-073,Chicago ,71.0,Active,  Customer record with note 73  
+REC-074,Austin,45.0,Active,  Customer record with note 74  
+REC-075, New York ,91.0,Closed,  Customer record with note 75  
+REC-076, New York ,86.0,Active,  Customer record with note 76  
+REC-077, New York ,54.0,,  Customer record with note 77  
+REC-078,boston,40.0,Closed,  Customer record with note 78  
+REC-079,SAN FRANCISCO,40.0,Closed,  Customer record with note 79  
+REC-080, New York ,74.0,Active,  Customer record with note 80  
+REC-081,san francisco,68.0,Pending,  Customer record with note 81  
+REC-082,chicago,42.0,Pending,  Customer record with note 82  
+REC-083,,64.0,Pending,  Customer record with note 83  
+REC-084, Seattle,56.0,Active,  Customer record with note 84  
+REC-085,boston,53.0,Active,  Customer record with note 85  
+REC-086,,,Closed,  Customer record with note 86  
+REC-087,san francisco,,Pending,  Customer record with note 87  
+REC-088, New York ,,Pending,  Customer record with note 88  
+REC-089, New York ,43.0,Active,  Customer record with note 89  
+REC-090,SAN FRANCISCO,71.0,Active,  Customer record with note 90  
+REC-091,san francisco,84.0,Closed,  Customer record with note 91  
+REC-092,boston,45.0,Active,  Customer record with note 92  
+REC-093,Austin,,Closed,  Customer record with note 93  
+REC-094,boston,71.0,Closed,  Customer record with note 94  
+REC-095,SAN FRANCISCO,,Active,  Customer record with note 95  
+REC-096, Seattle,,Active,  Customer record with note 96  
+REC-097,boston,70.0,Active,  Customer record with note 97  
+REC-098, New York ,65.0,Closed,  Customer record with note 98  
+REC-099,san francisco,66.0,Pending,  Customer record with note 99  
+REC-100, Seattle,47.0,,  Customer record with note 100  
+REC-101,Chicago ,79.0,Closed,  Customer record with note 101  
+REC-102,SAN FRANCISCO,,Pending,  Customer record with note 102  
+REC-103,chicago,81.0,Closed,  Customer record with note 103  
+REC-104, Seattle,,,  Customer record with note 104  
+REC-105,chicago,52.0,Active,  Customer record with note 105  
+REC-106, Seattle,76.0,Active,  Customer record with note 106  
+REC-107,chicago,41.0,Closed,  Customer record with note 107  
+REC-108,Chicago ,89.0,Closed,  Customer record with note 108  
+REC-109,chicago,60.0,Closed,  Customer record with note 109  
+REC-110,san francisco,43.0,,  Customer record with note 110  
+REC-111,,97.0,Pending,  Customer record with note 111  
+REC-112,chicago,46.0,,  Customer record with note 112  
+REC-113, New York ,42.0,Active,  Customer record with note 113  
+REC-114,chicago,74.0,,  Customer record with note 114  
+REC-115, Seattle,84.0,Closed,  Customer record with note 115  
+REC-116,Austin,70.0,Pending,  Customer record with note 116  
+REC-117,san francisco,,Active,  Customer record with note 117  
+REC-118,boston,96.0,Pending,  Customer record with note 118  
+REC-119,,73.0,Active,  Customer record with note 119  
+REC-120, New York ,54.0,Pending,  Customer record with note 120  
+REC-121, Seattle,56.0,Active,  Customer record with note 121  
+REC-122,san francisco,44.0,Active,  Customer record with note 122  
+REC-123,boston,65.0,Active,  Customer record with note 123  
+REC-124, New York ,94.0,Closed,  Customer record with note 124  
+REC-125,Austin,68.0,Active,  Customer record with note 125  
+REC-126, New York ,76.0,Closed,  Customer record with note 126  
+REC-127,Chicago ,80.0,Closed,  Customer record with note 127  
+REC-128,boston,78.0,Closed,  Customer record with note 128  
+REC-129,SAN FRANCISCO,90.0,Active,  Customer record with note 129  
+REC-130,boston,96.0,Pending,  Customer record with note 130  
+REC-131,chicago,67.0,,  Customer record with note 131  
+REC-132,Austin,78.0,Active,  Customer record with note 132  
+REC-133,SAN FRANCISCO,,Pending,  Customer record with note 133  
+REC-134,boston,,Active,  Customer record with note 134  
+REC-135,chicago,68.0,Active,  Customer record with note 135  
+REC-136,Austin,,Closed,  Customer record with note 136  
+REC-137,SAN FRANCISCO,44.0,Pending,  Customer record with note 137  
+REC-138,Austin,85.0,Pending,  Customer record with note 138  
+REC-139,boston,52.0,Closed,  Customer record with note 139  
+REC-140, Seattle,100.0,Pending,  Customer record with note 140  
+REC-141,Austin,52.0,Pending,  Customer record with note 141  
+REC-142,Chicago ,48.0,Pending,  Customer record with note 142  
+REC-143,boston,63.0,Active,  Customer record with note 143  
+REC-144,Austin,55.0,,  Customer record with note 144  
+REC-145, Seattle,,Pending,  Customer record with note 145  
+REC-146, New York ,90.0,Pending,  Customer record with note 146  
+REC-147, Seattle,,Pending,  Customer record with note 147  
+REC-148, Seattle,,Active,  Customer record with note 148  
+REC-149,SAN FRANCISCO,52.0,Closed,  Customer record with note 149  
+REC-150,Austin,93.0,Active,  Customer record with note 150  
+REC-151,SAN FRANCISCO,40.0,Pending,  Customer record with note 151  
+REC-152,boston,91.0,,  Customer record with note 152  
+REC-153, Seattle,,Active,  Customer record with note 153  
+REC-154,boston,75.0,Pending,  Customer record with note 154  
+REC-155,,50.0,Closed,  Customer record with note 155  
+REC-156, New York ,70.0,Active,  Customer record with note 156  
+REC-157,san francisco,,Pending,  Customer record with note 157  
+REC-158,chicago,43.0,Active,  Customer record with note 158  
+REC-159,,92.0,Closed,  Customer record with note 159  
+REC-160, New York ,95.0,Active,  Customer record with note 160  
+REC-161,chicago,87.0,Closed,  Customer record with note 161  
+REC-162, New York ,49.0,Pending,  Customer record with note 162  
+REC-163, New York ,44.0,Pending,  Customer record with note 163  
+REC-164,SAN FRANCISCO,97.0,Closed,  Customer record with note 164  
+REC-165,chicago,44.0,Active,  Customer record with note 165  
+REC-166,boston,83.0,Closed,  Customer record with note 166  
+REC-167,SAN FRANCISCO,65.0,Pending,  Customer record with note 167  
+REC-168,chicago,93.0,Pending,  Customer record with note 168  
+REC-169,chicago,86.0,Active,  Customer record with note 169  
+REC-170,san francisco,80.0,Pending,  Customer record with note 170  
+REC-171,Austin,43.0,Closed,  Customer record with note 171  
+REC-172,chicago,46.0,Active,  Customer record with note 172  
+REC-173,Chicago ,,Pending,  Customer record with note 173  
+REC-174,SAN FRANCISCO,98.0,Closed,  Customer record with note 174  
+REC-175,Chicago ,89.0,Pending,  Customer record with note 175  
+REC-176, Seattle,60.0,Active,  Customer record with note 176  
+REC-177,chicago,94.0,Closed,  Customer record with note 177  
+REC-178, Seattle,70.0,Closed,  Customer record with note 178  
+REC-179,SAN FRANCISCO,,Closed,  Customer record with note 179  
+REC-180,boston,,Active,  Customer record with note 180  
+REC-181,,92.0,Active,  Customer record with note 181  
+REC-182,san francisco,,Active,  Customer record with note 182  
+REC-183,boston,77.0,Active,  Customer record with note 183  
+REC-184,SAN FRANCISCO,98.0,Active,  Customer record with note 184  
+REC-185,Austin,79.0,Pending,  Customer record with note 185  
+REC-186,Chicago ,74.0,Active,  Customer record with note 186  
+REC-187,SAN FRANCISCO,68.0,Pending,  Customer record with note 187  
+REC-188,Chicago ,,Active,  Customer record with note 188  
+REC-189,Chicago ,66.0,Closed,  Customer record with note 189  
+REC-190, Seattle,51.0,Pending,  Customer record with note 190  
+REC-191,san francisco,93.0,Closed,  Customer record with note 191  
+REC-192,,,Closed,  Customer record with note 192  
+REC-193,,85.0,Pending,  Customer record with note 193  
+REC-194,Chicago ,76.0,Closed,  Customer record with note 194  
+REC-195, New York ,94.0,Closed,  Customer record with note 195  
+REC-196,,54.0,Pending,  Customer record with note 196  
+REC-197,SAN FRANCISCO,50.0,Pending,  Customer record with note 197  
+REC-198,Austin,98.0,Pending,  Customer record with note 198  
+REC-199,chicago,50.0,Active,  Customer record with note 199  
+REC-200,,71.0,Pending,  Customer record with note 200  
+REC-201,boston,85.0,,  Customer record with note 201  
+REC-202, Seattle,81.0,Closed,  Customer record with note 202  
+REC-203,Austin,83.0,Active,  Customer record with note 203  
+REC-204,Austin,75.0,Active,  Customer record with note 204  
+REC-205,boston,45.0,Pending,  Customer record with note 205  
+REC-206, Seattle,70.0,Closed,  Customer record with note 206  
+REC-207,Austin,69.0,Active,  Customer record with note 207  
+REC-208, Seattle,,Active,  Customer record with note 208  
+REC-209,Chicago ,54.0,Closed,  Customer record with note 209  
+REC-210,Chicago ,92.0,Closed,  Customer record with note 210  
+REC-211,Austin,70.0,Pending,  Customer record with note 211  
+REC-212,,81.0,Active,  Customer record with note 212  
+REC-213,boston,,Pending,  Customer record with note 213  
+REC-214, Seattle,,Pending,  Customer record with note 214  
+REC-215,chicago,63.0,Pending,  Customer record with note 215  
+REC-216,san francisco,77.0,Closed,  Customer record with note 216  
+REC-217,san francisco,87.0,Active,  Customer record with note 217  
+REC-218,,,Closed,  Customer record with note 218  
+REC-219,Austin,42.0,Closed,  Customer record with note 219  
+REC-220, New York ,43.0,Active,  Customer record with note 220  
+REC-221,chicago,84.0,Active,  Customer record with note 221  
+REC-222, New York ,52.0,Active,  Customer record with note 222  
+REC-223,Austin,95.0,Pending,  Customer record with note 223  
+REC-224,Austin,40.0,,  Customer record with note 224  
+REC-225,boston,43.0,Pending,  Customer record with note 225  
+REC-226,san francisco,61.0,Closed,  Customer record with note 226  
+REC-227,Chicago ,46.0,Active,  Customer record with note 227  
+REC-228,Chicago ,,Closed,  Customer record with note 228  
+REC-229,san francisco,80.0,,  Customer record with note 229  
+REC-230,,75.0,Closed,  Customer record with note 230  
+REC-231, New York ,82.0,,  Customer record with note 231  
+REC-232,SAN FRANCISCO,45.0,Active,  Customer record with note 232  
+REC-233,boston,,Pending,  Customer record with note 233  
+REC-234,Austin,80.0,Closed,  Customer record with note 234  
+REC-235,Austin,98.0,,  Customer record with note 235  
+REC-236,,97.0,Pending,  Customer record with note 236  
+REC-237,Chicago ,59.0,Pending,  Customer record with note 237  
+REC-238,,56.0,Pending,  Customer record with note 238  
+REC-239,chicago,,Pending,  Customer record with note 239  
+REC-240,chicago,,Pending,  Customer record with note 240  
+REC-241,SAN FRANCISCO,97.0,Pending,  Customer record with note 241  
+REC-242,boston,69.0,Active,  Customer record with note 242  
+REC-243,,86.0,Pending,  Customer record with note 243  
+REC-244, Seattle,57.0,,  Customer record with note 244  
+REC-245,chicago,,Pending,  Customer record with note 245  
+REC-246, New York ,87.0,Pending,  Customer record with note 246  
+REC-247, New York ,60.0,Active,  Customer record with note 247  
+REC-248, New York ,69.0,Pending,  Customer record with note 248  
+REC-249,Austin,85.0,Pending,  Customer record with note 249  
+REC-250,,96.0,Active,  Customer record with note 250  
+REC-251,Chicago ,90.0,Closed,  Customer record with note 251  
+REC-252,chicago,,Closed,  Customer record with note 252  
+REC-253,chicago,,Closed,  Customer record with note 253  
+REC-254,,58.0,Active,  Customer record with note 254  
+REC-255,,74.0,Closed,  Customer record with note 255  
+REC-256,chicago,43.0,Closed,  Customer record with note 256  
+REC-257,Chicago ,77.0,Pending,  Customer record with note 257  
+REC-258,chicago,45.0,Pending,  Customer record with note 258  
+REC-259,boston,42.0,Closed,  Customer record with note 259  
+REC-260,chicago,,Closed,  Customer record with note 260  
+REC-261,Chicago ,100.0,Pending,  Customer record with note 261  
+REC-262,san francisco,45.0,Pending,  Customer record with note 262  
+REC-263,Austin,46.0,,  Customer record with note 263  
+REC-264,chicago,88.0,Pending,  Customer record with note 264  
+REC-265, New York ,57.0,Closed,  Customer record with note 265  
+REC-266,,42.0,Pending,  Customer record with note 266  
+REC-267, Seattle,59.0,,  Customer record with note 267  
+REC-268,SAN FRANCISCO,73.0,Active,  Customer record with note 268  
+REC-269,SAN FRANCISCO,56.0,,  Customer record with note 269  
+REC-270,,41.0,,  Customer record with note 270  
+REC-271, Seattle,98.0,,  Customer record with note 271  
+REC-272,chicago,97.0,Active,  Customer record with note 272  
+REC-273,Chicago ,74.0,Active,  Customer record with note 273  
+REC-274,Austin,58.0,Closed,  Customer record with note 274  
+REC-275,Chicago ,98.0,Pending,  Customer record with note 275  
+REC-276,SAN FRANCISCO,68.0,Pending,  Customer record with note 276  
+REC-277,chicago,72.0,Pending,  Customer record with note 277  
+REC-278,SAN FRANCISCO,49.0,Pending,  Customer record with note 278  
+REC-279,Chicago ,,Closed,  Customer record with note 279  
+REC-280,san francisco,52.0,Closed,  Customer record with note 280  
+REC-281,Chicago ,73.0,Closed,  Customer record with note 281  
+REC-282,Austin,,Active,  Customer record with note 282  
+REC-283,,99.0,Closed,  Customer record with note 283  
+REC-284,san francisco,,Active,  Customer record with note 284  
+REC-285, New York ,44.0,Closed,  Customer record with note 285  
+REC-286,,63.0,Pending,  Customer record with note 286  
+REC-287,chicago,,Active,  Customer record with note 287  
+REC-288,boston,92.0,Pending,  Customer record with note 288  
+REC-289,san francisco,94.0,Active,  Customer record with note 289  
+REC-290,chicago,83.0,Pending,  Customer record with note 290  
+REC-291,chicago,86.0,Pending,  Customer record with note 291  
+REC-292, Seattle,,Active,  Customer record with note 292  
+REC-293,san francisco,86.0,Closed,  Customer record with note 293  
+REC-294,chicago,57.0,Pending,  Customer record with note 294  
+REC-295,Austin,84.0,Closed,  Customer record with note 295  
+REC-296,Chicago ,59.0,Active,  Customer record with note 296  
+REC-297, New York ,46.0,Pending,  Customer record with note 297  
+REC-298,chicago,,Pending,  Customer record with note 298  
+REC-299,boston,,Active,  Customer record with note 299  
+REC-300, Seattle,,Closed,  Customer record with note 300  
+REC-301,san francisco,78.0,Closed,  Customer record with note 301  
+REC-302,Chicago ,86.0,Pending,  Customer record with note 302  
+REC-303,SAN FRANCISCO,40.0,Active,  Customer record with note 303  
+REC-304, New York ,47.0,Pending,  Customer record with note 304  
+REC-305,boston,63.0,Pending,  Customer record with note 305  
+REC-306, New York ,73.0,Active,  Customer record with note 306  
+REC-307,chicago,86.0,Active,  Customer record with note 307  
+REC-308,Austin,69.0,Pending,  Customer record with note 308  
+REC-309,,,Closed,  Customer record with note 309  
+REC-310,chicago,65.0,,  Customer record with note 310  
+REC-311,SAN FRANCISCO,100.0,Closed,  Customer record with note 311  
+REC-312,SAN FRANCISCO,62.0,Pending,  Customer record with note 312  
+REC-313,boston,52.0,Pending,  Customer record with note 313  
+REC-314,,,Closed,  Customer record with note 314  
+REC-315,chicago,,Active,  Customer record with note 315  
+REC-316,Austin,100.0,Active,  Customer record with note 316  
+REC-317,Austin,94.0,Active,  Customer record with note 317  
+REC-318,san francisco,74.0,Active,  Customer record with note 318  
+REC-319,san francisco,48.0,Pending,  Customer record with note 319  
+REC-320,Austin,91.0,Closed,  Customer record with note 320  
+REC-321,san francisco,60.0,Active,  Customer record with note 321  
+REC-322, New York ,57.0,Pending,  Customer record with note 322  
+REC-323,Chicago ,98.0,Closed,  Customer record with note 323  
+REC-324,Chicago ,57.0,Active,  Customer record with note 324  
+REC-325,SAN FRANCISCO,68.0,Pending,  Customer record with note 325  
+REC-326, New York ,,Closed,  Customer record with note 326  
+REC-327, Seattle,,Active,  Customer record with note 327  
+REC-328,boston,91.0,Active,  Customer record with note 328  
+REC-329,Austin,,Closed,  Customer record with note 329  
+REC-330,boston,83.0,Pending,  Customer record with note 330  
+REC-331,chicago,75.0,,  Customer record with note 331  
+REC-332,SAN FRANCISCO,58.0,,  Customer record with note 332  
+REC-333, New York ,90.0,Pending,  Customer record with note 333  
+REC-334,san francisco,57.0,Closed,  Customer record with note 334  
+REC-335, New York ,84.0,Closed,  Customer record with note 335  
+REC-336,boston,78.0,Pending,  Customer record with note 336  
+REC-337, New York ,99.0,Active,  Customer record with note 337  
+REC-338, Seattle,69.0,Active,  Customer record with note 338  
+REC-339,chicago,73.0,Closed,  Customer record with note 339  
+REC-340,SAN FRANCISCO,52.0,Active,  Customer record with note 340  
+REC-341,SAN FRANCISCO,71.0,Closed,  Customer record with note 341  
+REC-342,san francisco,100.0,Pending,  Customer record with note 342  
+REC-343,san francisco,40.0,Closed,  Customer record with note 343  
+REC-344, New York ,55.0,Active,  Customer record with note 344  
+REC-345,boston,96.0,Pending,  Customer record with note 345  
+REC-346,chicago,95.0,Active,  Customer record with note 346  
+REC-347,,60.0,Closed,  Customer record with note 347  
+REC-348,chicago,,Pending,  Customer record with note 348  
+REC-349,boston,75.0,Closed,  Customer record with note 349  
+REC-350,Austin,71.0,Closed,  Customer record with note 350  
+REC-351, New York ,94.0,Pending,  Customer record with note 351  
+REC-352,SAN FRANCISCO,81.0,,  Customer record with note 352  
+REC-353,,47.0,,  Customer record with note 353  
+REC-354,chicago,69.0,Closed,  Customer record with note 354  
+REC-355,SAN FRANCISCO,,,  Customer record with note 355  
+REC-356, New York ,49.0,Active,  Customer record with note 356  
+REC-357, Seattle,44.0,,  Customer record with note 357  
+REC-358,boston,100.0,Active,  Customer record with note 358  
+REC-359,Chicago ,94.0,Pending,  Customer record with note 359  
+REC-360, Seattle,58.0,Pending,  Customer record with note 360  
+REC-361,Chicago ,64.0,Closed,  Customer record with note 361  
+REC-362, New York ,86.0,Active,  Customer record with note 362  
+REC-363, New York ,67.0,Pending,  Customer record with note 363  
+REC-364,SAN FRANCISCO,63.0,Closed,  Customer record with note 364  
+REC-365,san francisco,55.0,Closed,  Customer record with note 365  
+REC-366,,89.0,Closed,  Customer record with note 366  
+REC-367,,84.0,Pending,  Customer record with note 367  
+REC-368, Seattle,98.0,Closed,  Customer record with note 368  
+REC-369,SAN FRANCISCO,46.0,Active,  Customer record with note 369  
+REC-370,san francisco,61.0,,  Customer record with note 370  
+REC-371, Seattle,,Active,  Customer record with note 371  
+REC-372,boston,82.0,Pending,  Customer record with note 372  
+REC-373,Chicago ,,Closed,  Customer record with note 373  
+REC-374,san francisco,72.0,Active,  Customer record with note 374  
+REC-375,Austin,74.0,Closed,  Customer record with note 375  
+REC-376,boston,51.0,Active,  Customer record with note 376  
+REC-377,SAN FRANCISCO,76.0,Active,  Customer record with note 377  
+REC-378, New York ,65.0,Pending,  Customer record with note 378  
+REC-379,Austin,98.0,Pending,  Customer record with note 379  
+REC-380, New York ,50.0,Closed,  Customer record with note 380  
+REC-381,Austin,90.0,Active,  Customer record with note 381  
+REC-382,boston,70.0,Pending,  Customer record with note 382  
+REC-383,,92.0,Active,  Customer record with note 383  
+REC-384,chicago,78.0,Closed,  Customer record with note 384  
+REC-385,san francisco,100.0,Active,  Customer record with note 385  
+REC-386,,,Active,  Customer record with note 386  
+REC-387,san francisco,82.0,,  Customer record with note 387  
+REC-388,chicago,45.0,Pending,  Customer record with note 388  
+REC-389, New York ,80.0,Closed,  Customer record with note 389  
+REC-390,san francisco,,Closed,  Customer record with note 390  
+REC-391, New York ,54.0,Closed,  Customer record with note 391  
+REC-392,,91.0,Pending,  Customer record with note 392  
+REC-393, New York ,50.0,Active,  Customer record with note 393  
+REC-394,boston,46.0,Closed,  Customer record with note 394  
+REC-395,boston,72.0,Pending,  Customer record with note 395  
+REC-396,SAN FRANCISCO,52.0,Active,  Customer record with note 396  
+REC-397,Austin,63.0,Active,  Customer record with note 397  
+REC-398,Austin,60.0,Pending,  Customer record with note 398  
+REC-399,chicago,56.0,Closed,  Customer record with note 399  
+REC-400,SAN FRANCISCO,,,  Customer record with note 400  
+REC-001,chicago,76.0,Active,  Customer record with note 1  
+REC-002,SAN FRANCISCO,47.0,Pending,  Customer record with note 2  
+REC-003, New York ,56.0,Closed,  Customer record with note 3  
+REC-004,san francisco,,Pending,  Customer record with note 4  
+REC-005,,92.0,Closed,  Customer record with note 5  
+REC-006,SAN FRANCISCO,47.0,Active,  Customer record with note 6  
+REC-007,Austin,99.0,,  Customer record with note 7  
+REC-008, New York ,94.0,Closed,  Customer record with note 8  
+REC-009,,71.0,Active,  Customer record with note 9  
+REC-010,Austin,,Active,  Customer record with note 10  
+REC-011,san francisco,40.0,Pending,  Customer record with note 11  
+REC-012,SAN FRANCISCO,60.0,Closed,  Customer record with note 12  
+REC-013, New York ,58.0,Active,  Customer record with note 13  
+REC-014,Chicago ,44.0,Active,  Customer record with note 14  
+REC-015, Seattle,44.0,,  Customer record with note 15  
+REC-016,boston,89.0,,  Customer record with note 16  
+REC-017,chicago,84.0,Active,  Customer record with note 17  
+REC-018, New York ,55.0,Pending,  Customer record with note 18  
+REC-019, New York ,55.0,Active,  Customer record with note 19  
+REC-020,,50.0,Active,  Customer record with note 20  
+REC-021,Austin,74.0,Closed,  Customer record with note 21  
+REC-022, New York ,,Pending,  Customer record with note 22  
+REC-023,,63.0,Active,  Customer record with note 23  
+REC-024,chicago,98.0,Active,  Customer record with note 24  
+REC-025,Chicago ,,Pending,  Customer record with note 25  
+REC-026,Austin,,Active,  Customer record with note 26  
+REC-027,,,Active,  Customer record with note 27  
+REC-028,Austin,86.0,Active,  Customer record with note 28  
+REC-029,boston,69.0,Active,  Customer record with note 29  
+REC-030,Austin,55.0,Pending,  Customer record with note 30  
+REC-031, Seattle,48.0,,  Customer record with note 31  
+REC-032, New York ,40.0,Pending,  Customer record with note 32  
+REC-033,Chicago ,55.0,Pending,  Customer record with note 33  
+REC-034,chicago,40.0,Active,  Customer record with note 34  
+REC-035, New York ,41.0,Active,  Customer record with note 35  
+REC-036,boston,100.0,Active,  Customer record with note 36  
+REC-037, New York ,61.0,Active,  Customer record with note 37  
+REC-038,SAN FRANCISCO,69.0,Pending,  Customer record with note 38  
+REC-039, Seattle,46.0,Pending,  Customer record with note 39  
+REC-040, Seattle,96.0,Closed,  Customer record with note 40  
+REC-041,boston,77.0,Active,  Customer record with note 41  
+REC-042, Seattle,93.0,Closed,  Customer record with note 42  
+REC-043,SAN FRANCISCO,82.0,Pending,  Customer record with note 43  
+REC-044, New York ,51.0,Active,  Customer record with note 44  
+REC-045, New York ,61.0,Closed,  Customer record with note 45  
+REC-046,SAN FRANCISCO,62.0,Active,  Customer record with note 46  
+REC-047, New York ,52.0,Active,  Customer record with note 47  
+REC-048,boston,92.0,Active,  Customer record with note 48  
+REC-049,,86.0,Active,  Customer record with note 49  
+REC-050,Chicago ,79.0,Closed,  Customer record with note 50  
+REC-051,san francisco,64.0,Pending,  Customer record with note 51  
+REC-052, Seattle,100.0,Pending,  Customer record with note 52  
+REC-053,chicago,51.0,Pending,  Customer record with note 53  
+REC-054,Austin,87.0,Pending,  Customer record with note 54  
+REC-055,chicago,99.0,Pending,  Customer record with note 55  
+REC-056,,42.0,Pending,  Customer record with note 56  
+REC-057, Seattle,72.0,Closed,  Customer record with note 57  
+REC-058,boston,83.0,Active,  Customer record with note 58  
+REC-059,,,Active,  Customer record with note 59  
+REC-060,boston,97.0,Pending,  Customer record with note 60  
+REC-061, Seattle,,,  Customer record with note 61  
+REC-062,san francisco,57.0,Closed,  Customer record with note 62  
+REC-063, Seattle,80.0,Pending,  Customer record with note 63  
+REC-064,SAN FRANCISCO,,Active,  Customer record with note 64  
+REC-065,,53.0,Closed,  Customer record with note 65  
+REC-066,boston,59.0,Active,  Customer record with note 66  
+REC-067,boston,87.0,Closed,  Customer record with note 67  
+REC-068,san francisco,84.0,Closed,  Customer record with note 68  
+REC-069,Austin,84.0,Active,  Customer record with note 69  
+REC-070, Seattle,62.0,Active,  Customer record with note 70  
+REC-071,chicago,97.0,Active,  Customer record with note 71  
+REC-072,SAN FRANCISCO,49.0,Closed,  Customer record with note 72  
+REC-073,Austin,65.0,Active,  Customer record with note 73  
+REC-074,chicago,72.0,Active,  Customer record with note 74  
+REC-075,,52.0,,  Customer record with note 75  
+REC-076,boston,51.0,Closed,  Customer record with note 76  
+REC-077,,53.0,Active,  Customer record with note 77  
+REC-078,boston,41.0,Pending,  Customer record with note 78  
+REC-079,boston,76.0,Active,  Customer record with note 79  
+REC-080, Seattle,98.0,Active,  Customer record with note 80  
+REC-081,chicago,80.0,Closed,  Customer record with note 81  
+REC-082,chicago,48.0,Pending,  Customer record with note 82  
+REC-083,chicago,52.0,Pending,  Customer record with note 83  
+REC-084,Chicago ,,Closed,  Customer record with note 84  
+REC-085,Chicago ,59.0,Active,  Customer record with note 85  
+REC-086,Chicago ,76.0,Active,  Customer record with note 86  
+REC-087,boston,,Pending,  Customer record with note 87  
+REC-088,Chicago ,,Closed,  Customer record with note 88  
+REC-089, Seattle,79.0,Closed,  Customer record with note 89  
+REC-090,san francisco,69.0,Pending,  Customer record with note 90  
+REC-091,san francisco,95.0,Active,  Customer record with note 91  
+REC-092,san francisco,55.0,Closed,  Customer record with note 92  
+REC-093,SAN FRANCISCO,66.0,Active,  Customer record with note 93  
+REC-094,san francisco,90.0,Closed,  Customer record with note 94  
+REC-095,san francisco,48.0,Closed,  Customer record with note 95  
+REC-096, Seattle,74.0,Closed,  Customer record with note 96  
+REC-097,chicago,81.0,Pending,  Customer record with note 97  
+REC-098,Chicago ,73.0,Closed,  Customer record with note 98  
+REC-099,boston,48.0,Active,  Customer record with note 99  
+REC-100, Seattle,60.0,Active,  Customer record with note 100  

@@ -1,0 +1,243 @@
+{
+  "name": "Customer Sentiment Analysis",
+  "description": "Reads a CSV of customer reviews, sends each one through an LLM to classify sentiment as Positive, Negative, or Neutral, filters negatives, and exports annotated results.",
+  "category": "ai_llm",
+  "tags": [
+    "llm",
+    "classification",
+    "nlp",
+    "sentiment",
+    "customer"
+  ],
+  "difficulty": "intermediate",
+  "containers": [
+    {
+      "id": "ctr_s1",
+      "title": "Step 1 - Load & Prepare Review Data",
+      "x": 60,
+      "y": 60,
+      "width": 660,
+      "height": 300,
+      "color": "rgba(139,92,246,0.07)",
+      "headerColor": "#8b5cf6",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_s2",
+      "title": "Step 2 - AI Sentiment Classification",
+      "x": 760,
+      "y": 60,
+      "width": 440,
+      "height": 300,
+      "color": "rgba(139,92,246,0.07)",
+      "headerColor": "#8b5cf6",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_s3",
+      "title": "Step 3 - Filter & Export Negatives",
+      "x": 1250,
+      "y": 60,
+      "width": 640,
+      "height": 300,
+      "color": "rgba(239,68,68,0.07)",
+      "headerColor": "#ef4444",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_s1",
+      "text": "### Customer Sentiment Pipeline\n- **Input CSV**: Expects columns: ReviewID, CustomerName, ReviewText, ProductName, StarRating\n- **LLM Process**: Calls Ollama locally - configure your model in the node settings\n- **Output column**: Sentiment - values: Positive / Negative / Neutral\n- **Filter**: Negative reviews routed to CRM escalation export\n\n> Tip: Run `ollama pull llama3.2` if needed.",
+      "x": 60,
+      "y": 390,
+      "width": 500,
+      "height": 180,
+      "color": "#8b5cf6"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_s_in",
+      "type": "input_data",
+      "name": "Input Customer Reviews (CSV)",
+      "x": 100,
+      "y": 170,
+      "config": {
+        "file_path": "customer_reviews.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_s_af",
+      "type": "auto_field",
+      "name": "Auto Field Types",
+      "x": 280,
+      "y": 170,
+      "config": {
+        "fields": []
+      }
+    },
+    {
+      "id": "node_s_clean",
+      "type": "clean",
+      "name": "Clean Review Text",
+      "x": 460,
+      "y": 170,
+      "config": {
+        "columns": [
+          "ReviewText"
+        ],
+        "trim_whitespace": true,
+        "case_transformation": "none",
+        "remove_empty_rows": true
+      }
+    },
+    {
+      "id": "node_s_llm",
+      "type": "llm_process",
+      "name": "AI Sentiment Classifier",
+      "x": 800,
+      "y": 170,
+      "config": {
+        "provider_type": "ollama",
+        "connection": {
+          "base_url": "http://localhost:11434",
+          "api_key": ""
+        },
+        "model": "llama3.2:latest",
+        "temperature": 0.1,
+        "max_tokens": 10,
+        "top_p": 1.0,
+        "timeout_seconds": 30,
+        "system_prompt": "You are a sentiment classification assistant. Respond with EXACTLY one word: Positive, Negative, or Neutral. No punctuation, no explanation.",
+        "user_prompt_template": "Classify the sentiment of this customer review:\n\nProduct: {{[ProductName]}}\nRating: {{[StarRating]}} stars\nReview: {{[ReviewText]}}",
+        "rag_context": {
+          "enabled": false,
+          "source": "static",
+          "text": "",
+          "column": "",
+          "file_path": "",
+          "placement": "before"
+        },
+        "output_mode": "single",
+        "output_column": "Sentiment",
+        "json_fields": [],
+        "on_error": "null",
+        "max_retries": 2,
+        "concurrency": 3,
+        "rate_limit_rps": 5,
+        "include_token_columns": true
+      }
+    },
+    {
+      "id": "node_s_filter",
+      "type": "filter",
+      "name": "Filter Negative Reviews",
+      "x": 1290,
+      "y": 170,
+      "config": {
+        "mode": "basic",
+        "logical_op": "AND",
+        "conditions": [
+          {
+            "column": "Sentiment",
+            "operator": "=",
+            "value": "Negative"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_s_sort",
+      "type": "sort",
+      "name": "Sort by Rating (Lowest First)",
+      "x": 1480,
+      "y": 130,
+      "config": {
+        "sort_by": [
+          {
+            "column": "StarRating",
+            "ascending": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_s_out",
+      "type": "output_data",
+      "name": "Export Negative Reviews",
+      "x": 1660,
+      "y": 130,
+      "config": {
+        "filename": "negative_reviews_for_escalation",
+        "format": "csv",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_s_browse",
+      "type": "browse",
+      "name": "Browse All Annotated Results",
+      "x": 1480,
+      "y": 260,
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "cs1",
+      "source": "node_s_in",
+      "sourceHandle": "O",
+      "target": "node_s_af",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cs2",
+      "source": "node_s_af",
+      "sourceHandle": "O",
+      "target": "node_s_clean",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cs3",
+      "source": "node_s_clean",
+      "sourceHandle": "O",
+      "target": "node_s_llm",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cs4",
+      "source": "node_s_llm",
+      "sourceHandle": "O",
+      "target": "node_s_filter",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cs5",
+      "source": "node_s_filter",
+      "sourceHandle": "T",
+      "target": "node_s_sort",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cs6",
+      "source": "node_s_sort",
+      "sourceHandle": "O",
+      "target": "node_s_out",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cs7",
+      "source": "node_s_filter",
+      "sourceHandle": "F",
+      "target": "node_s_browse",
+      "targetHandle": "I"
+    }
+  ]
+}

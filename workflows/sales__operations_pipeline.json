@@ -1,0 +1,292 @@
+{
+  "name": "Sales & Operations Pipeline",
+  "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
+  "metadata": {
+    "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
+    "author": "",
+    "version": "2.1.0",
+    "created_at": "2026-09-15T02:06:34",
+    "updated_at": "2026-09-15T02:06:34"
+  },
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "node_sales_in",
+      "type": "input_data",
+      "name": "Input Sales Orders (CSV)",
+      "x": 100,
+      "y": 180,
+      "config": {
+        "delimiter": ",",
+        "file_path": "sales_orders.csv",
+        "file_type": "csv",
+        "has_header": true
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sales_autofield",
+      "type": "auto_field",
+      "name": "Auto Field Types",
+      "x": 280,
+      "y": 180,
+      "config": {
+        "fields": []
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sales_clean",
+      "type": "clean",
+      "name": "Clean Text & Region",
+      "x": 460,
+      "y": 180,
+      "config": {
+        "case_transformation": "title",
+        "columns": [
+          "CustomerNotes",
+          "Region"
+        ],
+        "remove_empty_rows": false,
+        "trim_whitespace": true
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sales_dt",
+      "type": "date_time",
+      "name": "Parse OrderDate",
+      "x": 640,
+      "y": 180,
+      "config": {
+        "column": "OrderDate",
+        "conversion_type": "string_to_date",
+        "format_template": "yyyy-MM-dd",
+        "output_column": "OrderDate_ISO"
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sales_formula",
+      "type": "formula",
+      "name": "Calculate Net Revenue",
+      "x": 820,
+      "y": 180,
+      "config": {
+        "formulas": [
+          {
+            "expression": "[Quantity] * [UnitPrice]",
+            "output_field": "GrossAmount",
+            "type": "float"
+          },
+          {
+            "expression": "[GrossAmount] * (1.0 - [Discount])",
+            "output_field": "NetAmount",
+            "type": "float"
+          }
+        ]
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sales_filter",
+      "type": "filter",
+      "name": "Filter Orders > $500",
+      "x": 1000,
+      "y": 180,
+      "config": {
+        "conditions": [
+          {
+            "column": "NetAmount",
+            "operator": ">",
+            "value": "500"
+          }
+        ],
+        "logical_op": "AND",
+        "mode": "basic"
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sales_summarize",
+      "type": "summarize",
+      "name": "Summarize by Region & Segment",
+      "x": 1200,
+      "y": 140,
+      "config": {
+        "actions": [
+          {
+            "action": "GroupBy",
+            "field": "Region",
+            "output_name": "Region"
+          },
+          {
+            "action": "GroupBy",
+            "field": "Segment",
+            "output_name": "Segment"
+          },
+          {
+            "action": "Sum",
+            "field": "NetAmount",
+            "output_name": "TotalRevenue"
+          },
+          {
+            "action": "Average",
+            "field": "NetAmount",
+            "output_name": "AvgOrderValue"
+          },
+          {
+            "action": "Count",
+            "field": "OrderID",
+            "output_name": "HighValueOrderCount"
+          }
+        ]
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sort_1",
+      "type": "sort",
+      "name": "Sort Revenue Desc",
+      "x": 1380,
+      "y": 140,
+      "config": {
+        "sort_by": [
+          {
+            "ascending": false,
+            "column": "TotalRevenue"
+          }
+        ]
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    },
+    {
+      "id": "node_sales_out",
+      "type": "output_data",
+      "name": "Export Sales Summary",
+      "x": 1560,
+      "y": 140,
+      "config": {
+        "filename": "regional_sales_summary",
+        "format": "csv",
+        "write_mode": "overwrite"
+      },
+      "container_id": "container_sales_1",
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "source": "node_sales_in",
+      "sourceHandle": "O",
+      "target": "node_sales_autofield",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c1_b",
+      "source": "node_sales_autofield",
+      "sourceHandle": "O",
+      "target": "node_sales_clean",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c2",
+      "source": "node_sales_clean",
+      "sourceHandle": "O",
+      "target": "node_sales_dt",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c3",
+      "source": "node_sales_dt",
+      "sourceHandle": "O",
+      "target": "node_sales_formula",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c4",
+      "source": "node_sales_formula",
+      "sourceHandle": "O",
+      "target": "node_sales_filter",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c5",
+      "source": "node_sales_filter",
+      "sourceHandle": "T",
+      "target": "node_sales_summarize",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c6",
+      "source": "node_sales_summarize",
+      "sourceHandle": "O",
+      "target": "node_sort_1",
+      "targetHandle": "I"
+    },
+    {
+      "id": "c7",
+      "source": "node_sort_1",
+      "sourceHandle": "O",
+      "target": "node_sales_out",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [
+    {
+      "id": "container_sales_1",
+      "title": "Sales Performance & Customer Enrichment",
+      "color": "rgba(34, 197, 94, 0.08)",
+      "textColor": "#ffffff",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "fillOpacity": 12,
+      "margin": 24,
+      "x": 60,
+      "y": 60,
+      "width": 1660,
+      "height": 380,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "node_sales_in",
+        "node_sales_autofield",
+        "node_sales_clean",
+        "node_sales_dt",
+        "node_sales_formula",
+        "node_sales_filter",
+        "node_sales_summarize",
+        "node_sort_1",
+        "node_sales_out"
+      ]
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_sales_1",
+      "text": "### Executive Sales KPIs\n- Auto Field optimizes incoming types automatically.\n- Data Clean trims whitespace and title-cases region names.\n- DateTime normalizes dates into ISO format.\n- Formula calculates Net Revenue after discounts.\n- High-value transactions (> $500) are aggregated by Region and Segment.",
+      "color": "#eab308",
+      "textColor": "#1e293b",
+      "fontSize": 13,
+      "x": 60,
+      "y": 460,
+      "width": 420,
+      "height": 140
+    }
+  ],
+  "cached_node_ids": [],
+  "auto_cache_upstream": false
+}

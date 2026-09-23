@@ -1,0 +1,60 @@
+name: Antigravity DataFlow CI Quality Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test Suite & Quality Gate (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov psutil flake8
+
+      - name: Lint and Code Hygiene
+        run: |
+          # Stop build if there are Python syntax errors or undefined names
+          flake8 backend tests --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 backend tests --count --exit-zero --max-complexity=15 --max-line-length=140 --statistics
+
+      - name: Run Core & Engine Unit Tests
+        run: |
+          pytest tests/test_engine.py tests/test_formula_functions.py tests/test_data_types.py -v
+
+      - name: Run SQL Pushdown Transpiler & Live Parity Tests
+        run: |
+          pytest tests/test_sql_compiler.py tests/test_live_sql_execution.py -v
+
+      - name: Run Security, Sandboxing & Fuzzing Tests
+        run: |
+          pytest tests/test_production_and_security.py tests/test_formula_fuzz_and_security.py -v
+
+      - name: Run Performance, Scale & Stress Benchmarks
+        run: |
+          pytest tests/test_performance_and_stress.py -v
+
+      - name: Run Full Master Regression Suite
+        run: |
+          pytest tests/ -v

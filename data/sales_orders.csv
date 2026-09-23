@@ -1,0 +1,101 @@
+OrderID,CustomerID,CustomerName,Segment,Region,State,OrderDate,Quantity,UnitPrice,Discount,CustomerNotes
+ORD-1001,CUST-123,Client B 1,Home Office,East,Pennsylvania,2024-07-26,11,278.4,0.2,   VIP CLIENT - priority processing   
+ORD-1002,CUST-124,Client C 2,Consumer,East,Maryland,2024-06-21,4,71.43,0.1,Customer requested gift receipt.
+ORD-1003,CUST-122,Client D 3,Corporate,West,Washington,2024-01-12,2,84.09,0.2,Customer requested gift receipt.
+ORD-1004,CUST-103,Client E 4,Consumer,north,New York,2024-12-16,11,223.85,0.05,   expedite shipping   
+ORD-1005,CUST-114,Client F 5,Home Office,NORTH,Illinois,2024-04-25,5,171.41,0.05,Regular recurring replenishment order.
+ORD-1006,CUST-107,Client G 6,Consumer,South,Florida,2024-12-15,10,56.74,0.15,Regular recurring replenishment order.
+ORD-1007,CUST-102,Client H 7,Home Office,West,California,2024-02-08,3,320.53,0.15,Regular recurring replenishment order.
+ORD-1008,CUST-134,Client I 8,Corporate,south,Florida,2024-02-26,10,209.5,0.2,Regular recurring replenishment order.
+ORD-1009,CUST-116,Client J 9,Corporate,South,Florida,2024-09-08,8,210.39,0.15, verified address with accounting department 
+ORD-1010,CUST-129,Client K 10,Home Office,NORTH,Massachusetts,2024-12-13,5,215.69,0.0,  urgent delivery requested  
+ORD-1011,CUST-111,Client L 11,Consumer,East,Pennsylvania,2024-12-08,9,345.74,0.0,Standard checkout.
+ORD-1012,CUST-128,Client M 12,Home Office,east,Pennsylvania,2024-10-07,3,275.66,0.2,Customer requested gift receipt.
+ORD-1013,CUST-122,Client N 13,Corporate,East,Pennsylvania,2024-03-12,1,45.66,0.2,Standard checkout.
+ORD-1014,CUST-114,Client O 14,Consumer,East,Maryland,2024-01-05,3,63.87,0.1,Customer requested gift receipt.
+ORD-1015,CUST-132,Client P 15,Consumer,EAST,Maryland,2024-03-07,10,33.26,0.2,  urgent delivery requested  
+ORD-1016,CUST-107,Client Q 16,Consumer,west,Washington,2024-04-13,7,221.44,0.1,Standard checkout.
+ORD-1017,CUST-128,Client R 17,Corporate,East,Maryland,2024-09-21,12,327.15,0.2,First time buyer discount applied.
+ORD-1018,CUST-133,Client S 18,Corporate,West,Washington,2024-09-07,11,130.41,0.15,First time buyer discount applied.
+ORD-1019,CUST-106,Client T 19,Home Office,North,New York,2024-09-03,14,25.17,0.2,   expedite shipping   
+ORD-1020,CUST-115,Client U 20,Consumer,west,Colorado,2024-10-12,14,97.19,0.1,Standard checkout.
+ORD-1021,CUST-139,Client V 21,Consumer,East,Virginia,2024-10-20,4,143.18,0.0,Regular recurring replenishment order.
+ORD-1022,CUST-102,Client W 22,Consumer,South,Georgia,2024-11-17,5,117.57,0.0,Customer requested gift receipt.
+ORD-1023,CUST-126,Client X 23,Home Office,West,Washington,2024-03-02,5,137.15,0.0, verified address with accounting department 
+ORD-1024,CUST-105,Client Y 24,Home Office,west,Washington,2024-01-06,4,51.28,0.1,Standard checkout.
+ORD-1025,CUST-116,Client Z 25,Corporate,WEST,Washington,2024-09-27,6,199.13,0.0,First time buyer discount applied.
+ORD-1026,CUST-107,Client A 26,Home Office,North,Illinois,2024-03-20,4,30.39,0.1,Standard checkout.
+ORD-1027,CUST-128,Client B 27,Consumer,West,California,2024-08-01,8,150.69,0.05,   VIP CLIENT - priority processing   
+ORD-1028,CUST-116,Client C 28,Corporate,north,New York,2024-03-07,7,200.97,0.05,Regular recurring replenishment order.
+ORD-1029,CUST-109,Client D 29,Consumer,South,Texas,2024-05-05,2,348.78,0.15,Standard checkout.
+ORD-1030,CUST-108,Client E 30,Home Office,NORTH,Illinois,2024-08-20,3,303.31,0.0,   VIP CLIENT - priority processing   
+ORD-1031,CUST-118,Client F 31,Corporate,West,Washington,2024-03-25,3,145.99,0.0, verified address with accounting department 
+ORD-1032,CUST-104,Client G 32,Corporate,west,Washington,2024-09-04,2,249.87,0.2,  urgent delivery requested  
+ORD-1033,CUST-112,Client H 33,Consumer,North,Massachusetts,2024-01-01,4,144.1,0.1,Standard checkout.
+ORD-1034,CUST-127,Client I 34,Corporate,East,Maryland,2024-03-22,7,106.4,0.2,Standard checkout.
+ORD-1035,CUST-104,Client J 35,Consumer,EAST,Virginia,2024-05-16,14,234.66,0.0,   VIP CLIENT - priority processing   
+ORD-1036,CUST-137,Client K 36,Consumer,east,Pennsylvania,2024-05-06,12,330.65,0.2,   VIP CLIENT - priority processing   
+ORD-1037,CUST-121,Client L 37,Consumer,West,California,2024-12-01,14,339.16,0.1,Regular recurring replenishment order.
+ORD-1038,CUST-103,Client M 38,Consumer,West,Colorado,2024-10-22,3,80.09,0.0,Customer requested gift receipt.
+ORD-1039,CUST-117,Client N 39,Corporate,West,Washington,2024-10-02,6,141.56,0.1,Customer requested gift receipt.
+ORD-1040,CUST-135,Client O 40,Consumer,west,California,2024-10-23,11,255.4,0.2,Customer requested gift receipt.
+ORD-1041,CUST-101,Client P 41,Consumer,South,Texas,2024-04-13,12,191.19,0.0,Regular recurring replenishment order.
+ORD-1042,CUST-123,Client Q 42,Corporate,West,Washington,2024-02-02,12,313.15,0.15,Standard checkout.
+ORD-1043,CUST-122,Client R 43,Home Office,East,Virginia,2024-06-26,9,75.39,0.2,Customer requested gift receipt.
+ORD-1044,CUST-105,Client S 44,Corporate,north,Massachusetts,2024-01-08,6,199.55,0.2, verified address with accounting department 
+ORD-1045,CUST-116,Client T 45,Consumer,EAST,Virginia,2024-07-08,4,158.69,0.1,Regular recurring replenishment order.
+ORD-1046,CUST-126,Client U 46,Corporate,North,Massachusetts,2024-12-26,14,38.35,0.1,   expedite shipping   
+ORD-1047,CUST-101,Client V 47,Consumer,North,Massachusetts,2024-12-21,14,296.69,0.0,  urgent delivery requested  
+ORD-1048,CUST-139,Client W 48,Corporate,east,Virginia,2024-05-01,6,257.24,0.2,Standard checkout.
+ORD-1049,CUST-137,Client X 49,Consumer,West,Colorado,2024-12-26,6,262.26,0.1,Standard checkout.
+ORD-1050,CUST-116,Client Y 50,Consumer,SOUTH,Texas,2024-04-05,14,54.83,0.0,Regular recurring replenishment order.
+ORD-1051,CUST-105,Client Z 51,Consumer,South,Florida,2024-07-26,7,137.55,0.2,Customer requested gift receipt.
+ORD-1052,CUST-104,Client A 52,Home Office,west,Washington,2024-01-24,10,228.4,0.05, verified address with accounting department 
+ORD-1053,CUST-135,Client B 53,Corporate,West,Colorado,2024-04-24,1,306.84,0.1,Regular recurring replenishment order.
+ORD-1054,CUST-133,Client C 54,Consumer,West,California,2024-12-03,13,202.33,0.2,  urgent delivery requested  
+ORD-1055,CUST-135,Client D 55,Home Office,WEST,Washington,2024-02-19,12,114.04,0.15,Customer requested gift receipt.
+ORD-1056,CUST-107,Client E 56,Corporate,east,Pennsylvania,2024-10-02,8,150.25,0.05,   VIP CLIENT - priority processing   
+ORD-1057,CUST-121,Client F 57,Consumer,West,Washington,2024-08-04,2,229.41,0.2,  urgent delivery requested  
+ORD-1058,CUST-136,Client G 58,Corporate,North,New York,2024-01-03,5,268.95,0.1,Standard checkout.
+ORD-1059,CUST-113,Client H 59,Home Office,South,Texas,2024-12-17,8,306.81,0.2,   expedite shipping   
+ORD-1060,CUST-122,Client I 60,Home Office,east,Pennsylvania,2024-04-16,9,147.76,0.0,  urgent delivery requested  
+ORD-1061,CUST-109,Client J 61,Home Office,North,Illinois,2024-09-19,1,42.38,0.2,Regular recurring replenishment order.
+ORD-1062,CUST-125,Client K 62,Home Office,East,Virginia,2024-05-03,4,211.37,0.2,Regular recurring replenishment order.
+ORD-1063,CUST-139,Client L 63,Consumer,West,Colorado,2024-07-13,4,332.51,0.0, verified address with accounting department 
+ORD-1064,CUST-112,Client M 64,Corporate,south,Georgia,2024-11-11,5,264.54,0.2,Customer requested gift receipt.
+ORD-1065,CUST-127,Client N 65,Corporate,NORTH,Massachusetts,2024-08-10,12,306.73,0.2,  urgent delivery requested  
+ORD-1066,CUST-101,Client O 66,Consumer,South,Florida,2024-08-16,13,52.57,0.1, verified address with accounting department 
+ORD-1067,CUST-131,Client P 67,Home Office,South,Texas,2024-04-06,7,345.45,0.15,Regular recurring replenishment order.
+ORD-1068,CUST-103,Client Q 68,Corporate,east,Pennsylvania,2024-03-07,7,162.87,0.05,First time buyer discount applied.
+ORD-1069,CUST-139,Client R 69,Corporate,North,New York,2024-12-08,12,210.73,0.15, verified address with accounting department 
+ORD-1070,CUST-133,Client S 70,Consumer,NORTH,Illinois,2024-01-25,12,337.71,0.15,Standard checkout.
+ORD-1071,CUST-121,Client T 71,Corporate,South,Texas,2024-05-16,10,28.95,0.2,First time buyer discount applied.
+ORD-1072,CUST-115,Client U 72,Home Office,east,Pennsylvania,2024-09-17,3,340.02,0.05,First time buyer discount applied.
+ORD-1073,CUST-132,Client V 73,Consumer,East,Pennsylvania,2024-11-12,6,214.9,0.0,Customer requested gift receipt.
+ORD-1074,CUST-128,Client W 74,Consumer,West,Washington,2024-10-08,8,80.15,0.15,Customer requested gift receipt.
+ORD-1075,CUST-120,Client X 75,Consumer,WEST,California,2024-09-01,4,345.52,0.0, verified address with accounting department 
+ORD-1076,CUST-125,Client Y 76,Consumer,north,New York,2024-03-05,14,49.77,0.05,   expedite shipping   
+ORD-1077,CUST-101,Client Z 77,Corporate,South,Florida,2024-07-24,2,204.27,0.2,  urgent delivery requested  
+ORD-1078,CUST-113,Client A 78,Consumer,South,Georgia,2024-06-27,11,218.09,0.0,   VIP CLIENT - priority processing   
+ORD-1079,CUST-117,Client B 79,Consumer,North,Massachusetts,2024-07-06,3,68.5,0.2,Regular recurring replenishment order.
+ORD-1080,CUST-110,Client C 80,Consumer,north,Illinois,2024-05-05,6,321.78,0.2,Customer requested gift receipt.
+ORD-1081,CUST-104,Client D 81,Consumer,East,Pennsylvania,2024-03-13,14,91.64,0.0, verified address with accounting department 
+ORD-1082,CUST-134,Client E 82,Consumer,South,Texas,2024-08-07,8,225.89,0.15,Customer requested gift receipt.
+ORD-1083,CUST-130,Client F 83,Home Office,South,Florida,2024-06-12,11,125.03,0.0, verified address with accounting department 
+ORD-1084,CUST-111,Client G 84,Consumer,south,Georgia,2024-05-14,1,68.55,0.2,Customer requested gift receipt.
+ORD-1085,CUST-115,Client H 85,Corporate,EAST,Maryland,2024-02-18,12,343.65,0.05,First time buyer discount applied.
+ORD-1086,CUST-130,Client I 86,Home Office,East,Maryland,2024-08-15,2,138.18,0.0,Regular recurring replenishment order.
+ORD-1087,CUST-110,Client J 87,Home Office,East,Virginia,2024-10-24,1,333.59,0.15,  urgent delivery requested  
+ORD-1088,CUST-111,Client K 88,Corporate,north,New York,2024-11-11,6,185.1,0.2,Standard checkout.
+ORD-1089,CUST-104,Client L 89,Consumer,East,Maryland,2024-06-16,7,66.61,0.1,Standard checkout.
+ORD-1090,CUST-121,Client M 90,Home Office,WEST,California,2024-10-19,3,192.45,0.05,   VIP CLIENT - priority processing   
+ORD-1091,CUST-126,Client N 91,Corporate,North,Massachusetts,2024-05-09,13,35.34,0.0,Regular recurring replenishment order.
+ORD-1092,CUST-122,Client O 92,Consumer,south,Florida,2024-09-26,14,132.28,0.1,  urgent delivery requested  
+ORD-1093,CUST-135,Client P 93,Home Office,East,Virginia,2024-01-08,13,25.84,0.15,  urgent delivery requested  
+ORD-1094,CUST-124,Client Q 94,Home Office,North,Illinois,2024-12-23,8,182.47,0.05,First time buyer discount applied.
+ORD-1095,CUST-123,Client R 95,Corporate,SOUTH,Texas,2024-07-03,14,73.02,0.1,   expedite shipping   
+ORD-1096,CUST-115,Client S 96,Home Office,south,Georgia,2024-06-03,12,59.83,0.05,   VIP CLIENT - priority processing   
+ORD-1097,CUST-126,Client T 97,Home Office,West,California,2024-01-07,5,84.24,0.0,First time buyer discount applied.
+ORD-1098,CUST-118,Client U 98,Consumer,South,Texas,2024-10-03,13,217.92,0.15,  urgent delivery requested  
+ORD-1099,CUST-137,Client V 99,Corporate,East,Maryland,2024-12-19,2,206.27,0.0,Customer requested gift receipt.
+ORD-1100,CUST-133,Client W 100,Corporate,south,Florida,2024-06-05,11,140.73,0.2,  urgent delivery requested  

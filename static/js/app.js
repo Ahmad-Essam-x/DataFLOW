@@ -1,0 +1,2445 @@
+/**
+ * Main Application Coordinator.
+ * Initializes canvas, palette, configuration, results panels, history manager,
+ * theme switching, and real-time SSE execution streaming.
+ */
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Session tracking for execution isolation
+  let clientSessionId = localStorage.getItem('dataflow_session_id');
+  if (!clientSessionId) {
+    clientSessionId = 'sess_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+    localStorage.setItem('dataflow_session_id', clientSessionId);
+  }
+  window.clientSessionId = clientSessionId;
+  window.activeRunId = null;
+
+  // 1. Instantiate Core Components
+  const resultsPanel = new ResultsPanel();
+  window.appResultsPanel = resultsPanel;
+
+  const canvas = new Canvas('canvas-container', {
+    onSelectNode: (node) => {
+      configPanel.render(node);
+      resultsPanel.showNodeResults(node);
+    },
+    onWorkflowChange: () => {
+      if (canvas.selectedNodeId) {
+        const node = canvas.nodes.find(n => n.id === canvas.selectedNodeId);
+        const isEditingInPanel = document.activeElement && configPanel.contentEl && configPanel.contentEl.contains(document.activeElement);
+        if (!isEditingInPanel) {
+          configPanel.render(node);
+        }
+        // Update validation badge when config changes
+        canvas.updateNodeValidation(node);
+      }
+      if (typeof markWorkflowDirty === 'function') {
+        markWorkflowDirty();
+      }
+    }
+  });
+  window.appCanvas = canvas;
+
+  if (window.appHistory) {
+    window.appHistory.setCanvas(canvas);
+  }
+
+  const configPanel = new ConfigPanel(canvas);
+  window.appConfigPanel = configPanel;
+
+  const palette = new ToolPalette(canvas);
+  window.appPalette = palette;
+
+  if (window.CanvasMiniMap) {
+    window.appMiniMap = new CanvasMiniMap(canvas);
+  }
+
+  // 1b. Setup UI Scale & Display Zoom
+  const UI_ZOOM_LEVELS = [0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0];
+  let currentUIScale = 1.0;
+  try {
+    const savedScale = window.userSettings 
+      ? window.userSettings.get('ui_zoom', 1.0) 
+      : parseFloat(localStorage.getItem('dataflow_ui_zoom') || '1.0');
+    if (!isNaN(savedScale) && savedScale >= 0.5 && savedScale <= 2.5) {
+      currentUIScale = savedScale;
+    }
+  } catch (_) {}
+
+  function applyUIScale(scale, notify = false) {
+    scale = Math.min(2.0, Math.max(0.6, Math.round(scale * 100) / 100));
+    currentUIScale = scale;
+    document.documentElement.style.zoom = `${scale}`;
+    localStorage.setItem('dataflow_ui_zoom', String(scale));
+    if (window.userSettings) {
+      window.userSettings.set('ui_zoom', scale);
+    }
+    if (notify && window.showToast) {
+      window.showToast('info', 'UI Display Scale', `Interface zoom: ${Math.round(scale * 100)}%`, 1200);
+    }
+  }
+
+  function zoomUIIn() {
+    let next = UI_ZOOM_LEVELS.find(lvl => lvl > currentUIScale + 0.01);
+    if (!next) next = Math.min(2.0, Math.round((currentUIScale + 0.1) * 100) / 100);
+    applyUIScale(next, true);
+  }
+
+  function zoomUIOut() {
+    let prev = [...UI_ZOOM_LEVELS].reverse().find(lvl => lvl < currentUIScale - 0.01);
+    if (!prev) prev = Math.max(0.6, Math.round((currentUIScale - 0.1) * 100) / 100);
+    applyUIScale(prev, true);
+  }
+
+  function resetUIZoom() {
+    applyUIScale(1.0, true);
+  }
+
+  window.appUIScale = {
+    apply: applyUIScale,
+    zoomIn: zoomUIIn,
+    zoomOut: zoomUIOut,
+    reset: resetUIZoom,
+    get: () => currentUIScale
+  };
+
+  // Apply saved scale immediately
+  if (currentUIScale !== 1.0) {
+    applyUIScale(currentUIScale, false);
+  }
+
+  // 2. Setup Theme Switching (Modern Dark vs Alteryx Classic Light vs High Contrast)
+  function setupTheme() {
+    // Apply theme from settings (userSettings seeded from localStorage already in constructor)
+    if (window.userSettings) {
+      window.userSettings._applyTheme();
+    } else {
+      const savedTheme = localStorage.getItem('alteryx_theme') || 'theme-dark';
+      document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+      document.documentElement.classList.add(savedTheme);
+      document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+      document.body.classList.add(savedTheme);
+    }
+
+    const toggleBtn = document.getElementById('btn-theme-toggle');
+    const sunIcon = document.getElementById('theme-icon-sun');
+    const moonIcon = document.getElementById('theme-icon-moon');
+    const label = document.getElementById('theme-toggle-label');
+
+    function updateIcons(theme) {
+      if (theme === 'theme-light') {
+        if (sunIcon) sunIcon.style.display = 'none';
+        if (moonIcon) moonIcon.style.display = 'block';
+        if (label) label.textContent = 'Light Mode';
+      } else if (theme === 'theme-high-contrast') {
+        if (sunIcon) sunIcon.style.display = 'block';
+        if (moonIcon) moonIcon.style.display = 'none';
+        if (label) label.textContent = 'Contrast';
+      } else {
+        if (sunIcon) sunIcon.style.display = 'none';
+        if (moonIcon) moonIcon.style.display = 'block';
+        if (label) label.textContent = 'Dark Mode';
+      }
+      if (toggleBtn) {
+        toggleBtn.title = `Current: ${label ? label.textContent : theme} (Click to toggle theme)`;
+        toggleBtn.setAttribute('aria-pressed', theme !== 'theme-light' ? 'true' : 'false');
+      }
+    }
+
+    const currentTheme = document.body.className.includes('theme-light') ? 'theme-light' :
+                         document.body.className.includes('theme-high-contrast') ? 'theme-high-contrast' : 'theme-dark';
+    updateIcons(currentTheme);
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const isLight = document.body.classList.contains('theme-light');
+        const nextTheme = isLight ? 'theme-dark' : 'theme-light';
+        document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+        document.documentElement.classList.add(nextTheme);
+        document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+        document.body.classList.add(nextTheme);
+
+        // Persist via userSettings (also writes to localStorage + server)
+        const shortKey = nextTheme === 'theme-light' ? 'light' : nextTheme === 'theme-high-contrast' ? 'high-contrast' : 'dark';
+        if (window.userSettings) window.userSettings.set('theme', shortKey);
+        else localStorage.setItem('alteryx_theme', nextTheme);
+
+        updateIcons(nextTheme);
+        if (window.appMenuBar && typeof window.appMenuBar.syncMenuStates === 'function') {
+          window.appMenuBar.syncMenuStates();
+        }
+        if (window.showToast) {
+          window.showToast('info', 'Theme Changed', `Switched to ${nextTheme === 'theme-light' ? 'Light Mode' : 'Dark Mode'}.`);
+        }
+      });
+    }
+  }
+  setupTheme();
+
+  // Load server-persisted settings (overrides localStorage, re-applies all settings to DOM/app).
+  // This is async but non-blocking — the page is already usable with localStorage values.
+  if (window.userSettings) {
+    window.userSettings.load().catch(err => console.warn('[App] userSettings.load() failed:', err));
+  }
+
+  // 3. Setup Undo / Redo Toolbar Controls
+  const undoBtn = document.getElementById('btn-undo');
+  const redoBtn = document.getElementById('btn-redo');
+
+  if (undoBtn) {
+    undoBtn.addEventListener('click', () => {
+      if (window.appHistory) window.appHistory.undo();
+    });
+  }
+
+  if (redoBtn) {
+    redoBtn.addEventListener('click', () => {
+      if (window.appHistory) window.appHistory.redo();
+    });
+  }
+
+  if (window.appEventBus) {
+    window.appEventBus.on('history:changed', ({ canUndo, canRedo }) => {
+      if (undoBtn) undoBtn.disabled = !canUndo;
+      if (redoBtn) redoBtn.disabled = !canRedo;
+    });
+  }
+
+  // 4. Global Toast System
+  window.showToast = function(type, title, message, durationMs = 4500) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    let iconSvg = '';
+    if (type === 'success') {
+      iconSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    } else if (type === 'error') {
+      iconSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    } else if (type === 'warning') {
+      iconSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+    } else {
+      iconSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0072ce" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+    }
+
+    toast.innerHTML = `
+      <div class="toast-icon">${iconSvg}</div>
+      <div class="toast-content">
+        <div class="toast-title">${title}</div>
+        <div class="toast-message">${message}</div>
+      </div>
+      <button class="toast-close">&times;</button>
+    `;
+
+    const closeBtn = toast.querySelector('.toast-close');
+    const removeToast = () => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => toast.remove(), 250);
+    };
+    closeBtn.addEventListener('click', removeToast);
+
+    container.appendChild(toast);
+
+    if (durationMs > 0) {
+      setTimeout(removeToast, durationMs);
+    }
+  };
+
+  // 5. Workflow Execution Engine
+  const runBtn = document.getElementById('btn-run');
+  const stopBtn = document.getElementById('btn-stop');
+
+  function getToolDisplayName(ev) {
+    if (!ev) return 'Tool';
+    let name = ev.node_name || ev.name;
+    if ((!name || name === 'undefined') && ev.node_id && canvas && canvas.nodes) {
+      const node = canvas.nodes.find(n => n.id === ev.node_id);
+      if (node) {
+        name = node.name || (node.data && node.data.name) || node.type;
+      }
+    }
+    if (!name || name === 'undefined') {
+      name = ev.node_type || ev.type || ev.node_id || 'Tool';
+    }
+    return name;
+  }
+
+  async function stopWorkflow() {
+    if (!window._isWorkflowRunning) return;
+
+    if (stopBtn) {
+      stopBtn.classList.add('is-stopping');
+      stopBtn.innerHTML = `
+        <span class="spinner-sm" aria-hidden="true"></span>
+        <span>Stopping...</span>
+      `;
+    }
+
+    try {
+      const cancelUrl = '/api/cancel' + (window.activeRunId ? `/${encodeURIComponent(window.activeRunId)}` : '');
+      await fetch(cancelUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ run_id: window.activeRunId || null })
+      });
+      if (window.showToast) {
+        window.showToast('warning', 'Cancelling...', 'Cancellation signal sent to the execution engine.');
+      }
+    } catch (e) {
+      console.warn('Cancel request failed:', e);
+    }
+  }
+
+  async function runWorkflow() {
+    if (window._isWorkflowRunning) return;
+
+    const wfData = canvas.getWorkflowData();
+    if (!wfData.nodes || wfData.nodes.length === 0) {
+      window.showToast('info', 'Canvas is Empty', 'Add tools to the canvas before running the workflow.');
+      return;
+    }
+
+    // Set UI to running state
+    window._isWorkflowRunning = true;
+    if (runBtn) {
+      runBtn.classList.add('loading', 'is-running');
+      runBtn.disabled = true;
+      runBtn.innerHTML = `
+        <span class="spinner-sm" aria-hidden="true"></span>
+        <span>Running...</span>
+      `;
+    }
+
+    if (stopBtn) {
+      stopBtn.disabled = false;
+      stopBtn.classList.add('btn-stop-active');
+      stopBtn.classList.remove('is-stopping');
+      stopBtn.innerHTML = `
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+        </svg>
+        <span>Stop</span>
+        <kbd>Esc</kbd>
+      `;
+    }
+
+    canvas.setRunningState(true);
+
+    // Initialize run block in results panel
+    if (resultsPanel && typeof resultsPanel.startRun === 'function') {
+      resultsPanel.startRun();
+    }
+
+    try {
+      const execTimeout = parseInt(
+        window.userSettings ? window.userSettings.get('execution_timeout', 60) : (localStorage.getItem('dataflow_execution_timeout') || '60')
+      , 10);
+      const autoCache = canvas.autoCacheUpstream !== undefined ? canvas.autoCacheUpstream :
+        (window.userSettings ? Boolean(window.userSettings.get('auto_cache_upstream', false)) : (localStorage.getItem('dataflow_auto_cache_upstream') === 'true'));
+      const useAmp = window.userSettings ? Boolean(window.userSettings.get('use_amp_engine', true)) : true;
+      const maxThreads = window.userSettings ? window.userSettings.get('max_engine_threads', 'auto') : 'auto';
+
+      const response = await fetch('/api/run-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': window.clientSessionId || '',
+          ...(window.activeRunId ? { 'X-Run-ID': window.activeRunId } : {})
+        },
+        body: JSON.stringify({
+          ...wfData,
+          session_id: window.clientSessionId,
+          execution_timeout: execTimeout,
+          auto_cache_upstream: autoCache,
+          use_amp_engine: useAmp,
+          max_threads: maxThreads
+        })
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`SSE stream unavailable (HTTP ${response.status})`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let lastCompletedEvent = null;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop();
+
+        for (const block of lines) {
+          const trimmed = block.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const jsonStr = trimmed.replace(/^data:\s*/, '');
+          try {
+            const ev = JSON.parse(jsonStr);
+            handleStreamEvent(ev);
+            if (ev.event === 'workflow_completed' || ev.event === 'workflow_cancelled') {
+              lastCompletedEvent = ev;
+            }
+          } catch (e) {
+            console.error('SSE chunk parse error:', e, jsonStr);
+          }
+        }
+      }
+
+      if (buffer.trim().startsWith('data:')) {
+        try {
+          const ev = JSON.parse(buffer.trim().replace(/^data:\s*/, ''));
+          handleStreamEvent(ev);
+          if (ev.event === 'workflow_completed' || ev.event === 'workflow_cancelled') lastCompletedEvent = ev;
+        } catch (e) {}
+      }
+
+      if (!lastCompletedEvent) {
+        await runWorkflowFallback(wfData);
+      }
+
+    } catch (streamErr) {
+      console.warn('Streaming execution fallback to static /api/run:', streamErr);
+      await runWorkflowFallback(wfData);
+    } finally {
+      window._isWorkflowRunning = false;
+      if (runBtn) {
+        runBtn.classList.remove('loading', 'is-running');
+        runBtn.disabled = false;
+        runBtn.innerHTML = `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Run Workflow</span>
+          <kbd>Ctrl+Enter</kbd>
+        `;
+      }
+      if (stopBtn) {
+        stopBtn.classList.remove('btn-stop-active', 'is-stopping');
+        stopBtn.disabled = true;
+        stopBtn.innerHTML = `
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+          </svg>
+          <span>Stop</span>
+          <kbd>Esc</kbd>
+        `;
+      }
+      canvas.setRunningState(false);
+    }
+  }
+
+  function handleStreamEvent(ev) {
+    const timeStr = new Date().toLocaleTimeString();
+    const toolName = getToolDisplayName(ev);
+    const toolIdStr = ev.node_id ? ` (#${ev.node_id})` : '';
+
+    switch (ev.event) {
+      case 'node_started':
+        if (ev.run_id) {
+          window.activeRunId = ev.run_id;
+        }
+        canvas.updateNodeExecutionStep({
+          node_id: ev.node_id,
+          status: 'running'
+        });
+        resultsPanel.appendLog({
+          time: timeStr,
+          level: 'INFO',
+          message: `Running tool '${toolName}'${toolIdStr}...`
+        });
+        break;
+
+      case 'node_completed':
+        canvas.updateNodeExecutionStep({
+          node_id: ev.node_id,
+          status: 'success',
+          duration_ms: ev.duration_ms,
+          record_counts: ev.record_counts
+        });
+        resultsPanel.appendLog({
+          time: timeStr,
+          level: 'INFO',
+          message: `✓ Tool '${toolName}'${toolIdStr} completed in ${ev.duration_ms}ms`
+        });
+        break;
+
+      case 'node_error':
+        canvas.updateNodeExecutionStep({
+          node_id: ev.node_id,
+          status: 'error'
+        });
+        resultsPanel.appendLog({
+          time: timeStr,
+          level: 'ERROR',
+          message: `✗ Tool '${toolName}'${toolIdStr} error: ${ev.error}`
+        });
+        break;
+
+      case 'workflow_completed':
+        if (ev.run_id) {
+          window.activeRunId = ev.run_id;
+        }
+        window.appLastResult = ev;
+        canvas.updateExecutionVisuals(ev.node_results || {});
+        resultsPanel.finalizeRun(ev);
+
+        if (ev.success) {
+          document.querySelectorAll('.node-card.has-error').forEach(el => el.classList.remove('has-error'));
+          window.showToast('success', 'Workflow Succeeded', `Completed all ${Object.keys(ev.node_results || {}).length} tools in ${ev.total_duration_ms}ms.`);
+        } else {
+          const diag = ev.diagnostic;
+          if (diag) {
+            window.showToast('error', diag.title, diag.message);
+            resultsPanel.switchToTab('messages-view');
+            if (diag.node_id) {
+              canvas.highlightErrorNode(diag.node_id);
+            }
+          } else {
+            window.showToast('error', 'Execution Error', ev.error || 'Workflow execution encountered an error.');
+          }
+        }
+
+        if (canvas.selectedNodeId) {
+          const selNode = canvas.nodes.find(n => n.id === canvas.selectedNodeId);
+          resultsPanel.showNodeResults(selNode);
+        }
+        break;
+
+      case 'workflow_cancelled':
+        if (ev.run_id) {
+          window.activeRunId = ev.run_id;
+        }
+        resultsPanel.appendLog({
+          time: timeStr,
+          level: 'WARNING',
+          message: ev.message || 'Workflow Cancelled by User.'
+        });
+        resultsPanel.finalizeRun({
+          cancelled: true,
+          success: false,
+          total_duration_ms: ev.total_duration_ms,
+          logs: ev.logs || []
+        });
+        window.showToast('warning', 'Workflow Cancelled', ev.message || 'Workflow execution was cancelled by the user.');
+        break;
+    }
+  }
+
+  async function runWorkflowFallback(wfData) {
+    try {
+      const execTimeout = parseInt(
+        window.userSettings ? window.userSettings.get('execution_timeout', 60) : (localStorage.getItem('dataflow_execution_timeout') || '60')
+      , 10);
+      const autoCache = canvas.autoCacheUpstream !== undefined ? canvas.autoCacheUpstream :
+        (window.userSettings ? Boolean(window.userSettings.get('auto_cache_upstream', false)) : (localStorage.getItem('dataflow_auto_cache_upstream') === 'true'));
+
+      const useAmp = window.userSettings ? Boolean(window.userSettings.get('use_amp_engine', true)) : true;
+      const maxThreads = window.userSettings ? window.userSettings.get('max_engine_threads', 'auto') : 'auto';
+
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': window.clientSessionId || '',
+          ...(window.activeRunId ? { 'X-Run-ID': window.activeRunId } : {})
+        },
+        body: JSON.stringify({
+          ...wfData,
+          session_id: window.clientSessionId,
+          execution_timeout: execTimeout,
+          auto_cache_upstream: autoCache,
+          use_amp_engine: useAmp,
+          max_threads: maxThreads
+        })
+      });
+
+      const result = await res.json();
+      if (result.run_id) {
+        window.activeRunId = result.run_id;
+      }
+      handleStreamEvent({ ...result, event: 'workflow_completed' });
+    } catch (err) {
+      resultsPanel.appendLog({
+        time: new Date().toLocaleTimeString(),
+        level: 'ERROR',
+        message: `Execution failed: ${err.message}`
+      });
+      resultsPanel.finalizeRun({
+        success: false,
+        diagnostic: {
+          error_code: 'NETWORK_OR_SERVER_ERROR',
+          title: 'Execution Failed',
+          message: err.message
+        }
+      });
+      window.showToast('error', 'Execution Failed', err.message);
+    }
+  }
+
+  if (runBtn) {
+    runBtn.addEventListener('click', runWorkflow);
+  }
+  if (stopBtn) {
+    stopBtn.addEventListener('click', stopWorkflow);
+  }
+
+
+
+  // 6. Workflow Lifecycle, Persistence & Dirty State Tracking
+  let isWorkflowDirty = false;
+  const dirtyBadge = document.getElementById('workflow-dirty-badge');
+  const baseDocumentTitle = 'Antigravity DataFlow';
+
+  function markWorkflowDirty() {
+    isWorkflowDirty = true;
+    if (dirtyBadge) {
+      dirtyBadge.textContent = '● Unsaved';
+      dirtyBadge.classList.remove('is-clean');
+      dirtyBadge.classList.add('is-dirty');
+      dirtyBadge.title = 'Unsaved changes (Ctrl+S to save)';
+    }
+    const nameInput = document.getElementById('workflow-name-input');
+    const wfName = (nameInput ? nameInput.value.trim() : '') || 'Workflow';
+    document.title = `* ${wfName} - ${baseDocumentTitle}`;
+  }
+  window.markWorkflowDirty = markWorkflowDirty;
+
+  function markWorkflowClean() {
+    isWorkflowDirty = false;
+    if (dirtyBadge) {
+      dirtyBadge.textContent = '✓ Saved';
+      dirtyBadge.classList.remove('is-dirty');
+      dirtyBadge.classList.add('is-clean');
+      dirtyBadge.title = 'All changes saved locally';
+    }
+    const nameInput = document.getElementById('workflow-name-input');
+    const wfName = (nameInput ? nameInput.value.trim() : '') || 'Workflow';
+    document.title = `${wfName} - ${baseDocumentTitle}`;
+  }
+  window.markWorkflowClean = markWorkflowClean;
+
+  // Unsaved changes safety guard on window exit / refresh
+  window.addEventListener('beforeunload', (e) => {
+    if (isWorkflowDirty && canvas.nodes && canvas.nodes.length > 0) {
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes in your workflow. Are you sure you want to leave?';
+      return e.returnValue;
+    }
+  });
+
+  const nameInputEl = document.getElementById('workflow-name-input');
+  if (nameInputEl) {
+    nameInputEl.addEventListener('input', () => {
+      markWorkflowDirty();
+    });
+  }
+
+  // Active workflow file bound to Windows Explorer file handle or disk path
+  window.activeWorkflowFile = { handle: null, name: null, path: null };
+
+  // Save Workflow As with genuine Windows Explorer Navigator
+  async function saveWorkflowAs() {
+    const nameInput = document.getElementById('workflow-name-input');
+    const currentName = (nameInput ? nameInput.value.trim() : '') || 'my_workflow';
+    const cleanStem = currentName.replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_').toLowerCase();
+    const suggestedName = `${cleanStem}.json`;
+    const wfData = canvas.getWorkflowData();
+    wfData.name = currentName;
+
+    // 1. Primary Method: Native Windows Explorer Save As Dialog via Chromium File System Access API
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: suggestedName,
+          types: [
+            {
+              description: 'Workflow Files (*.json)',
+              accept: { 'application/json': ['.json'] }
+            },
+            {
+              description: 'Alteryx Workflow (*.yxmd)',
+              accept: { 'application/xml': ['.yxmd'] }
+            },
+            {
+              description: 'All Files (*.*)',
+              accept: { '*/*': [] }
+            }
+          ]
+        });
+
+        if (!handle) return false;
+
+        const writable = await handle.createWritable();
+        await writable.write(JSON.stringify(wfData, null, 2));
+        await writable.close();
+
+        const savedFilename = handle.name;
+        const cleanTitle = savedFilename.replace(/\.(json|yxmd)$/i, '');
+        if (nameInput) nameInput.value = cleanTitle;
+        wfData.name = cleanTitle;
+
+        window.activeWorkflowFile = {
+          handle: handle,
+          name: savedFilename,
+          path: savedFilename
+        };
+
+        markWorkflowClean();
+
+        // Sync with backend so engine and dependencies track it
+        try {
+          await fetch('/api/save-workflow', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Session-ID': window.clientSessionId || ''
+            },
+            body: JSON.stringify(wfData)
+          });
+          await fetch('/api/workflow/autosave', {
+            method: 'DELETE',
+            headers: { 'X-Session-ID': window.clientSessionId || '' }
+          });
+        } catch (_) {}
+
+        window.showToast('success', 'Workflow Saved', `Saved '${savedFilename}' via Windows Explorer.`);
+        await refreshSavedWorkflows();
+        if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
+          window.appMenuBar.addRecentWorkflow(cleanTitle, savedFilename, wfData);
+        }
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          return false; // User cancelled Windows Explorer Save dialog
+        }
+        console.warn('showSaveFilePicker error, attempting backend dialog fallback:', err);
+      }
+    }
+
+    // 2. Secondary Method: Native Windows Explorer Save As Dialog via Python Backend
+    try {
+      const res = await fetch('/api/dialog/save-file', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': window.clientSessionId || ''
+        },
+        body: JSON.stringify({ workflow: wfData, default_name: suggestedName })
+      });
+      const json = await res.json();
+      if (json.cancelled) {
+        return false;
+      }
+      if (json.success) {
+        const cleanTitle = json.name || json.filename.replace(/\.(json|yxmd)$/i, '');
+        if (nameInput) nameInput.value = cleanTitle;
+        window.activeWorkflowFile = {
+          handle: null,
+          name: json.filename,
+          path: json.path
+        };
+        markWorkflowClean();
+        try {
+          await fetch('/api/workflow/autosave', {
+            method: 'DELETE',
+            headers: { 'X-Session-ID': window.clientSessionId || '' }
+          });
+        } catch (_) {}
+        window.showToast('success', 'Workflow Saved', `Saved '${json.filename}' via Windows Explorer.`);
+        await refreshSavedWorkflows();
+        if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
+          window.appMenuBar.addRecentWorkflow(cleanTitle, json.path, wfData);
+        }
+        return true;
+      }
+    } catch (dialogErr) {
+      console.warn('Backend native save dialog failed, fallback to download:', dialogErr);
+    }
+
+    // 3. Fallback: Standard Export Download
+    exportWorkflowJson();
+    return true;
+  }
+  window.saveWorkflowAs = saveWorkflowAs;
+
+  // Save Workflow: updates active file if bound, otherwise opens Windows Explorer Save As
+  async function saveWorkflow(customName = null) {
+    if (customName || (!window.activeWorkflowFile?.handle && !window.activeWorkflowFile?.path)) {
+      return await saveWorkflowAs();
+    }
+
+    const nameInput = document.getElementById('workflow-name-input');
+    const wfName = (nameInput ? nameInput.value.trim() : '') || window.activeWorkflowFile.name || 'Workflow';
+    const wfData = canvas.getWorkflowData();
+    wfData.name = wfName;
+
+    // 1. Direct write to Windows Explorer file handle
+    if (window.activeWorkflowFile?.handle) {
+      try {
+        const writable = await window.activeWorkflowFile.handle.createWritable();
+        await writable.write(JSON.stringify(wfData, null, 2));
+        await writable.close();
+        markWorkflowClean();
+        try {
+          await fetch('/api/save-workflow', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Session-ID': window.clientSessionId || ''
+            },
+            body: JSON.stringify(wfData)
+          });
+          await fetch('/api/workflow/autosave', {
+            method: 'DELETE',
+            headers: { 'X-Session-ID': window.clientSessionId || '' }
+          });
+        } catch (_) {}
+        window.showToast('success', 'Workflow Saved', `Saved changes to '${window.activeWorkflowFile.name}'.`);
+        await refreshSavedWorkflows();
+        return true;
+      } catch (handleErr) {
+        console.warn('File handle write failed, redirecting to Windows Explorer Save As:', handleErr);
+        return await saveWorkflowAs();
+      }
+    }
+
+    // 2. Direct write to server disk path
+    if (window.activeWorkflowFile?.path) {
+      try {
+        const res = await fetch('/api/save-workflow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-ID': window.clientSessionId || ''
+          },
+          body: JSON.stringify({ ...wfData, target_filepath: window.activeWorkflowFile.path })
+        });
+        const json = await res.json();
+        if (json.success) {
+          markWorkflowClean();
+          try {
+            await fetch('/api/workflow/autosave', {
+              method: 'DELETE',
+              headers: { 'X-Session-ID': window.clientSessionId || '' }
+            });
+          } catch (_) {}
+          window.showToast('success', 'Workflow Saved', `Saved '${window.activeWorkflowFile.name}'.`);
+          await refreshSavedWorkflows();
+          return true;
+        }
+      } catch (serverErr) {
+        console.warn('Server save failed, redirecting to Windows Explorer Save As:', serverErr);
+      }
+    }
+
+    return await saveWorkflowAs();
+  }
+  window.saveWorkflow = saveWorkflow;
+
+  // Open / Load Workflow using Windows Explorer Navigator
+  async function openWorkflowFileDialog() {
+    // 1. Primary: Native Windows Explorer Open Dialog via Chromium File System Access API
+    if (typeof window.showOpenFilePicker === 'function') {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [
+            {
+              description: 'Workflow Files (*.json, *.yxmd, *.zip, *.yxzp)',
+              accept: {
+                'application/json': ['.json'],
+                'application/xml': ['.yxmd'],
+                'application/zip': ['.zip', '.yxzp']
+              }
+            },
+            {
+              description: 'All Files (*.*)',
+              accept: { '*/*': [] }
+            }
+          ],
+          multiple: false
+        });
+
+        if (!handle) return false;
+        const file = await handle.getFile();
+        const fileName = file.name;
+        const isPackage = fileName.endsWith('.zip') || fileName.endsWith('.yxzp');
+
+        if (isPackage) {
+          await importWorkflowPackage(file);
+          window.activeWorkflowFile = { handle: null, name: fileName, path: fileName };
+        } else {
+          const text = await file.text();
+          const wf = JSON.parse(text);
+          const cleanTitle = fileName.replace(/\.(json|yxmd)$/i, '');
+          handleWorkflowLoaded(wf, cleanTitle);
+          window.activeWorkflowFile = { handle: handle, name: fileName, path: fileName };
+          markWorkflowClean();
+          window.showToast('success', 'Workflow Loaded', `Loaded '${fileName}' via Windows Explorer.`);
+          if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
+            window.appMenuBar.addRecentWorkflow(cleanTitle, fileName, wf);
+          }
+        }
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          return false; // User cancelled Windows Explorer Open dialog
+        }
+        console.warn('showOpenFilePicker error, attempting backend dialog fallback:', err);
+      }
+    }
+
+    // 2. Secondary: Native Windows Explorer Open Dialog via Python Backend
+    try {
+      const res = await fetch('/api/dialog/open-file', {
+        method: 'POST',
+        headers: { 'X-Session-ID': window.clientSessionId || '' }
+      });
+      const json = await res.json();
+      if (json.cancelled) return false;
+      if (json.success && json.workflow) {
+        const cleanTitle = json.name || json.filename.replace(/\.(json|yxmd|zip|yxzp)$/i, '');
+        handleWorkflowLoaded(json.workflow, cleanTitle);
+        window.activeWorkflowFile = { handle: null, name: json.filename, path: json.path };
+        markWorkflowClean();
+        window.showToast('success', 'Workflow Loaded', `Loaded '${json.filename}' via Windows Explorer.`);
+        if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
+          window.appMenuBar.addRecentWorkflow(cleanTitle, json.path, json.workflow);
+        }
+        return true;
+      }
+    } catch (dialogErr) {
+      console.warn('Backend native open dialog failed, falling back to file input:', dialogErr);
+    }
+
+    // 3. Fallback: Trigger HTML5 file input (which also opens Windows Explorer)
+    const fileInput = document.getElementById('input-workflow-file');
+    if (fileInput) fileInput.click();
+    return true;
+  }
+  window.openWorkflowFileDialog = openWorkflowFileDialog;
+
+  function exportWorkflowJson() {
+    const nameInput = document.getElementById('workflow-name-input');
+    const wfName = (nameInput ? nameInput.value.trim() : '') || 'workflow';
+    const wfData = canvas.getWorkflowData();
+    wfData.name = wfName;
+    const blob = new Blob([JSON.stringify(wfData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${wfName.replace(/\s+/g, '_').toLowerCase()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    window.showToast('success', 'Workflow Exported', `Downloaded '${wfName}.json'.`);
+  }
+  window.exportWorkflowJson = exportWorkflowJson;
+
+  async function exportWorkflowPackage() {
+    const nameInput = document.getElementById('workflow-name-input');
+    const wfName = (nameInput ? nameInput.value.trim() : '') || 'workflow';
+    const wfData = canvas.getWorkflowData();
+    wfData.name = wfName;
+
+    try {
+      window.showToast('info', 'Packaging Workflow...', 'Compressing workflow and referenced data assets into .zip package...', 4000);
+      const res = await fetch('/api/workflow/export-package', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(wfData)
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Server responded with status ${res.status}`);
+      }
+      const blob = await res.blob();
+      const cleanStem = wfName.replace(/[\s\W]+/g, '_').toLowerCase();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${cleanStem}_package.zip`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      window.showToast('success', 'Package Exported', `Downloaded '${cleanStem}_package.zip'.`);
+    } catch (err) {
+      console.error('Package export error:', err);
+      window.showToast('error', 'Packaging Failed', err.message);
+    }
+  }
+  window.exportWorkflowPackage = exportWorkflowPackage;
+
+  async function importWorkflowPackage(file) {
+    if (!file) return;
+    try {
+      window.showToast('info', 'Importing Package...', `Unpacking '${file.name}'...`, 4000);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/workflow/import-package', {
+        method: 'POST',
+        body: formData
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to import package.');
+      }
+
+      if (json.workflow) {
+        handleWorkflowLoaded(json.workflow, json.workflow.name || file.name.replace(/\.(zip|yxzp)$/i, ''));
+        const fileCount = (json.extracted_files || []).length;
+        window.showToast('success', 'Package Imported', `Loaded workflow and unpacked ${fileCount} data asset(s).`);
+        await refreshSavedWorkflows();
+      } else {
+        throw new Error('No valid workflow definition found in package.');
+      }
+    } catch (err) {
+      console.error('Package import failed:', err);
+      window.showToast('error', 'Import Failed', err.message);
+    }
+  }
+  window.importWorkflowPackage = importWorkflowPackage;
+
+  function handleWorkflowLoaded(wf, defaultName = 'Workflow') {
+    canvas.loadWorkflow(wf);
+    const nameInput = document.getElementById('workflow-name-input');
+    if (nameInput) {
+      nameInput.value = wf.name || defaultName;
+    }
+    // Clear stale results from previous workflow
+    window.appLastResult = null;
+    resultsPanel.clear();
+
+    if (wf.nodes && wf.nodes.length > 0) {
+      canvas.selectNode(wf.nodes[0].id);
+    } else {
+      configPanel.render(null);
+      resultsPanel.showNodeResults(null);
+    }
+
+    if (window.appHistory) {
+      window.appHistory.pushSnapshot(`Opened ${wf.name || defaultName}`);
+    }
+    const wfName = wf.name || defaultName;
+    const wfPath = wf.path || `workflows/${wfName.replace(/\s+/g, '_').toLowerCase()}.json`;
+    if (wf.path) {
+      window.activeWorkflowFile = {
+        handle: window.activeWorkflowFile?.name === wfName ? window.activeWorkflowFile.handle : null,
+        name: wfName,
+        path: wf.path
+      };
+    }
+    if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
+      window.appMenuBar.addRecentWorkflow(wfName, wfPath, wf);
+    }
+    markWorkflowClean();
+    window.showToast('success', 'Workflow Loaded', `Opened '${wfName}'.`);
+  }
+  window.handleWorkflowLoaded = handleWorkflowLoaded;
+
+  async function loadWorkflowFromServer(filename) {
+    try {
+      let res = await fetch(`/api/workflow/${encodeURIComponent(filename)}`);
+      if (!res.ok) {
+        res = await fetch(`/api/sample-workflow/${encodeURIComponent(filename)}`);
+      }
+      if (!res.ok) throw new Error(`Could not fetch workflow file (${res.status})`);
+      const data = await res.json();
+      handleWorkflowLoaded(data, filename.replace(/\.json$/i, ''));
+    } catch (err) {
+      console.error('Failed to load workflow:', err);
+      window.showToast('error', 'Load Failed', `Could not load workflow: ${err.message}`);
+    }
+  }
+
+  // Modal Dialog Controllers: Dependencies, Revisions & Properties
+  async function openWorkflowDependenciesModal() {
+    const modal = document.getElementById('modal-workflow-deps');
+    if (!modal) return;
+    const wfData = canvas.getWorkflowData();
+    const tbody = document.getElementById('deps-table-body');
+    const banner = document.getElementById('deps-summary-banner');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: var(--text-muted);">Inspecting workflow assets...</td></tr>`;
+
+    modal.style.display = 'flex';
+
+    try {
+      const res = await fetch('/api/workflow/dependencies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(wfData)
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to inspect dependencies');
+
+      if (banner) {
+        if (data.missing_count === 0) {
+          banner.className = 'deps-summary-banner banner-ok';
+          banner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px; color: #16a34a;">✓</span>
+              <div>
+                <strong style="color: #16a34a;">All ${data.total_dependencies} External Assets Found</strong>
+                <div style="font-size: 10.5px; color: var(--text-muted);">All referenced files resolve to existing files on disk.</div>
+              </div>
+            </div>
+            <span class="deps-status-pill status-found">${data.total_dependencies} Valid</span>
+          `;
+        } else {
+          banner.className = 'deps-summary-banner banner-warning';
+          banner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px; color: #f59e0b;">⚠</span>
+              <div>
+                <strong style="color: #f59e0b;">${data.missing_count} of ${data.total_dependencies} Assets Missing</strong>
+                <div style="font-size: 10.5px; color: var(--text-muted);">Some input/output files do not exist at the specified locations.</div>
+              </div>
+            </div>
+            <span class="deps-status-pill status-missing">${data.missing_count} Missing</span>
+          `;
+        }
+      }
+
+      if (tbody) {
+        if (!data.dependencies || data.dependencies.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-muted);">No external file dependencies in this workflow.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        data.dependencies.forEach(dep => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid var(--border-subtle)';
+          const statusHtml = dep.exists
+            ? `<span class="deps-status-pill status-found">✓ Exists</span>`
+            : `<span class="deps-status-pill status-missing">⚠ Missing</span>`;
+          const sizeHtml = dep.exists && dep.size_bytes !== null
+            ? `${(dep.size_bytes / 1024).toFixed(1)} KB`
+            : '-';
+          
+          tr.innerHTML = `
+            <td style="padding: 8px 12px; font-weight: 500;">
+              <span class="node-badge" style="background: rgba(0, 114, 206, 0.12); color: var(--color-primary); padding: 2px 6px; border-radius: 3px; font-size: 10px;">${dep.node_type}</span>
+              <span style="margin-left: 6px;">#${dep.node_id}</span>
+            </td>
+            <td style="padding: 8px 12px; text-transform: capitalize; color: var(--text-muted);">${dep.role}</td>
+            <td style="padding: 8px 12px; font-family: monospace; font-size: 10.5px; word-break: break-all;" title="${dep.path}">${dep.path}</td>
+            <td style="padding: 8px 12px; color: var(--text-secondary);">${sizeHtml}</td>
+            <td style="padding: 8px 12px;">${statusHtml}</td>
+            <td style="padding: 8px 12px; text-align: right;">
+              <button class="btn btn-secondary btn-sm" data-select-node="${dep.node_id}" style="padding: 2px 8px; font-size: 10.5px;">Select Tool</button>
+            </td>
+          `;
+
+          const selBtn = tr.querySelector(`[data-select-node="${dep.node_id}"]`);
+          if (selBtn) {
+            selBtn.addEventListener('click', () => {
+              modal.style.display = 'none';
+              canvas.selectNode(dep.node_id);
+            });
+          }
+          tbody.appendChild(tr);
+        });
+      }
+    } catch (err) {
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; color: var(--color-danger); text-align: center;">Error inspecting assets: ${err.message}</td></tr>`;
+      }
+    }
+  }
+  window.openWorkflowDependenciesModal = openWorkflowDependenciesModal;
+
+  async function openVersionHistoryModal() {
+    const modal = document.getElementById('modal-workflow-revisions');
+    if (!modal) return;
+    const listContainer = document.getElementById('revisions-list-container');
+    const nameInput = document.getElementById('workflow-name-input');
+    const wfName = (nameInput ? nameInput.value.trim() : '') || 'workflow';
+    const filename = `${wfName.replace(/[\s\W]+/g, '_').toLowerCase()}.json`;
+
+    if (listContainer) {
+      listContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading version history...</div>`;
+    }
+    modal.style.display = 'flex';
+
+    try {
+      const res = await fetch(`/api/workflow/${encodeURIComponent(filename)}/revisions`);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to load revisions');
+
+      if (!listContainer) return;
+
+      if (!data.revisions || data.revisions.length === 0) {
+        listContainer.innerHTML = `
+          <div style="padding: 30px 16px; text-align: center; color: var(--text-muted);">
+            <div style="font-size: 24px; margin-bottom: 8px;">📂</div>
+            <div style="font-weight: 500;">No revision history yet</div>
+            <div style="font-size: 11px; margin-top: 4px;">Backups are automatically saved whenever you save changes to an existing workflow.</div>
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = '';
+      data.revisions.forEach(rev => {
+        const card = document.createElement('div');
+        card.className = 'revision-card';
+        card.style.padding = '10px 12px';
+        card.style.borderRadius = '6px';
+        card.style.border = '1px solid var(--border-subtle)';
+        card.style.background = 'var(--bg-hover)';
+        card.style.display = 'flex';
+        card.style.justifyContent = 'space-between';
+        card.style.alignItems = 'center';
+
+        const sizeKb = (rev.size_bytes / 1024).toFixed(1);
+        card.innerHTML = `
+          <div>
+            <div style="font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+              <span>🕒 ${rev.timestamp}</span>
+              <span style="font-weight: normal; color: var(--text-muted); font-size: 10.5px;">(${sizeKb} KB)</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 3px;">
+              Backup: <code>${rev.backup_file}</code>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 11px;" title="Revert workflow to this revision">
+            Restore This Version
+          </button>
+        `;
+
+        const restoreBtn = card.querySelector('button');
+        restoreBtn.addEventListener('click', async () => {
+          if (!confirm(`Revert to revision from ${rev.timestamp}? Current unsaved edits will be replaced.`)) {
+            return;
+          }
+          try {
+            const revRes = await fetch(`/api/workflow/${encodeURIComponent(filename)}/revert`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ backup_file: rev.backup_file })
+            });
+            const revJson = await revRes.json();
+            if (!revJson.success) throw new Error(revJson.error || 'Failed to restore revision');
+
+            handleWorkflowLoaded(revJson.workflow, wfName);
+            modal.style.display = 'none';
+            window.showToast('success', 'Revision Restored', `Workflow reverted to snapshot from ${rev.timestamp}.`);
+          } catch (e) {
+            window.showToast('error', 'Restore Failed', e.message);
+          }
+        });
+
+        listContainer.appendChild(card);
+      });
+    } catch (err) {
+      if (listContainer) {
+        listContainer.innerHTML = `<div style="padding: 16px; color: var(--color-danger); text-align: center;">Failed to load revisions: ${err.message}</div>`;
+      }
+    }
+  }
+  window.openVersionHistoryModal = openVersionHistoryModal;
+
+  function openWorkflowPropertiesModal() {
+    const modal = document.getElementById('modal-workflow-props');
+    if (!modal) return;
+    const wfData = canvas.getWorkflowData();
+    const metadata = wfData.metadata || {};
+
+    const nameInput = document.getElementById('prop-wf-name');
+    const authorInput = document.getElementById('prop-wf-author');
+    const versionInput = document.getElementById('prop-wf-version');
+    const descInput = document.getElementById('prop-wf-desc');
+    const statNodes = document.getElementById('stat-node-count');
+    const statConns = document.getElementById('stat-conn-count');
+    const statZoom = document.getElementById('stat-viewport-zoom');
+
+    const topNameInput = document.getElementById('workflow-name-input');
+    if (nameInput) nameInput.value = (topNameInput ? topNameInput.value.trim() : '') || wfData.name || 'Workflow';
+    if (authorInput) authorInput.value = metadata.author || '';
+    if (versionInput) versionInput.value = metadata.version || '2.1.0';
+    if (descInput) descInput.value = metadata.description || wfData.description || '';
+
+    if (statNodes) statNodes.textContent = (wfData.nodes || []).length;
+    if (statConns) statConns.textContent = (wfData.connections || []).length;
+    if (statZoom) statZoom.textContent = `${Math.round((canvas.zoom || 1.0) * 100)}%`;
+
+    modal.style.display = 'flex';
+  }
+  window.openWorkflowPropertiesModal = openWorkflowPropertiesModal;
+
+  const btnSaveProps = document.getElementById('btn-save-workflow-props');
+  if (btnSaveProps) {
+    btnSaveProps.addEventListener('click', () => {
+      const modal = document.getElementById('modal-workflow-props');
+      const nameInput = document.getElementById('prop-wf-name');
+      const authorInput = document.getElementById('prop-wf-author');
+      const versionInput = document.getElementById('prop-wf-version');
+      const descInput = document.getElementById('prop-wf-desc');
+
+      const newName = nameInput ? nameInput.value.trim() : '';
+      if (newName) {
+        const topNameInput = document.getElementById('workflow-name-input');
+        if (topNameInput) topNameInput.value = newName;
+      }
+
+      if (!canvas.workflowMetadata) canvas.workflowMetadata = {};
+      canvas.workflowMetadata.author = authorInput ? authorInput.value.trim() : '';
+      canvas.workflowMetadata.version = versionInput ? versionInput.value.trim() : '2.1.0';
+      canvas.workflowMetadata.description = descInput ? descInput.value.trim() : '';
+
+      markWorkflowDirty();
+      if (modal) modal.style.display = 'none';
+      window.showToast('info', 'Properties Updated', 'Workflow properties updated.');
+    });
+  }
+
+  // Auto-Save Background Timer (every 30s)
+  setInterval(async () => {
+    if (!isWorkflowDirty) return;
+    if (!canvas.nodes || canvas.nodes.length === 0) return;
+
+    try {
+      const wfData = canvas.getWorkflowData();
+      const nameInput = document.getElementById('workflow-name-input');
+      wfData.name = (nameInput ? nameInput.value.trim() : '') || 'Untitled Workflow';
+
+      await fetch('/api/workflow/autosave', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': window.clientSessionId || ''
+        },
+        body: JSON.stringify(wfData)
+      });
+    } catch (_) {
+      // Non-intrusive background failure
+    }
+  }, 30000);
+
+  // Crash Recovery Inspection on App Startup
+  async function checkAutoSaveRecovery() {
+    try {
+      const res = await fetch('/api/workflow/autosave', {
+        headers: { 'X-Session-ID': window.clientSessionId || '' }
+      });
+      const data = await res.json();
+      if (data.success && data.available && data.workflow) {
+        const savedWf = data.workflow;
+        const modal = document.getElementById('modal-workflow-recovery');
+        const card = document.getElementById('recovery-details-card');
+        if (!modal || !card) return false;
+
+        const nodeCount = (savedWf.nodes || []).length;
+        const connCount = (savedWf.connections || []).length;
+        const autosaveDate = savedWf.metadata && savedWf.metadata.updated_at
+          ? new Date(savedWf.metadata.updated_at).toLocaleString()
+          : 'Recent session';
+
+        card.innerHTML = `
+          <div style="font-weight: 600; font-size: 13px; color: var(--color-primary); margin-bottom: 4px;">
+            ${savedWf.name || 'Untitled Workflow'}
+          </div>
+          <div style="color: var(--text-secondary); line-height: 1.6;">
+            <div>🕒 Last modified: <strong>${autosaveDate}</strong></div>
+            <div>🧩 Contains: <strong>${nodeCount} tools</strong>, <strong>${connCount} connections</strong></div>
+          </div>
+        `;
+
+        modal.style.display = 'flex';
+
+        const applyBtn = document.getElementById('btn-apply-recovery');
+        const discardBtn = document.getElementById('btn-discard-recovery');
+
+        if (applyBtn) {
+          applyBtn.onclick = () => {
+            handleWorkflowLoaded(savedWf, savedWf.name || 'Recovered Workflow');
+            markWorkflowDirty();
+            modal.style.display = 'none';
+            window.showToast('warning', 'Session Recovered', 'Restored auto-saved workflow onto canvas. Save when ready.');
+          };
+        }
+
+        if (discardBtn) {
+          discardBtn.onclick = async () => {
+            try {
+              await fetch('/api/workflow/autosave', {
+                method: 'DELETE',
+                headers: { 'X-Session-ID': window.clientSessionId || '' }
+              });
+            } catch (_) {}
+            modal.style.display = 'none';
+            window.showToast('info', 'Auto-Save Discarded', 'Cleared previous auto-save snapshot.');
+          };
+        }
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+  window.checkAutoSaveRecovery = checkAutoSaveRecovery;
+
+  // --------------------------------------------------------------------
+  // Workflow-to-SQL Pushdown Modal Controller
+  // --------------------------------------------------------------------
+  const activeSqlState = {
+    sql: '',
+    dialect: 'ansi',
+    tableMappings: {},
+    includeComments: true
+  };
+
+  function highlightSql(rawSql) {
+    if (!rawSql) return '';
+    let s = rawSql
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // 1. Comments
+    s = s.replace(/(--[^\n]*)/g, '<span class="sql-comment">$1</span>');
+
+    // 2. Strings
+    s = s.replace(/('([^'\\]|\\.)*')/g, '<span class="sql-str">$1</span>');
+
+    // 3. CTE Identifiers before AS (
+    s = s.replace(/\b(cte_[a-zA-Z0-9_]+)\s+AS\s+\(/gi, '<span class="sql-cte">$1</span> <span class="sql-kw">AS</span> (');
+
+    // 4. SQL Keywords
+    const keywords = [
+      'WITH', 'SELECT', 'FROM', 'WHERE', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
+      'FULL JOIN', 'CROSS JOIN', 'JOIN', 'ON', 'GROUP BY', 'ORDER BY', 'ASC', 'DESC',
+      'UNION ALL', 'UNION', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END',
+      'AND', 'OR', 'NOT', 'IS NULL', 'IS NOT NULL', 'AS', 'IN', 'BETWEEN', 'LIKE', 'ILIKE',
+      'PARTITION BY', 'OVER'
+    ];
+    keywords.forEach(kw => {
+      const regex = new RegExp(`\\b(${kw})\\b`, 'gi');
+      s = s.replace(regex, (match) => `<span class="sql-kw">${match.toUpperCase()}</span>`);
+    });
+
+    // 5. Functions
+    const functions = [
+      'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'ROW_NUMBER', 'CAST', 'TRY_CAST',
+      'COALESCE', 'TRIM', 'UPPER', 'LOWER', 'SUBSTR', 'SUBSTRING', 'LEFT', 'RIGHT',
+      'ROUND', 'ABS', 'CEIL', 'FLOOR', 'CONCAT', 'EXTRACT', 'STRFTIME',
+      'CURRENT_TIMESTAMP', 'CURRENT_DATE', 'READ_CSV_AUTO', 'REPLACE'
+    ];
+    functions.forEach(fn => {
+      const regex = new RegExp(`\\b(${fn})\\s*\\(`, 'gi');
+      s = s.replace(regex, (match, p1) => `<span class="sql-fn">${p1.toUpperCase()}</span>(`);
+    });
+
+    return s;
+  }
+
+  function switchSqlTab(tabName) {
+    const btnScript = document.getElementById('tab-btn-sql-script');
+    const btnTables = document.getElementById('tab-btn-sql-tables');
+    const paneScript = document.getElementById('tab-pane-sql-script');
+    const paneTables = document.getElementById('tab-pane-sql-tables');
+
+    if (tabName === 'tables') {
+      if (btnTables) btnTables.classList.add('active');
+      if (btnScript) btnScript.classList.remove('active');
+      if (paneTables) paneTables.style.display = 'block';
+      if (paneScript) paneScript.style.display = 'none';
+    } else {
+      if (btnScript) btnScript.classList.add('active');
+      if (btnTables) btnTables.classList.remove('active');
+      if (paneScript) paneScript.style.display = 'flex';
+      if (paneTables) paneTables.style.display = 'none';
+    }
+  }
+
+  function renderSqlTableMappings() {
+    const container = document.getElementById('sql-table-mappings-list');
+    if (!container) return;
+
+    const inputNodes = [];
+    if (canvas && canvas.nodes) {
+      canvas.nodes.forEach(node => {
+        if (node.type === 'input_data') {
+          inputNodes.push(node);
+        }
+      });
+    }
+
+    if (inputNodes.length === 0) {
+      container.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: var(--text-muted); background: var(--bg-hover); border-radius: 6px;">
+          No <strong>Input Data</strong> nodes present in this workflow.
+        </div>
+      `;
+      return;
+    }
+
+    let html = `
+      <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); text-align: left;">
+            <th style="padding: 6px 10px;">Tool</th>
+            <th style="padding: 6px 10px;">Local Filepath / Name</th>
+            <th style="padding: 6px 10px;">Database Table / View Mapping</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    inputNodes.forEach(n => {
+      const toolName = n.name || 'Input Data';
+      const fp = (n.config && (n.config.filepath || n.config.file_name)) || 'Unnamed input file';
+      const currentMap = activeSqlState.tableMappings[n.id] || '';
+      const basePart = fp.split(/[\/\\]/).pop() || 'table_name';
+      const placeholder = basePart.replace(/\.[^/.]+$/, '');
+
+      html += `
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 8px 10px; font-weight: 600; color: var(--color-primary);">${toolName}</td>
+          <td style="padding: 8px 10px; color: var(--text-secondary);"><code style="font-size: 11px;">${fp}</code></td>
+          <td style="padding: 8px 10px;">
+            <input type="text" class="form-control form-control-sm sql-mapping-input" 
+              data-node-id="${n.id}" 
+              value="${currentMap}" 
+              placeholder='e.g. "PROD_DB"."ANALYTICS"."${placeholder.toUpperCase()}"' 
+              style="width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('.sql-mapping-input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const nid = e.target.dataset.nodeId;
+        const val = e.target.value.trim();
+        if (val) {
+          activeSqlState.tableMappings[nid] = val;
+        } else {
+          delete activeSqlState.tableMappings[nid];
+        }
+      });
+      inp.addEventListener('change', () => {
+        refreshSqlPreview();
+      });
+    });
+  }
+
+  async function refreshSqlPreview() {
+    const codeEl = document.getElementById('export-sql-code');
+    const statsSummary = document.getElementById('sql-stats-summary');
+    const statsTerminal = document.getElementById('sql-stats-terminal');
+    const dialectSelect = document.getElementById('sql-dialect-select');
+    const commentsCheck = document.getElementById('sql-opt-comments');
+
+    if (codeEl) codeEl.textContent = '-- Compiling visual workflow into SQL...';
+
+    const dialect = dialectSelect ? dialectSelect.value : 'ansi';
+    const includeComments = commentsCheck ? commentsCheck.checked : true;
+    activeSqlState.dialect = dialect;
+    activeSqlState.includeComments = includeComments;
+
+    const nameInput = document.getElementById('workflow-name-input');
+    const wfName = (nameInput ? nameInput.value.trim() : '') || 'Workflow';
+    const wfData = canvas ? canvas.getWorkflowData() : { nodes: [], connections: [] };
+    wfData.name = wfName;
+
+    try {
+      const res = await fetch('/api/workflow/to-sql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflow: wfData,
+          dialect: dialect,
+          options: {
+            table_mappings: activeSqlState.tableMappings,
+            include_comments: includeComments
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Compilation error');
+      }
+
+      activeSqlState.sql = data.sql;
+      if (codeEl) {
+        codeEl.innerHTML = highlightSql(data.sql);
+      }
+      if (statsSummary) {
+        statsSummary.innerHTML = `<strong style="color: var(--color-primary);">CTEs:</strong> ${data.ctes_generated} generated &bull; <strong>Dialect:</strong> ${data.dialect.toUpperCase()}`;
+      }
+      if (statsTerminal) {
+        statsTerminal.innerHTML = `<strong>Terminal Output:</strong> <code>${data.terminal_cte || 'N/A'}</code>`;
+      }
+    } catch (err) {
+      if (codeEl) {
+        codeEl.textContent = `-- Error compiling SQL: ${err.message}`;
+      }
+      if (statsSummary) statsSummary.textContent = 'Compilation Failed';
+    }
+  }
+
+  async function openExportSqlModal() {
+    const modal = document.getElementById('modal-export-sql');
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+    switchSqlTab('script');
+    renderSqlTableMappings();
+    await refreshSqlPreview();
+  }
+  window.openExportSqlModal = openExportSqlModal;
+
+  // SQL Modal Wireup
+  const tabBtnScript = document.getElementById('tab-btn-sql-script');
+  if (tabBtnScript) tabBtnScript.addEventListener('click', () => switchSqlTab('script'));
+  const tabBtnTables = document.getElementById('tab-btn-sql-tables');
+  if (tabBtnTables) tabBtnTables.addEventListener('click', () => switchSqlTab('tables'));
+
+  const dialectSelect = document.getElementById('sql-dialect-select');
+  if (dialectSelect) dialectSelect.addEventListener('change', refreshSqlPreview);
+  const commentsCheck = document.getElementById('sql-opt-comments');
+  if (commentsCheck) commentsCheck.addEventListener('change', refreshSqlPreview);
+
+  const topExportSqlBtn = document.getElementById('btn-top-export-sql');
+  if (topExportSqlBtn) topExportSqlBtn.addEventListener('click', openExportSqlModal);
+
+  const copySqlBtn = document.getElementById('btn-copy-sql');
+  if (copySqlBtn) {
+    copySqlBtn.addEventListener('click', async () => {
+      if (!activeSqlState.sql) return;
+      try {
+        await navigator.clipboard.writeText(activeSqlState.sql);
+        const txt = document.getElementById('copy-sql-text');
+        if (txt) txt.textContent = '✓ Copied!';
+        if (window.showToast) window.showToast('success', 'SQL Copied', 'SQL script copied to clipboard.');
+        setTimeout(() => {
+          if (txt) txt.textContent = 'Copy SQL';
+        }, 2000);
+      } catch (err) {
+        if (window.showToast) window.showToast('error', 'Copy Failed', err.message);
+      }
+    });
+  }
+
+  const downloadSqlBtn = document.getElementById('btn-download-sql');
+  if (downloadSqlBtn) {
+    downloadSqlBtn.addEventListener('click', async () => {
+      if (!activeSqlState.sql) await refreshSqlPreview();
+      const nameInput = document.getElementById('workflow-name-input');
+      const wfName = (nameInput ? nameInput.value.trim() : '') || 'workflow';
+      const filename = `${wfName.replace(/[\s\W]+/g, '_').toLowerCase()}.sql`;
+
+      try {
+        const blob = new Blob([activeSqlState.sql], { type: 'application/sql' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (window.showToast) window.showToast('success', 'SQL Downloaded', `Saved as '${filename}'.`);
+      } catch (err) {
+        if (window.showToast) window.showToast('error', 'Download Failed', err.message);
+      }
+    });
+  }
+
+  const saveBtn = document.getElementById('btn-save');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveWorkflow);
+  }
+
+  // Template Library
+  window.templateLibrary = new TemplateLibrary();
+  const btnTemplates = document.getElementById('btn-templates');
+  if (btnTemplates) {
+    btnTemplates.addEventListener('click', () => window.templateLibrary.show());
+  }
+
+  // Open Button & Dropdown Wireup
+  const openDirectBtn = document.getElementById('btn-open-direct');
+  if (openDirectBtn) {
+    openDirectBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openWorkflowFileDialog();
+    });
+  }
+
+  const openBtn = document.getElementById('btn-open-menu');
+  const openMenu = document.getElementById('open-menu');
+
+  if (openBtn && openMenu) {
+    openBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openMenu.classList.toggle('show');
+    });
+
+    window.addEventListener('click', () => {
+      openMenu.classList.remove('show');
+    });
+  }
+
+  async function refreshSavedWorkflows() {
+    const savedList = document.getElementById('saved-workflows-list');
+    if (!savedList) return;
+
+    try {
+      const res = await fetch('/api/samples');
+      const data = await res.json();
+      const workflows = data.workflows || [];
+
+      if (workflows.length === 0) {
+        savedList.innerHTML = `<div style="padding: 8px 12px; font-size: 11px; color: var(--text-muted);">No saved workflows yet</div>`;
+        return;
+      }
+
+      savedList.innerHTML = '';
+      workflows.forEach(wf => {
+        const item = document.createElement('button');
+        item.className = 'dropdown-item';
+        const dateStr = wf.modified ? ` &bull; ${typeof wf.modified === 'number' ? new Date(wf.modified * 1000).toLocaleDateString() : wf.modified}` : '';
+        item.innerHTML = `
+          <span class="dropdown-item-title">${wf.name}</span>
+          <span class="dropdown-item-sub">${wf.node_count || 0} tools${dateStr}</span>
+        `;
+        item.addEventListener('click', () => {
+          loadWorkflowFromServer(wf.file);
+          if (openMenu) openMenu.classList.remove('show');
+        });
+        savedList.appendChild(item);
+      });
+    } catch (err) {
+      console.warn('Failed to refresh saved workflows:', err);
+    }
+  }
+
+  const fileInput = document.getElementById('input-workflow-file');
+  const loadFileBtn = document.getElementById('btn-load-file');
+  if (loadFileBtn) {
+    loadFileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (openMenu) openMenu.classList.remove('show');
+      openWorkflowFileDialog();
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const fn = file.name.toLowerCase();
+      if (fn.endsWith('.zip') || fn.endsWith('.yxzp')) {
+        importWorkflowPackage(file);
+        fileInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const wf = JSON.parse(ev.target.result);
+          handleWorkflowLoaded(wf, file.name.replace(/\.(json|yxmd)$/i, ''));
+          window.activeWorkflowFile = { handle: null, name: file.name, path: file.name };
+          markWorkflowClean();
+        } catch (err) {
+          window.showToast('error', 'Invalid File', 'Could not parse workflow JSON file.');
+        }
+      };
+      reader.readAsText(file);
+      fileInput.value = '';
+    });
+  }
+
+  // Package Input (.zip / .yxzp)
+  const packageFileInput = document.getElementById('input-package-file');
+  const loadPackageBtn = document.getElementById('btn-load-package');
+  if (loadPackageBtn && packageFileInput) {
+    loadPackageBtn.addEventListener('click', () => {
+      packageFileInput.click();
+      if (openMenu) openMenu.classList.remove('show');
+    });
+  }
+
+  if (packageFileInput) {
+    packageFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        importWorkflowPackage(file);
+      }
+      packageFileInput.value = '';
+    });
+  }
+
+  const depsExportBtn = document.getElementById('btn-deps-export-package');
+  if (depsExportBtn) {
+    depsExportBtn.addEventListener('click', () => {
+      exportWorkflowPackage();
+    });
+  }
+
+  // ====================================================================
+  // Centralized Application Command Registry
+  // ====================================================================
+  const app = {
+    async executeCommand(commandId) {
+      if (!commandId || typeof commandId !== 'string') return;
+      const cmd = commandId.trim().toLowerCase();
+      const normCmd = cmd.replace(/_/g, '-');
+
+      switch (normCmd) {
+        // --- FILE ---
+        case 'file:new':
+          if (!isWorkflowDirty || confirm('Create a new blank workflow? Any unsaved changes will be cleared.')) {
+            canvas.loadWorkflow({ nodes: [], connections: [] });
+            canvas.cachedNodeIds.clear();
+            resultsPanel.clear();
+            configPanel.render(null);
+            const nameInput = document.getElementById('workflow-name-input');
+            if (nameInput) nameInput.value = 'New Workflow';
+            markWorkflowClean();
+            if (window.appHistory) window.appHistory.pushSnapshot('New Workflow');
+            if (window.showToast) window.showToast('info', 'New Workflow', 'Created blank canvas.');
+          }
+          break;
+
+        case 'file:open':
+          openWorkflowFileDialog();
+          break;
+
+        case 'file:templates':
+        case 'help:templates':
+          if (window.templateLibrary) {
+            window.templateLibrary.show();
+          }
+          break;
+
+        case 'file:save':
+          saveWorkflow();
+          break;
+          saveWorkflow();
+          break;
+
+        case 'file:save-as':
+          saveWorkflowAs();
+          break;
+
+        case 'file:export-json':
+          exportWorkflowJson();
+          break;
+
+        case 'file:export-package':
+          exportWorkflowPackage();
+          break;
+
+        case 'file:export-sql':
+        case 'workflow:export-sql':
+          openExportSqlModal();
+          break;
+
+        case 'file:import-package': {
+          const pkgInput = document.getElementById('input-package-file');
+          if (pkgInput) pkgInput.click();
+          break;
+        }
+
+        case 'file:revisions':
+          openVersionHistoryModal();
+          break;
+
+        case 'file:properties':
+          openWorkflowPropertiesModal();
+          break;
+
+        case 'file:clear': {
+          const clearBtn = document.getElementById('btn-clear');
+          if (clearBtn) clearBtn.click();
+          break;
+        }
+
+        // --- EDIT ---
+        case 'edit:undo':
+          if (window.appHistory) window.appHistory.undo();
+          break;
+
+        case 'edit:redo':
+          if (window.appHistory) window.appHistory.redo();
+          break;
+
+        case 'edit:cut':
+          canvas.cutSelection();
+          break;
+
+        case 'edit:copy':
+          canvas.copySelection();
+          break;
+
+        case 'edit:paste':
+          canvas.pasteClipboard();
+          break;
+
+        case 'edit:duplicate':
+          canvas.duplicateSelected();
+          break;
+
+        case 'edit:delete':
+          canvas.deleteSelected();
+          break;
+
+        case 'edit:select-all':
+          canvas.selectAll();
+          break;
+
+        case 'edit:find':
+          canvas.openSpotlight();
+          break;
+
+        // --- VIEW ---
+        case 'view:toggle-palette': {
+          const paletteEl = document.getElementById('tool-palette-ribbon') || document.getElementById('palette-bar');
+          if (paletteEl) {
+            const isHidden = paletteEl.style.display === 'none';
+            paletteEl.style.display = isHidden ? 'flex' : 'none';
+            if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+            if (window.showToast) {
+              window.showToast('info', 'Tool Palette', `Tool Palette ${isHidden ? 'Shown' : 'Hidden'}.`);
+            }
+          }
+          break;
+        }
+
+        case 'view:toggle-config': {
+          const configEl = document.getElementById('config-panel') || document.getElementById('config-sidebar');
+          if (configEl) {
+            const isHidden = configEl.style.display === 'none';
+            configEl.style.display = isHidden ? 'flex' : 'none';
+            if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+            if (window.showToast) {
+              window.showToast('info', 'Configuration Panel', `Configuration Panel ${isHidden ? 'Shown' : 'Hidden'}.`);
+            }
+          }
+          break;
+        }
+
+        case 'view:toggle-results': {
+          const resultsEl = document.getElementById('results-panel');
+          if (resultsEl) {
+            resultsEl.classList.toggle('collapsed');
+            if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+          }
+          break;
+        }
+
+        case 'view:toggle-histograms': {
+          const histBtn = document.getElementById('btn-toggle-histograms');
+          if (histBtn) {
+            histBtn.click();
+          } else if (resultsPanel) {
+            resultsPanel.showHistograms = !resultsPanel.showHistograms;
+            resultsPanel.renderGrid();
+          }
+          if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+          break;
+        }
+
+        case 'view:zoom-in':
+        case 'view:ui-zoom-in':
+          zoomUIIn();
+          break;
+
+        case 'view:zoom-out':
+        case 'view:ui-zoom-out':
+          zoomUIOut();
+          break;
+
+        case 'view:zoom-reset':
+        case 'view:ui-zoom-reset':
+          resetUIZoom();
+          break;
+
+        case 'view:canvas-zoom-in':
+          canvas.zoomIn();
+          break;
+
+        case 'view:canvas-zoom-out':
+          canvas.zoomOut();
+          break;
+
+        case 'view:canvas-zoom-reset':
+          canvas.resetZoom();
+          break;
+
+        case 'view:autolayout':
+          canvas.autoLayout();
+          if (window.showToast) window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean layers.');
+          break;
+
+        case 'view:toggle-overview':
+        case 'view:toggle_overview':
+          if (window.appMiniMap) {
+            window.appMiniMap.toggle();
+          }
+          break;
+
+        case 'view:reset-panels': {
+          localStorage.removeItem('dataflow_panel_dimensions');
+          const paletteEl = document.getElementById('tool-palette-ribbon') || document.getElementById('palette-bar');
+          if (paletteEl) {
+            paletteEl.style.display = 'flex';
+            paletteEl.style.height = '';
+          }
+          const configEl = document.getElementById('config-panel') || document.getElementById('config-sidebar');
+          if (configEl) {
+            configEl.style.display = 'flex';
+            configEl.style.width = '';
+          }
+          const resultsEl = document.getElementById('results-panel');
+          if (resultsEl) {
+            resultsEl.classList.remove('collapsed');
+            resultsEl.style.height = '';
+          }
+          if (window.appMiniMap) {
+            window.appMiniMap.toggle(true);
+            window.appMiniMap.render();
+          }
+          if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+          if (window.showToast) window.showToast('info', 'Panels Reset', 'Restored default panels layout and dimensions.');
+          break;
+        }
+
+        case 'view:toggle-wire-probes':
+        case 'view:toggle_probes':
+        case 'options:toggle-wire-probes':
+          canvas.setWireProbesEnabled(!canvas.wireProbesEnabled);
+          if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+          break;
+
+        case 'view:badge-duration:3000':
+        case 'view:badge-duration:5000':
+        case 'view:badge-duration:10000':
+        case 'view:badge-duration:always':
+        case 'view:badge-duration:off': {
+          const durationVal = commandId.replace('view:badge-duration:', '');
+          canvas.setNodeBadgeDuration(durationVal);
+          if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+          const labelMap = {
+            '3000': '3 seconds auto-hide',
+            '5000': '5 seconds auto-hide',
+            '10000': '10 seconds auto-hide',
+            'always': 'always visible',
+            'off': 'hidden'
+          };
+          if (window.showToast) window.showToast('info', 'Execution Badges', `Execution status badge set to ${labelMap[durationVal] || durationVal}.`);
+          break;
+        }
+
+        // --- OPTIONS ---
+        case 'options:dependencies':
+          openWorkflowDependenciesModal();
+          break;
+
+        case 'options:user-settings':
+          if (window.appMenuBar) window.appMenuBar.openUserSettingsModal();
+          break;
+
+        case 'options:purge-cache': {
+          try {
+            const res = await fetch('/api/cache/purge', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              if (resultsPanel) resultsPanel.clear();
+              if (window.showToast) {
+                const memNote = data.process_memory_mb ? ` (Process RAM: ${data.process_memory_mb} MB)` : '';
+                window.showToast('success', 'Cache Purged', `${data.message}${memNote}`);
+              }
+            } else {
+              if (window.showToast) window.showToast('error', 'Purge Failed', data.message || 'Error purging cache.');
+            }
+          } catch (err) {
+            if (window.showToast) window.showToast('error', 'Purge Error', err.message);
+          }
+          break;
+        }
+
+        // --- HELP ---
+        case 'help:shortcuts':
+          if (window.appMenuBar) window.appMenuBar.openModal('modal-shortcuts');
+          break;
+
+        case 'help:about':
+          if (window.appMenuBar) window.appMenuBar.openModal('modal-about');
+          break;
+
+        // --- WORKFLOW EXECUTION ---
+        case 'workflow:run':
+          runWorkflow();
+          break;
+
+        case 'workflow:cancel':
+        case 'workflow:stop':
+          if (window._isWorkflowRunning) {
+            stopWorkflow();
+          }
+          break;
+
+        default:
+          console.warn('Unknown application command:', commandId);
+      }
+    }
+  };
+  window.app = app;
+
+  // Global Keyboard Accelerator Handling
+  window.addEventListener('keydown', (e) => {
+    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+    const isInput = activeTag === 'input' || activeTag === 'textarea' || (document.activeElement && document.activeElement.isContentEditable);
+
+    const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+    // F1: Help Shortcuts
+    if (e.key === 'F1') {
+      e.preventDefault();
+      app.executeCommand('help:shortcuts');
+      return;
+    }
+
+    // Global UI Scaling Shortcuts (active everywhere, including inputs):
+    // Ctrl + Plus / Ctrl + = / NumpadAdd: Scale UI Up
+    if (isCtrlOrMeta && !e.altKey && (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd' || e.code === 'Equal')) {
+      e.preventDefault();
+      app.executeCommand('view:zoom-in');
+      return;
+    }
+
+    // Ctrl + Minus / Ctrl + _ / NumpadSubtract: Scale UI Down
+    if (isCtrlOrMeta && !e.altKey && (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract' || e.code === 'Minus')) {
+      e.preventDefault();
+      app.executeCommand('view:zoom-out');
+      return;
+    }
+
+    // Ctrl + 0 / Numpad0: Reset UI Zoom to 100%
+    if (isCtrlOrMeta && !e.altKey && (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0')) {
+      e.preventDefault();
+      app.executeCommand('view:zoom-reset');
+      return;
+    }
+
+    // When focused in text inputs, only intercept explicitly desired shortcuts
+    if (isInput) {
+      if (isCtrlOrMeta && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        app.executeCommand('file:save');
+      }
+      return;
+    }
+
+    // Ctrl + N: New Workflow (prevent browser new window)
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'n' || e.key === 'N')) {
+      e.preventDefault();
+      app.executeCommand('file:new');
+      return;
+    }
+
+    // Ctrl + O: Open Workflow (prevent browser open file)
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'o' || e.key === 'O')) {
+      e.preventDefault();
+      app.executeCommand('file:open');
+      return;
+    }
+
+    // Ctrl + Shift + S: Save As
+    if (isCtrlOrMeta && e.shiftKey && !e.altKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      app.executeCommand('file:save-as');
+      return;
+    }
+
+    // Ctrl + S: Save (prevent browser save webpage)
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      app.executeCommand('file:save');
+      return;
+    }
+
+    // Ctrl + F: Spotlight Tool Search (prevent browser page find bar)
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      app.executeCommand('edit:find');
+      return;
+    }
+
+    // Ctrl + Alt + T: Toggle Tool Palette
+    if (isCtrlOrMeta && e.altKey && (e.key === 't' || e.key === 'T')) {
+      e.preventDefault();
+      app.executeCommand('view:toggle-palette');
+      return;
+    }
+
+    // Ctrl + Alt + C: Toggle Config Panel
+    if (isCtrlOrMeta && e.altKey && (e.key === 'c' || e.key === 'C')) {
+      e.preventDefault();
+      app.executeCommand('view:toggle-config');
+      return;
+    }
+
+    // Ctrl + Alt + R: Toggle Results Panel
+    if (isCtrlOrMeta && e.altKey && (e.key === 'r' || e.key === 'R')) {
+      e.preventDefault();
+      app.executeCommand('view:toggle-results');
+      return;
+    }
+
+    // Ctrl + Alt + O: Toggle Overview MiniMap
+    if (isCtrlOrMeta && e.altKey && (e.key === 'o' || e.key === 'O')) {
+      e.preventDefault();
+      app.executeCommand('view:toggle-overview');
+      return;
+    }
+
+    // Ctrl + Alt + W: Toggle Wire Data Probes
+    if (isCtrlOrMeta && e.altKey && (e.key === 'w' || e.key === 'W')) {
+      e.preventDefault();
+      app.executeCommand('view:toggle-wire-probes');
+      return;
+    }
+
+    // Ctrl + Shift + Delete: Purge Engine Cache & Memory
+    if (isCtrlOrMeta && e.shiftKey && (e.key === 'Delete' || e.key === 'Del')) {
+      e.preventDefault();
+      app.executeCommand('options:purge-cache');
+      return;
+    }
+
+    // Ctrl + Enter: Run Workflow
+    if (isCtrlOrMeta && e.key === 'Enter') {
+      e.preventDefault();
+      app.executeCommand('workflow:run');
+      return;
+    }
+
+    // Escape: Stop Workflow if running
+    if (e.key === 'Escape' && window._isWorkflowRunning) {
+      e.preventDefault();
+      app.executeCommand('workflow:stop');
+      return;
+    }
+  });
+
+  // Auto-Layout Flow
+  const autoLayoutBtn = document.getElementById('btn-autolayout');
+  if (autoLayoutBtn) {
+    autoLayoutBtn.addEventListener('click', () => {
+      canvas.autoLayout();
+      window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean left-to-right execution layers.');
+    });
+  }
+
+  // Clear Canvas
+  const clearBtn = document.getElementById('btn-clear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Clear entire workflow canvas?')) {
+        canvas.loadWorkflow({ nodes: [], connections: [] });
+        resultsPanel.clear();
+        configPanel.render(null);
+        if (window.appHistory) {
+          window.appHistory.pushSnapshot('Clear Canvas');
+        }
+        window.showToast('info', 'Canvas Cleared', 'All tools and wires have been removed.');
+      }
+    });
+  }
+
+  // Zoom controls
+  const zoomInBtn = document.getElementById('btn-zoom-in');
+  const zoomOutBtn = document.getElementById('btn-zoom-out');
+  const zoomResetBtn = document.getElementById('btn-zoom-reset');
+  if (zoomInBtn) zoomInBtn.addEventListener('click', () => canvas.zoomIn());
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => canvas.zoomOut());
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => canvas.resetZoom());
+
+  // 7. Split Pane Resizers
+  setupResizers();
+
+  // 8. Sample Workflows & Datasets Loader
+  async function loadSampleWorkflow(filename) {
+    try {
+      const res = await fetch(`/api/sample-workflow/${filename}`);
+      const data = await res.json();
+      handleWorkflowLoaded(data, data.name || filename);
+      runWorkflow();
+    } catch (err) {
+      console.error('Failed to load sample workflow:', err);
+    }
+  }
+
+  // 9. Fetch Tools & Samples Metadata
+  try {
+    const [toolsRes, samplesRes] = await Promise.all([
+      fetch('/api/tools'),
+      fetch('/api/samples')
+    ]);
+
+    const toolsData = await toolsRes.json();
+    const samplesData = await samplesRes.json();
+
+    palette.setTools(toolsData.tools);
+    canvas.setToolsRegistry(toolsData.tools);
+    configPanel.setSampleDatasets(samplesData.datasets || []);
+
+    await refreshSavedWorkflows();
+    
+    // 10. Check if a specific initial workflow was specified via CLI (--open) or query param (?open=...)
+    let initialLoaded = false;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const openParam = urlParams.get('open');
+      const url = openParam ? `/api/initial-workflow?open=${encodeURIComponent(openParam)}` : '/api/initial-workflow';
+      const initRes = await fetch(url);
+      if (initRes.ok) {
+        const initData = await initRes.json();
+        if (initData.workflow) {
+          handleWorkflowLoaded(initData.workflow, initData.name || 'Workflow');
+          initialLoaded = true;
+          runWorkflow();
+        }
+      }
+    } catch (e) {
+      console.warn('Initial workflow check failed:', e);
+    }
+
+    // Check for crash recovery autosave, or auto-load default sample workflow if none
+    if (!initialLoaded) {
+      const recovered = await checkAutoSaveRecovery();
+      if (!recovered && samplesData.workflows && samplesData.workflows.length > 0) {
+        await loadSampleWorkflow(samplesData.workflows[0].file);
+      }
+    }
+
+    if (window.appMenuBar && typeof window.appMenuBar.syncMenuStates === 'function') {
+      window.appMenuBar.syncMenuStates();
+    }
+  } catch (err) {
+    console.error('Metadata fetch error:', err);
+  }
+});
+
+/**
+ * Handles resizable dividers for Palette, Left Configuration panel, and Bottom Results panel.
+ * Supports smooth dragging, min/max constraints, and layout persistence in localStorage.
+ */
+function setupResizers() {
+  const resizerTop = document.getElementById('resizer-top');
+  const paletteRibbon = document.getElementById('tool-palette-ribbon') || document.getElementById('palette-bar');
+  const resizerLeft = document.getElementById('resizer-left');
+  const configPanel = document.getElementById('config-panel') || document.getElementById('config-sidebar');
+  const resizerBottom = document.getElementById('resizer-bottom');
+  const resultsPanel = document.getElementById('results-panel');
+
+  // Load saved dimensions from userSettings (falls back to localStorage)
+  let savedDims = null;
+  try {
+    if (window.userSettings) {
+      savedDims = window.userSettings.get('panel_dimensions', null);
+    } else {
+      const raw = localStorage.getItem('dataflow_panel_dimensions');
+      if (raw) savedDims = JSON.parse(raw);
+    }
+  } catch (err) {
+    console.warn('Failed to parse saved panel dimensions', err);
+  }
+
+  if (savedDims) {
+    if (paletteRibbon && savedDims.paletteHeight) {
+      paletteRibbon.style.height = `${savedDims.paletteHeight}px`;
+    }
+    if (configPanel && savedDims.configWidth) {
+      configPanel.style.width = `${savedDims.configWidth}px`;
+    }
+    if (resultsPanel && savedDims.resultsHeight) {
+      resultsPanel.style.height = `${savedDims.resultsHeight}px`;
+    }
+  }
+
+  function saveDimensions() {
+    const dims = {};
+    if (paletteRibbon && paletteRibbon.offsetHeight) dims.paletteHeight = paletteRibbon.offsetHeight;
+    if (configPanel && configPanel.offsetWidth) dims.configWidth = configPanel.offsetWidth;
+    if (resultsPanel && resultsPanel.offsetHeight) dims.resultsHeight = resultsPanel.offsetHeight;
+    if (window.userSettings) window.userSettings.set('panel_dimensions', dims);
+    else localStorage.setItem('dataflow_panel_dimensions', JSON.stringify(dims));
+  }
+
+  let activeResizer = null;
+
+  if (resizerTop && paletteRibbon) {
+    resizerTop.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      activeResizer = 'top';
+      resizerTop.classList.add('resizing');
+      document.body.classList.add('resizing-layout');
+      document.body.style.cursor = 'row-resize';
+    });
+  }
+
+  if (resizerLeft && configPanel) {
+    resizerLeft.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      activeResizer = 'left';
+      resizerLeft.classList.add('resizing');
+      document.body.classList.add('resizing-layout');
+      document.body.style.cursor = 'col-resize';
+    });
+  }
+
+  if (resizerBottom && resultsPanel) {
+    resizerBottom.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      activeResizer = 'bottom';
+      resizerBottom.classList.add('resizing');
+      document.body.classList.add('resizing-layout');
+      document.body.style.cursor = 'row-resize';
+    });
+  }
+
+  window.addEventListener('mousemove', (e) => {
+    if (!activeResizer) return;
+    e.preventDefault();
+
+    if (activeResizer === 'top' && paletteRibbon) {
+      const ribbonRect = paletteRibbon.getBoundingClientRect();
+      const newHeight = Math.max(50, Math.min(240, e.clientY - ribbonRect.top));
+      paletteRibbon.style.height = `${newHeight}px`;
+    } else if (activeResizer === 'left' && configPanel) {
+      const newWidth = Math.max(260, Math.min(650, e.clientX));
+      configPanel.style.width = `${newWidth}px`;
+    } else if (activeResizer === 'bottom' && resultsPanel) {
+      const newHeight = Math.max(100, Math.min(window.innerHeight * 0.75, window.innerHeight - e.clientY));
+      resultsPanel.style.height = `${newHeight}px`;
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!activeResizer) return;
+    if (resizerTop) resizerTop.classList.remove('resizing');
+    if (resizerLeft) resizerLeft.classList.remove('resizing');
+    if (resizerBottom) resizerBottom.classList.remove('resizing');
+    document.body.classList.remove('resizing-layout');
+    document.body.style.cursor = 'default';
+    activeResizer = null;
+    saveDimensions();
+    if (window.appMiniMap) {
+      window.appMiniMap.render();
+    }
+  });
+}

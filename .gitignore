@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller / Build outputs
+build/
+dist/
+*.manifest
+*.spec.bak
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Logs and debug output
+*.log
+err.log
+out.log
+exe_output.txt
+
+# User settings and runtime data
+user_settings.json
+scratch/
+output_*.csv
+output_*.xlsx
+campaign_attribution_matrix.csv
+inventory_audit_ledger.csv
+regional_sales_summary.csv
+tests/test_write.txt
+data/outputs/
+
+# Workflow session autosaves and backups
+workflows/.autosave/
+workflows/.backups/
+
+# Dynamic uploaded files (session uploads with 8-hex uuid prefix)
+data/[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]_*
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

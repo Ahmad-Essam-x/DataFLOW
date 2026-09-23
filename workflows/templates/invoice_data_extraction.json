@@ -1,0 +1,248 @@
+{
+  "name": "Invoice Data Extraction",
+  "description": "Uses an LLM to extract structured fields (vendor name, invoice number, total amount, due date) from free-text invoice descriptions into a clean structured table.",
+  "category": "ai_llm",
+  "tags": [
+    "llm",
+    "extraction",
+    "invoice",
+    "finance",
+    "nlp",
+    "structured"
+  ],
+  "difficulty": "intermediate",
+  "containers": [
+    {
+      "id": "ctr_ie1",
+      "title": "Step 1 - Load Invoice Data",
+      "x": 60,
+      "y": 60,
+      "width": 480,
+      "height": 300,
+      "color": "rgba(139,92,246,0.07)",
+      "headerColor": "#8b5cf6",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_ie2",
+      "title": "Step 2 - LLM Field Extraction (JSON Parse Mode)",
+      "x": 590,
+      "y": 60,
+      "width": 440,
+      "height": 300,
+      "color": "rgba(139,92,246,0.07)",
+      "headerColor": "#8b5cf6",
+      "collapsed": false,
+      "disabled": false
+    },
+    {
+      "id": "ctr_ie3",
+      "title": "Step 3 - Clean & Export",
+      "x": 1080,
+      "y": 60,
+      "width": 580,
+      "height": 300,
+      "color": "rgba(59,130,246,0.07)",
+      "headerColor": "#3b82f6",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_ie1",
+      "text": "### Invoice Extraction Pipeline\n- **Input CSV**: Expects column `InvoiceText` containing raw invoice content\n- **LLM Process (JSON Parse Mode)**: Instructs the LLM to respond with structured JSON\n- **Extracted fields**: VendorName, InvoiceNumber, TotalAmount, DueDate, Currency\n- **Filter**: Rows where extraction failed are routed to a review queue\n\n> System prompt forces strict JSON output. Use llama3.1 or gpt-4o-mini for best results.",
+      "x": 60,
+      "y": 380,
+      "width": 520,
+      "height": 180,
+      "color": "#8b5cf6"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_ie_in",
+      "type": "input_data",
+      "name": "Input Invoice Records (CSV)",
+      "x": 100,
+      "y": 170,
+      "config": {
+        "file_path": "invoices_raw.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_ie_clean",
+      "type": "clean",
+      "name": "Trim Invoice Text",
+      "x": 300,
+      "y": 170,
+      "config": {
+        "columns": [
+          "InvoiceText"
+        ],
+        "trim_whitespace": true,
+        "case_transformation": "none",
+        "remove_empty_rows": true
+      }
+    },
+    {
+      "id": "node_ie_llm",
+      "type": "llm_process",
+      "name": "AI Field Extractor",
+      "x": 630,
+      "y": 170,
+      "config": {
+        "provider_type": "ollama",
+        "connection": {
+          "base_url": "http://localhost:11434",
+          "api_key": ""
+        },
+        "model": "llama3.2:latest",
+        "temperature": 0.0,
+        "max_tokens": 256,
+        "top_p": 1.0,
+        "timeout_seconds": 45,
+        "system_prompt": "You are an invoice parsing assistant. Extract invoice fields and return ONLY a valid JSON object with these exact keys: vendor_name, invoice_number, total_amount, due_date, currency. If a field cannot be found, use null. No explanation, no markdown, just the JSON object.",
+        "user_prompt_template": "Extract the invoice details from this text:\n\n{{[InvoiceText]}}",
+        "rag_context": {
+          "enabled": false,
+          "source": "static",
+          "text": "",
+          "column": "",
+          "file_path": "",
+          "placement": "before"
+        },
+        "output_mode": "json_parse",
+        "output_column": "AI_Response",
+        "json_fields": [
+          {
+            "field_name": "vendor_name",
+            "output_col": "VendorName"
+          },
+          {
+            "field_name": "invoice_number",
+            "output_col": "InvoiceNumber"
+          },
+          {
+            "field_name": "total_amount",
+            "output_col": "TotalAmount"
+          },
+          {
+            "field_name": "due_date",
+            "output_col": "DueDate"
+          },
+          {
+            "field_name": "currency",
+            "output_col": "Currency"
+          }
+        ],
+        "on_error": "error_message",
+        "max_retries": 2,
+        "concurrency": 2,
+        "rate_limit_rps": 3,
+        "include_token_columns": false
+      }
+    },
+    {
+      "id": "node_ie_filter",
+      "type": "filter",
+      "name": "Filter Successful Extractions",
+      "x": 1120,
+      "y": 170,
+      "config": {
+        "mode": "basic",
+        "logical_op": "AND",
+        "conditions": [
+          {
+            "column": "VendorName",
+            "operator": "is not null",
+            "value": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_ie_sort",
+      "type": "sort",
+      "name": "Sort by Due Date",
+      "x": 1320,
+      "y": 130,
+      "config": {
+        "sort_by": [
+          {
+            "column": "DueDate",
+            "ascending": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_ie_out",
+      "type": "output_data",
+      "name": "Export Structured Invoices",
+      "x": 1520,
+      "y": 130,
+      "config": {
+        "filename": "invoices_structured",
+        "format": "xlsx",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_ie_browse",
+      "type": "browse",
+      "name": "Preview Results",
+      "x": 1520,
+      "y": 260,
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "cie1",
+      "source": "node_ie_in",
+      "sourceHandle": "O",
+      "target": "node_ie_clean",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cie2",
+      "source": "node_ie_clean",
+      "sourceHandle": "O",
+      "target": "node_ie_llm",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cie3",
+      "source": "node_ie_llm",
+      "sourceHandle": "O",
+      "target": "node_ie_filter",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cie4",
+      "source": "node_ie_filter",
+      "sourceHandle": "T",
+      "target": "node_ie_sort",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cie5",
+      "source": "node_ie_sort",
+      "sourceHandle": "O",
+      "target": "node_ie_out",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cie6",
+      "source": "node_ie_sort",
+      "sourceHandle": "O",
+      "target": "node_ie_browse",
+      "targetHandle": "I"
+    }
+  ]
+}

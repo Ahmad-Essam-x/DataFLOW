@@ -1,0 +1,11 @@
+CustomerID,CustomerName,Segment,Region
+CUST-101,Acme Corp,Enterprise,East
+CUST-102,Global Logistics,SMB,West
+CUST-103,Apex Retail,Enterprise,North
+CUST-104,Nova Tech,Government,South
+CUST-105,Summit Solutions,SMB,East
+CUST-106,Prime Dynamics,Enterprise,West
+CUST-107,Echo Systems,SMB,North
+CUST-108,Vanguard Labs,Government,South
+CUST-109,Pinnacle Group,Enterprise,East
+CUST-110,Horizon Media,SMB,West

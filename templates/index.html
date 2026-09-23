@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity DataFlow - Local Visual ETL Designer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" type="image/png" href="/static/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Anti-flash: apply saved theme class synchronously before any paint -->
+  <script>
+    (function() {
+      try {
+        var s = localStorage.getItem('userSettings_v1');
+        var theme = 'dark';
+        if (s) {
+          var p = JSON.parse(s);
+          if (p && p.theme) theme = p.theme;
+        } else {
+          // Fall back to legacy key
+          var leg = localStorage.getItem('alteryx_theme');
+          if (leg === 'theme-light') theme = 'light';
+          else if (leg === 'theme-high-contrast') theme = 'high-contrast';
+        }
+        var cls = theme === 'light' ? 'theme-light' : theme === 'high-contrast' ? 'theme-high-contrast' : 'theme-dark';
+        document.documentElement.className = cls;
+      } catch(e) {}
+    })();
+  </script>
+</head>
+<body class="theme-dark">
+  <!-- Alteryx Main Menu Bar (File, Edit, View, Options, Help) -->
+  <nav id="main-menubar" class="main-menubar" role="menubar">
+    <div class="menubar-menus">
+      <!-- 1. File Menu -->
+      <div class="menubar-item" data-menu="file">
+        <button class="menubar-btn" id="menu-btn-file" aria-haspopup="true">File</button>
+        <div class="menubar-dropdown" id="dropdown-menu-file">
+          <button class="menubar-action" data-action="file:new">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            </span>
+            <span class="action-label">New Workflow</span>
+            <kbd>Ctrl+N</kbd>
+          </button>
+          <button class="menubar-action" data-action="file:open">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            </span>
+            <span class="action-label">Open Workflow...</span>
+            <kbd>Ctrl+O</kbd>
+          </button>
+          <div class="menubar-submenu-wrapper">
+            <div class="menubar-action menu-has-submenu">
+              <span class="action-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+              <span class="action-label">Open Recent</span>
+              <span class="action-chevron">▶</span>
+            </div>
+            <div class="menubar-submenu" id="menu-recent-list">
+              <div class="menu-empty-note">No recent workflows</div>
+            </div>
+          </div>
+          <button class="menubar-action" data-action="file:templates">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>
+            <span class="action-label">Workflow Templates...</span>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="file:save">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            </span>
+            <span class="action-label">Save</span>
+            <kbd>Ctrl+S</kbd>
+          </button>
+          <button class="menubar-action" data-action="file:save-as">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+            </span>
+            <span class="action-label">Save As...</span>
+            <kbd>Ctrl+Shift+S</kbd>
+          </button>
+          <button class="menubar-action" data-action="file:export-json">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </span>
+            <span class="action-label">Export Workflow JSON</span>
+          </button>
+          <button class="menubar-action" data-action="file:export-package">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+            </span>
+            <span class="action-label">Export Workflow Package (.zip)</span>
+          </button>
+          <button class="menubar-action" data-action="file:export-sql">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            </span>
+            <span class="action-label">Export Workflow as SQL...</span>
+            <kbd>Ctrl+Shift+E</kbd>
+          </button>
+          <button class="menubar-action" data-action="file:import-package">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </span>
+            <span class="action-label">Import Workflow Package...</span>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="file:revisions">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            </span>
+            <span class="action-label">Version History & Backups...</span>
+          </button>
+          <button class="menubar-action" data-action="file:properties">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </span>
+            <span class="action-label">Workflow Properties...</span>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="file:clear">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </span>
+            <span class="action-label">Clear Canvas</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 2. Edit Menu -->
+      <div class="menubar-item" data-menu="edit">
+        <button class="menubar-btn" id="menu-btn-edit" aria-haspopup="true">Edit</button>
+        <div class="menubar-dropdown" id="dropdown-menu-edit">
+          <button class="menubar-action" data-action="edit:undo">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+            </span>
+            <span class="action-label">Undo</span>
+            <kbd>Ctrl+Z</kbd>
+          </button>
+          <button class="menubar-action" data-action="edit:redo">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path></svg>
+            </span>
+            <span class="action-label">Redo</span>
+            <kbd>Ctrl+Y</kbd>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="edit:cut">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+            </span>
+            <span class="action-label">Cut</span>
+            <kbd>Ctrl+X</kbd>
+          </button>
+          <button class="menubar-action" data-action="edit:copy">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </span>
+            <span class="action-label">Copy</span>
+            <kbd>Ctrl+C</kbd>
+          </button>
+          <button class="menubar-action" data-action="edit:paste">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+            </span>
+            <span class="action-label">Paste</span>
+            <kbd>Ctrl+V</kbd>
+          </button>
+          <button class="menubar-action" data-action="edit:duplicate">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><rect x="3" y="3" width="13" height="13" rx="2" ry="2"></rect></svg>
+            </span>
+            <span class="action-label">Duplicate</span>
+            <kbd>Ctrl+D</kbd>
+          </button>
+          <button class="menubar-action" data-action="edit:delete">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </span>
+            <span class="action-label">Delete</span>
+            <kbd>Del</kbd>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="edit:select-all">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+            </span>
+            <span class="action-label">Select All</span>
+            <kbd>Ctrl+A</kbd>
+          </button>
+          <button class="menubar-action" data-action="edit:find">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <span class="action-label">Find / Spotlight Tool</span>
+            <kbd>Ctrl+F</kbd>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. View Menu -->
+      <div class="menubar-item" data-menu="view">
+        <button class="menubar-btn" id="menu-btn-view" aria-haspopup="true">View</button>
+        <div class="menubar-dropdown" id="dropdown-menu-view">
+          <button class="menubar-action" data-action="view:toggle-palette">
+            <span class="menu-check" id="check-view-palette">✓</span>
+            <span class="action-label">Tool Palette</span>
+            <kbd>Ctrl+Alt+T</kbd>
+          </button>
+          <button class="menubar-action" data-action="view:toggle-config">
+            <span class="menu-check" id="check-view-config">✓</span>
+            <span class="action-label">Configuration Panel</span>
+            <kbd>Ctrl+Alt+C</kbd>
+          </button>
+          <button class="menubar-action" data-action="view:toggle-results">
+            <span class="menu-check" id="check-view-results">✓</span>
+            <span class="action-label">Results Window</span>
+            <kbd>Ctrl+Alt+R</kbd>
+          </button>
+          <button class="menubar-action" data-action="view:toggle-histograms">
+            <span class="menu-check" id="check-view-histograms">✓</span>
+            <span class="action-label">In-Grid Distribution Sparklines</span>
+          </button>
+          <button class="menubar-action" data-action="view:toggle-overview">
+            <span class="menu-check" id="check-view-overview">✓</span>
+            <span class="action-label">Overview Window (MiniMap)</span>
+            <kbd>Ctrl+Alt+O</kbd>
+          </button>
+          <button class="menubar-action" id="menu-wire-probe-status" data-action="view:toggle-wire-probes">
+            <span class="menu-check" id="check-view-wire-probes">✓</span>
+            <span class="action-label">Wire Data Probes</span>
+            <kbd>Ctrl+Alt+W</kbd>
+          </button>
+          <div class="menubar-divider"></div>
+          <div class="menubar-submenu-wrapper">
+            <div class="menubar-action menu-has-submenu">
+              <span class="action-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+              <span class="action-label">Execution Status Badges</span>
+              <span class="action-chevron">▶</span>
+            </div>
+            <div class="menubar-submenu" id="menu-badge-duration-list">
+              <button class="menubar-action" data-action="view:badge-duration:3000">
+                <span class="menu-check" id="check-badge-3000">✓</span>
+                <span class="action-label">Auto-hide after 3s (Default)</span>
+              </button>
+              <button class="menubar-action" data-action="view:badge-duration:5000">
+                <span class="menu-check" id="check-badge-5000"></span>
+                <span class="action-label">Auto-hide after 5s</span>
+              </button>
+              <button class="menubar-action" data-action="view:badge-duration:10000">
+                <span class="menu-check" id="check-badge-10000"></span>
+                <span class="action-label">Auto-hide after 10s</span>
+              </button>
+              <button class="menubar-action" data-action="view:badge-duration:always">
+                <span class="menu-check" id="check-badge-always"></span>
+                <span class="action-label">Always Show</span>
+              </button>
+              <button class="menubar-action" data-action="view:badge-duration:off">
+                <span class="menu-check" id="check-badge-off"></span>
+                <span class="action-label">Off (Hidden)</span>
+              </button>
+            </div>
+          </div>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="view:zoom-in">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </span>
+            <span class="action-label">Zoom In</span>
+            <kbd>Ctrl++</kbd>
+          </button>
+          <button class="menubar-action" data-action="view:zoom-out">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </span>
+            <span class="action-label">Zoom Out</span>
+            <kbd>Ctrl+-</kbd>
+          </button>
+          <button class="menubar-action" data-action="view:zoom-reset">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </span>
+            <span class="action-label">Actual Size (100%)</span>
+            <kbd>Ctrl+0</kbd>
+          </button>
+          <button class="menubar-action" data-action="view:autolayout">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </span>
+            <span class="action-label">Align Flow</span>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="view:reset-panels">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
+            </span>
+            <span class="action-label">Reset Panels Layout</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. Options Menu -->
+      <div class="menubar-item" data-menu="options">
+        <button class="menubar-btn" id="menu-btn-options" aria-haspopup="true">Options</button>
+        <div class="menubar-dropdown" id="dropdown-menu-options">
+          <button class="menubar-action" data-action="options:dependencies">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            </span>
+            <span class="action-label">Workflow Dependencies / Assets...</span>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="options:user-settings">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </span>
+            <span class="action-label">User Settings...</span>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="options:purge-cache">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </span>
+            <span class="action-label">Purge Engine Cache & Memory</span>
+            <kbd>Ctrl+Shift+Del</kbd>
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. Help Menu -->
+      <div class="menubar-item" data-menu="help">
+        <button class="menubar-btn" id="menu-btn-help" aria-haspopup="true">Help</button>
+        <div class="menubar-dropdown" id="dropdown-menu-help">
+          <button class="menubar-action" data-action="help:shortcuts">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="6" y1="16" x2="18" y2="16"></line></svg>
+            </span>
+            <span class="action-label">Keyboard Shortcuts Cheat Sheet</span>
+            <kbd>F1</kbd>
+          </button>
+          <button class="menubar-action" data-action="help:templates">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>
+            <span class="action-label">Workflow Templates...</span>
+          </button>
+          <div class="menubar-divider"></div>
+          <button class="menubar-action" data-action="help:about">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </span>
+            <span class="action-label">About Antigravity DataFlow</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Top Navigation & Global Toolbar -->
+  <header id="top-bar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">DataFlow</span>
+        <span class="brand-badge">Local App</span>
+      </div>
+    </div>
+
+    <div class="workflow-meta">
+      <input type="text" id="workflow-name-input" value="Customer Sales Analysis" spellcheck="false" title="Click to rename workflow">
+      <span id="workflow-dirty-badge" class="dirty-badge is-clean" title="Workflow saved">✓ Saved</span>
+    </div>
+
+
+    <div class="top-actions">
+      <!-- Run & Stop Workflow Control Group -->
+      <div class="run-stop-control-group">
+        <button id="btn-run" class="btn btn-primary btn-run-workflow" title="Run entire workflow (Ctrl + Enter)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Run Workflow</span>
+          <kbd>Ctrl+Enter</kbd>
+        </button>
+        <button id="btn-stop" class="btn btn-stop-workflow" title="Cancel / Stop running workflow (Esc)" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+          </svg>
+          <span>Stop</span>
+          <kbd>Esc</kbd>
+        </button>
+      </div>
+
+      <!-- Undo / Redo Buttons -->
+      <button id="btn-undo" class="btn-icon" title="Undo (Ctrl+Z)" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v6h6"></path>
+          <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+        </svg>
+      </button>
+      <button id="btn-redo" class="btn-icon" title="Redo (Ctrl+Y)" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 7v6h-6"></path>
+          <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
+        </svg>
+      </button>
+
+      <div class="action-divider"></div>
+
+      <!-- Template Library Button -->
+      <button id="btn-templates" class="btn btn-secondary" title="Browse and load pre-built workflow templates">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Templates</span>
+      </button>
+
+      <!-- SQL Export Button -->
+      <button id="btn-top-export-sql" class="btn btn-secondary" title="Export workflow as SQL script (Ctrl+Shift+E)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </svg>
+        <span>SQL</span>
+      </button>
+
+      <!-- Save / Load -->
+      <button id="btn-save" class="btn btn-secondary" title="Save workflow to local project and download copy (Ctrl+S)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span>Save</span>
+      </button>
+
+      <!-- Open Workflow Split Button -->
+      <div class="dropdown-wrapper" style="display: inline-flex; align-items: stretch;">
+        <button id="btn-open-direct" class="btn btn-secondary" title="Open workflow with Windows Explorer (Ctrl+O)" style="border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>Open</span>
+        </button>
+        <button id="btn-open-menu" class="btn btn-secondary" title="Recent workflows & open options" style="border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 1px solid rgba(255,255,255,0.15); padding-left: 5px; padding-right: 7px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div id="open-menu" class="dropdown-menu">
+          <button id="btn-load-file" class="dropdown-item">
+            <span class="dropdown-item-title" style="display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              Open File (Windows Explorer)...
+            </span>
+            <span class="dropdown-item-sub">Navigate and select workflow file via Windows Explorer</span>
+          </button>
+          <button id="btn-load-package" class="dropdown-item" style="border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px;">
+            <span class="dropdown-item-title" style="display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+              Import Workflow Package (.zip)...
+            </span>
+            <span class="dropdown-item-sub">Unpack and load workflow with bundled data assets</span>
+          </button>
+          <div class="dropdown-header">Saved Workflows</div>
+          <div id="saved-workflows-list"></div>
+        </div>
+      </div>
+      <input type="file" id="input-workflow-file" accept=".json,.yxmd,.zip,.yxzp" style="display: none;">
+      <input type="file" id="input-package-file" accept=".zip,.yxzp" style="display: none;">
+
+
+      <!-- Auto Layout / Align Flow -->
+      <button id="btn-autolayout" class="btn btn-secondary" title="Auto-align tools cleanly from left to right">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>Align Flow</span>
+      </button>
+
+      <!-- Clear Canvas -->
+      <button id="btn-clear" class="btn btn-ghost" title="Clear all nodes and wires">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+
+      <div class="action-divider"></div>
+
+      <!-- Canvas Zoom Controls -->
+      <div class="zoom-controls">
+        <button id="btn-zoom-out" class="btn-icon" title="Zoom Out (-)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <span id="zoom-level-text">100%</span>
+        <button id="btn-zoom-in" class="btn-icon" title="Zoom In (+)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button id="btn-zoom-reset" class="btn-icon" title="Reset Zoom (1:1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Theme Switcher (Alteryx Light / Modern Dark) -->
+      <button id="btn-theme-toggle" class="btn-theme-toggle" title="Toggle Theme (Dark / Light Mode)">
+        <span class="theme-icon-wrap">
+          <svg id="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg id="theme-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </span>
+        <span id="theme-toggle-label">Dark Mode</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Tool Palette Ribbon (Categorized Tool Strip) -->
+  <nav id="tool-palette-ribbon">
+    <div class="palette-categories">
+      <button class="cat-tab active" data-category="all">All Tools</button>
+      <button class="cat-tab in_out-tab" data-category="in_out">In / Out</button>
+      <button class="cat-tab preparation-tab" data-category="preparation">Preparation</button>
+      <button class="cat-tab join-tab" data-category="join">Join</button>
+      <button class="cat-tab transform-tab" data-category="transform">Transform</button>
+      <button class="cat-tab parse-tab" data-category="parse">Parse</button>
+      <button class="cat-tab ai-tab" data-category="ai" style="border-left: 2px solid #8b5cf6;">AI / LLM</button>
+      <button class="cat-tab documentation-tab" data-category="documentation">Documentation</button>
+    </div>
+
+    <div class="palette-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" id="tool-search-input" placeholder="Search tools..." spellcheck="false">
+    </div>
+
+    <!-- Scrollable Tools List -->
+    <div id="tools-container" class="tools-container"></div>
+  </nav>
+  
+  <!-- Resizer Divider (Top Palette <-> Canvas / Main Area) -->
+  <div id="resizer-top" class="resizer-horizontal"></div>
+
+  <!-- Main Work Area -->
+  <main id="main-area">
+    <!-- Left: Dynamic Configuration Panel -->
+    <aside id="config-panel" class="panel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <span id="config-tool-icon" class="tool-icon-mini"></span>
+          <h2 id="config-tool-title">Configuration</h2>
+        </div>
+        <div class="panel-header-actions">
+          <span id="config-tool-category" class="cat-badge"></span>
+        </div>
+      </div>
+      <div id="config-content" class="panel-body">
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <p>Select a tool on the canvas to configure its settings.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Resizer Divider (Left Config <-> Canvas) -->
+    <div id="resizer-left" class="resizer-vertical"></div>
+
+    <!-- Center: Interactive Drag-and-Drop Canvas -->
+    <section id="canvas-container">
+      <div id="canvas-wrapper">
+        <!-- SVG Layer for Bezier Connections -->
+        <svg id="canvas-svg" class="canvas-svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"></path>
+            </marker>
+            <marker id="arrow-selected" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"></path>
+            </marker>
+          </defs>
+          <g id="wires-group"></g>
+          <path id="temp-wire" class="wire temp-wire" d=""></path>
+        </svg>
+
+        <!-- HTML Containers Layer (Below nodes) -->
+        <div id="containers-layer"></div>
+
+        <!-- HTML Comments Layer -->
+        <div id="comments-layer"></div>
+
+        <!-- HTML Nodes Layer -->
+        <div id="nodes-layer"></div>
+      </div>
+
+      <!-- Canvas Dropzone Overlay for CSV / Excel Drag & Drop -->
+      <div id="canvas-dropzone-overlay" class="canvas-dropzone-overlay" style="display: none;">
+        <div class="dropzone-card">
+          <div class="dropzone-icon">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div class="dropzone-title">Drop CSV or Excel Files to Import</div>
+          <div class="dropzone-subtitle">Drop anywhere on canvas to create Input Data tools</div>
+          <div class="dropzone-badges">
+            <span class="dropzone-badge">.CSV</span>
+            <span class="dropzone-badge">.XLSX</span>
+            <span class="dropzone-badge">.XLS</span>
+            <span class="dropzone-badge">.TSV</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Hint Badge -->
+      <div class="canvas-overlay-hint">
+        <span>Drag tools from top palette &bull; Connect output ports to inputs &bull; Press <b>Ctrl+Enter</b> to run</span>
+      </div>
+
+      <!-- Canvas Overview MiniMap Navigator -->
+      <div id="canvas-overview-navigator" class="canvas-overview-navigator" role="region" aria-label="Workflow Overview Navigator">
+        <div class="overview-header" id="overview-header">
+          <div class="overview-title-group">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+            <span>Overview</span>
+          </div>
+          <div class="overview-actions">
+            <button id="btn-overview-toggle" class="overview-btn" title="Minimize / Restore Overview">−</button>
+            <button id="btn-overview-close" class="overview-btn" title="Close Overview Window">✕</button>
+          </div>
+        </div>
+        <div class="overview-body" id="overview-body">
+          <canvas id="overview-canvas" class="overview-canvas" width="220" height="140"></canvas>
+          <div id="overview-viewport-box" class="overview-viewport-box" title="Drag to pan canvas"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Resizer Divider (Main Area <-> Results Panel) -->
+  <div id="resizer-bottom" class="resizer-horizontal"></div>
+
+  <!-- Bottom: Results & Data Profiling Panel (Alteryx-style) -->
+  <footer id="results-panel" class="panel">
+    <div class="results-header">
+      <div class="results-title-group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+        <span class="results-title">Results</span>
+        <span id="results-node-badge" class="node-badge-label">No tool selected</span>
+
+        <!-- Output Port Switcher Tabs (e.g. T/F or J/L/R) -->
+        <div id="results-port-tabs" class="port-tabs"></div>
+      </div>
+
+      <div class="results-nav-tabs">
+        <button class="results-tab active" data-tab="data-view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          Data View
+        </button>
+        <button class="results-tab" data-tab="profile-view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+          Metadata & Profiler
+        </button>
+        <button class="results-tab" data-tab="chart-view" id="tab-btn-chart">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Interactive Charts
+        </button>
+        <button class="results-tab" data-tab="messages-view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Messages & Log
+          <span id="messages-count-pill" class="badge-pill">0</span>
+        </button>
+      </div>
+
+      <div class="results-actions">
+        <div id="results-record-count" class="records-summary">0 records</div>
+
+        <div class="export-dropdown-wrapper">
+          <button id="btn-export-dropdown" class="btn btn-secondary btn-sm" title="Export data from this tool">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Export</span>
+          </button>
+          <div id="export-menu" class="dropdown-menu dropdown-menu-right">
+            <button id="btn-export-csv" class="dropdown-item">Export to CSV</button>
+            <button id="btn-export-excel" class="dropdown-item">Export to Excel (.xlsx)</button>
+          </div>
+        </div>
+
+        <button id="btn-toggle-results" class="btn-icon btn-sm" title="Toggle collapse/expand">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="results-body">
+      <!-- 1. Data View Tab -->
+      <div id="tab-data-view" class="tab-pane active">
+        <div class="table-toolbar">
+          <div class="table-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="grid-search-input" placeholder="Search rows in view..." spellcheck="false">
+          </div>
+          <div class="table-view-options">
+            <button id="btn-toggle-histograms" class="btn btn-ghost btn-sm active" title="Toggle in-grid column distribution histograms">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="8"></rect><rect x="10" y="8" width="4" height="12"></rect><rect x="17" y="4" width="4" height="16"></rect></svg>
+              <span>Histograms</span>
+            </button>
+            <button id="btn-toggle-columns" class="btn btn-ghost btn-sm" title="Show/hide columns and optimize grid layout">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7m0-18H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7m0-18v18"></path>
+              </svg>
+              <span id="columns-btn-label">Columns</span>
+            </button>
+          </div>
+          <div class="pagination-controls">
+            <button id="btn-copy-table" class="btn btn-ghost btn-sm" title="Copy current table data to clipboard as TSV">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+            <button id="btn-page-prev" class="btn-icon btn-sm" title="Previous page">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span id="pagination-text" class="page-text">Page 1 of 1</span>
+            <button id="btn-page-next" class="btn-icon btn-sm" title="Next page">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
+        <div id="partial-results-banner" class="partial-results-banner" style="display: none;"></div>
+        <div id="grid-wrapper" class="grid-table-container">
+          <div class="results-empty-msg">Run the workflow and click a node to view intermediate records.</div>
+        </div>
+      </div>
+
+      <!-- 2. Profiler View Tab -->
+      <div id="tab-profile-view" class="tab-pane">
+        <div id="profiler-container" class="profiler-cards-container">
+          <div class="results-empty-msg">Select a completed tool to inspect column distributions and statistics.</div>
+        </div>
+      </div>
+
+      <!-- 3. Interactive Chart View Tab -->
+      <div id="tab-chart-view" class="tab-pane">
+        <div class="chart-builder-container">
+          <div class="chart-toolbar">
+            <div class="chart-config-group">
+              <label for="chart-type-select">Type:</label>
+              <select id="chart-type-select" class="form-control form-control-sm">
+                <option value="bar">📊 Bar Chart</option>
+                <option value="line">📈 Line Chart</option>
+                <option value="scatter">🔵 Scatter Plot</option>
+                <option value="histogram">📶 Distribution Histogram</option>
+                <option value="donut">🍩 Donut Chart</option>
+              </select>
+            </div>
+
+            <div class="chart-config-group" id="chart-x-group">
+              <label for="chart-x-select">X Axis:</label>
+              <select id="chart-x-select" class="form-control form-control-sm"></select>
+            </div>
+
+            <div class="chart-config-group" id="chart-y-group">
+              <label for="chart-y-select">Y Axis:</label>
+              <select id="chart-y-select" class="form-control form-control-sm"></select>
+            </div>
+
+            <div class="chart-config-group" id="chart-agg-group">
+              <label for="chart-agg-select">Agg:</label>
+              <select id="chart-agg-select" class="form-control form-control-sm">
+                <option value="count">Count Records</option>
+                <option value="sum" selected>Sum</option>
+                <option value="mean">Average (Mean)</option>
+                <option value="min">Min</option>
+                <option value="max">Max</option>
+              </select>
+            </div>
+
+            <div class="chart-actions-group">
+              <button id="btn-chart-export-png" class="btn btn-secondary btn-sm" title="Download Chart as PNG">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>PNG</span>
+              </button>
+              <button id="btn-chart-export-svg" class="btn btn-secondary btn-sm" title="Download Chart as SVG">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>SVG</span>
+              </button>
+              <button id="btn-chart-copy-clipboard" class="btn btn-ghost btn-sm" title="Copy Chart Image to Clipboard">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span>Copy</span>
+              </button>
+              <button id="btn-chart-export-csv" class="btn btn-ghost btn-sm" title="Export Aggregated Chart Data to CSV">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                <span>CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="chart-viewport" class="chart-viewport">
+            <div class="results-empty-msg">Select a completed tool to render an interactive chart.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Messages & Log Tab -->
+      <div id="tab-messages-view" class="tab-pane">
+        <div class="messages-toolbar">
+          <div class="messages-filter-group">
+            <button class="btn-filter-pill active" data-msg-filter="all">All (<span id="msg-filter-count-all">0</span>)</button>
+            <button class="btn-filter-pill filter-pill-error" data-msg-filter="error">Errors (<span id="msg-filter-count-error">0</span>)</button>
+            <button class="btn-filter-pill filter-pill-warning" data-msg-filter="warning">Warnings (<span id="msg-filter-count-warning">0</span>)</button>
+            <button class="btn-filter-pill filter-pill-info" data-msg-filter="info">Info (<span id="msg-filter-count-info">0</span>)</button>
+          </div>
+          <div class="messages-toolbar-actions">
+            <button id="btn-copy-messages" class="btn btn-ghost btn-sm" title="Copy messages log to clipboard">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy Log</span>
+            </button>
+            <button id="btn-clear-messages" class="btn btn-ghost btn-sm" title="Clear all messages">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
+        <div id="messages-log" class="execution-log-container">
+          <div class="results-empty-msg">DataFlow ready. Build your pipeline and press 'Run Workflow'.</div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Modals -->
+  <!-- 1. User Settings Modal -->
+  <div id="modal-user-settings" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-settings-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </span>
+          <h2 id="modal-settings-title">User Settings &amp; Preferences</h2>
+        </div>
+        <button class="modal-close-btn" data-close="modal-user-settings" title="Close (Esc)">✕</button>
+      </div>
+
+      <!-- Settings Tabs Header -->
+      <div class="settings-tabs-header">
+        <button type="button" class="settings-tab-btn active" data-settings-tab="tab-canvas-visuals">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          <span>Canvas &amp; Visuals</span>
+        </button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="tab-engine-memory">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+          <span>Engine &amp; Memory</span>
+        </button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="tab-appearance">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+          <span>Appearance</span>
+        </button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <!-- Tab 1: Canvas & Visuals -->
+        <div id="tab-canvas-visuals" class="settings-tab-pane active">
+          <div class="setting-group">
+            <label class="setting-checkbox-label">
+              <input type="checkbox" id="setting-wire-probes" class="setting-checkbox">
+              <div class="setting-text">
+                <span class="setting-title">Enable Connection Wire Data Probes</span>
+                <span class="setting-desc">Display interactive live data previews and record counts when hovering over connection wires on the canvas.</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="setting-group">
+            <label for="setting-grid-snap" class="setting-label">Canvas Grid Snapping</label>
+            <select id="setting-grid-snap" class="form-control">
+              <option value="16">16px Standard Grid Snap (Default - Alteryx Aligned)</option>
+              <option value="8">8px Fine Grid Snap (Compact Alignment)</option>
+              <option value="0">Disabled (Free placement / Smooth Drag)</option>
+            </select>
+            <span class="setting-desc">Snap tools, containers, and notes to canvas grid coordinates during placement and dragging.</span>
+          </div>
+
+          <div class="setting-group">
+            <label for="setting-wire-style" class="setting-label">Connection Wire Routing Style</label>
+            <select id="setting-wire-style" class="form-control">
+              <option value="bezier">Smooth Curved Bézier (Default)</option>
+              <option value="orthogonal">Orthogonal Stepped (Manhattan 90° Routing)</option>
+            </select>
+            <span class="setting-desc">Choose between flowing curves or structured rectilinear connection wires between tool ports.</span>
+          </div>
+
+          <div class="setting-group">
+            <label for="setting-node-badge-duration" class="setting-label">Node Execution Badges</label>
+            <select id="setting-node-badge-duration" class="form-control">
+              <option value="3000" selected>Auto-hide after 3 seconds (Default)</option>
+              <option value="5000">Auto-hide after 5 seconds</option>
+              <option value="10000">Auto-hide after 10 seconds</option>
+              <option value="always">Always Visible</option>
+              <option value="off">Off (Disabled / Hidden)</option>
+            </select>
+            <span class="setting-desc">Control how long the record count and processing time pill remains visible underneath each tool after workflow execution.</span>
+          </div>
+        </div>
+
+        <!-- Tab 2: Engine & Memory -->
+        <div id="tab-engine-memory" class="settings-tab-pane" style="display: none;">
+          <div class="setting-group">
+            <label for="setting-execution-engine" class="setting-label">Workflow Execution Engine</label>
+            <select id="setting-execution-engine" class="form-control">
+              <option value="amp" selected>AMP Engine (Multi-Threaded Parallel Processing) [Recommended]</option>
+              <option value="classic">Original Engine (Single-Threaded Sequential / Compatibility Mode)</option>
+            </select>
+            <span class="setting-desc">The AMP engine executes multiple inputs and independent pipeline branches concurrently across worker threads for maximum speed.</span>
+          </div>
+
+          <div class="setting-group" id="group-engine-threads">
+            <label for="setting-engine-threads" class="setting-label">AMP Parallel Worker Threads</label>
+            <select id="setting-engine-threads" class="form-control">
+              <option value="auto" selected>Auto-detect based on CPU cores (Default)</option>
+              <option value="2">2 Worker Threads</option>
+              <option value="4">4 Worker Threads</option>
+              <option value="8">8 Worker Threads</option>
+              <option value="16">16 Worker Threads</option>
+            </select>
+            <span class="setting-desc">Number of concurrent worker threads allocated for parallel tool execution.</span>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-checkbox-label">
+              <input type="checkbox" id="setting-auto-cache-upstream" class="setting-checkbox">
+              <div class="setting-text">
+                <span class="setting-title">Auto-Cache Upstream Dependency Tools</span>
+                <span class="setting-desc">Automatically cache outputs of upstream tools during workflow execution so subsequent runs skip reprocessing.</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="setting-group">
+            <label for="setting-page-size" class="setting-label">Default Results Page Size</label>
+            <select id="setting-page-size" class="form-control">
+              <option value="50">50 records per page</option>
+              <option value="100" selected>100 records per page (Default)</option>
+              <option value="250">250 records per page (High Density)</option>
+            </select>
+            <span class="setting-desc">Number of rows loaded per page in the bottom Results Data View table.</span>
+          </div>
+
+          <div class="setting-group">
+            <label for="setting-execution-timeout" class="setting-label">Workflow Execution Timeout Limit</label>
+            <select id="setting-execution-timeout" class="form-control">
+              <option value="30">30 seconds</option>
+              <option value="60" selected>60 seconds (Default)</option>
+              <option value="120">120 seconds (2 minutes)</option>
+              <option value="300">300 seconds (5 minutes)</option>
+            </select>
+            <span class="setting-desc">Maximum execution duration allowed for a workflow run before safety cancellation triggers.</span>
+          </div>
+        </div>
+
+        <!-- Tab 3: Appearance -->
+        <div id="tab-appearance" class="settings-tab-pane" style="display: none;">
+          <div class="setting-group">
+            <label for="setting-theme-select" class="setting-label">Application Color Theme</label>
+            <select id="setting-theme-select" class="form-control">
+              <option value="dark">Modern Dark Theme (Default)</option>
+              <option value="light">Alteryx Classic Light Theme</option>
+              <option value="high-contrast">High-Contrast Mode (Accessibility / Ultra-Contrast)</option>
+            </select>
+            <span class="setting-desc">Select your preferred appearance theme for the workbench canvas, tool glyphs, and panels.</span>
+          </div>
+
+          <div class="setting-group">
+            <label for="setting-ui-zoom" class="setting-label">UI Display Scale (Zoom)</label>
+            <select id="setting-ui-zoom" class="form-control">
+              <option value="0.75">75% (Compact)</option>
+              <option value="0.8">80%</option>
+              <option value="0.9">90%</option>
+              <option value="1.0" selected>100% (Default)</option>
+              <option value="1.1">110%</option>
+              <option value="1.25">125% (Large)</option>
+              <option value="1.5">150% (Extra Large)</option>
+              <option value="1.75">175%</option>
+              <option value="2.0">200%</option>
+            </select>
+            <span class="setting-desc">Adjust the overall user interface scale and text size. Keyboard shortcuts: <kbd>Ctrl</kbd> + <kbd>+</kbd> to enlarge, <kbd>Ctrl</kbd> + <kbd>-</kbd> to reduce, <kbd>Ctrl</kbd> + <kbd>0</kbd> to reset.</span>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-checkbox-label">
+              <input type="checkbox" id="setting-in-grid-histograms" class="setting-checkbox">
+              <div class="setting-text">
+                <span class="setting-title">In-Grid Distribution Sparklines</span>
+                <span class="setting-desc">Render miniature data distribution histograms in column headers within the Results data table.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="modal-user-settings">Cancel</button>
+        <button id="btn-save-settings" class="btn btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Keyboard Shortcuts Modal -->
+  <div id="modal-shortcuts" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-shortcuts-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="6" y1="16" x2="18" y2="16"></line></svg>
+          </span>
+          <h2 id="modal-shortcuts-title">Keyboard Shortcuts Cheat Sheet</h2>
+        </div>
+        <button class="modal-close-btn" data-close="modal-shortcuts" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body shortcuts-body">
+        <div class="shortcuts-grid">
+          <div class="shortcuts-section">
+            <h3 class="shortcuts-heading">Workflow &amp; Execution</h3>
+            <div class="shortcut-row"><span class="shortcut-desc">Run Workflow</span><kbd>Ctrl+Enter</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">New Blank Workflow</span><kbd>Ctrl+N</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Open Workflow</span><kbd>Ctrl+O</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Save Workflow</span><kbd>Ctrl+S</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Save As...</span><kbd>Ctrl+Shift+S</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Cancel / Stop Run</span><kbd>Esc</kbd></div>
+          </div>
+
+          <div class="shortcuts-section">
+            <h3 class="shortcuts-heading">Canvas &amp; Editing</h3>
+            <div class="shortcut-row"><span class="shortcut-desc">Undo / Redo</span><div class="kbds"><kbd>Ctrl+Z</kbd><kbd>Ctrl+Y</kbd></div></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Cut Nodes</span><kbd>Ctrl+X</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Copy Nodes</span><kbd>Ctrl+C</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Paste Nodes</span><kbd>Ctrl+V</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Duplicate Nodes</span><kbd>Ctrl+D</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Delete Selected</span><kbd>Del</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Select All</span><kbd>Ctrl+A</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Spotlight Tool Search</span><kbd>Ctrl+F</kbd></div>
+          </div>
+
+          <div class="shortcuts-section">
+            <h3 class="shortcuts-heading">View &amp; Panels</h3>
+            <div class="shortcut-row"><span class="shortcut-desc">Toggle Tool Palette</span><kbd>Ctrl+Alt+T</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Toggle Configuration</span><kbd>Ctrl+Alt+C</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Toggle Results Window</span><kbd>Ctrl+Alt+R</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Zoom In / Out</span><div class="kbds"><kbd>Ctrl++</kbd><kbd>Ctrl+-</kbd></div></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Actual Size (100%)</span><kbd>Ctrl+0</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Pan Canvas</span><kbd>Space + Drag</kbd></div>
+            <div class="shortcut-row"><span class="shortcut-desc">Shortcuts Help</span><kbd>F1</kbd></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="modal-shortcuts">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. About Dialog Modal -->
+  <div id="modal-about" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-about-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="brand-icon" style="width: 26px; height: 26px; border-radius: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
+          <h2 id="modal-about-title">About Antigravity DataFlow</h2>
+        </div>
+        <button class="modal-close-btn" data-close="modal-about" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body about-body">
+        <div class="about-hero">
+          <h3 class="about-app-name">Antigravity DataFlow</h3>
+          <p class="about-version">Version 2.0.0 &bull; Desktop Visual ETL Designer</p>
+        </div>
+        <p class="about-desc">
+          An authentic, ultra-fast visual data prep and ETL studio inspired by Alteryx Designer.
+          Built for local data processing with zero cloud lock-in.
+        </p>
+        <div class="about-specs">
+          <div class="spec-item">
+            <span class="spec-label">Execution Engine</span>
+            <span class="spec-val">Python 3 &bull; Vectorized Pandas</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Canvas Renderer</span>
+            <span class="spec-val">HTML5 High-DPI Canvas &amp; SVG</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Architecture</span>
+            <span class="spec-val">Single Executable Desktop App</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Status</span>
+            <span class="spec-val">Local System Active</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" data-close="modal-about">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Excel Sheet Selection Modal (Alteryx Parity & Multi-Sheet Import) -->
+  <div id="modal-excel-sheet" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-excel-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="excel-modal-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="3" y1="15" x2="21" y2="15"></line>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 id="modal-excel-title" class="modal-title">Select Excel Sheet / Table</h3>
+            <p id="excel-modal-filename" class="modal-subtitle">Choose worksheet to import into your workflow</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close="modal-excel-sheet" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="form-hint" style="margin-bottom: 12px;">This workbook contains multiple worksheets. Choose a sheet to import, or import all sheets simultaneously.</p>
+        <div id="excel-sheet-list" class="excel-sheet-list">
+          <!-- Populated dynamically with sheets -->
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-secondary" id="btn-excel-import-all" title="Creates a separate Input Data tool for each sheet in this workbook">
+          📦 Import All Sheets
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" data-close="modal-excel-sheet">Cancel</button>
+          <button class="btn btn-primary" id="btn-excel-confirm-sheet">Import Selected Sheet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Workflow Dependencies & Asset Manager Modal (Alteryx Parity) -->
+  <div id="modal-workflow-deps" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-deps-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon" style="background: rgba(14, 165, 233, 0.15); color: #0284c7;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          </span>
+          <div>
+            <h2 id="modal-deps-title" style="margin: 0; font-size: 15px; font-weight: 600;">Workflow Dependencies &amp; Asset Manager</h2>
+            <p class="modal-subtitle" style="margin: 2px 0 0; font-size: 11px; color: var(--text-secondary);">Manage external dataset references, verify file integrity, and resolve broken file paths</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close="modal-workflow-deps" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <div id="deps-summary-banner" class="deps-summary-banner" style="margin-bottom: 12px; padding: 10px 14px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;"></div>
+        <div class="deps-table-wrapper" style="max-height: 340px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px;">
+          <table class="deps-table" style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+            <thead>
+              <tr style="background: var(--bg-hover); border-bottom: 1px solid var(--border-subtle); text-align: left;">
+                <th style="padding: 8px 12px;">Tool</th>
+                <th style="padding: 8px 12px;">Role</th>
+                <th style="padding: 8px 12px;">Asset Path</th>
+                <th style="padding: 8px 12px;">Size</th>
+                <th style="padding: 8px 12px;">Status</th>
+                <th style="padding: 8px 12px; text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="deps-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-secondary" id="btn-deps-export-package" title="Bundle all referenced datasets into a portable .zip archive">
+          📦 Export Workflow Package (.zip)
+        </button>
+        <button class="btn btn-primary" data-close="modal-workflow-deps">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Version History & Backups Modal -->
+  <div id="modal-workflow-revisions" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-rev-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          </span>
+          <div>
+            <h2 id="modal-rev-title" style="margin: 0; font-size: 15px; font-weight: 600;">Version History &amp; Revisions</h2>
+            <p class="modal-subtitle" style="margin: 2px 0 0; font-size: 11px; color: var(--text-secondary);">Browse historical snapshots and restore previous revisions of this workflow</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close="modal-workflow-revisions" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <div id="revisions-list-container" class="revisions-list-container" style="max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="modal-workflow-revisions">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Workflow Properties & Metadata Modal -->
+  <div id="modal-workflow-props" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-props-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon" style="background: rgba(34, 197, 94, 0.15); color: #16a34a;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </span>
+          <div>
+            <h2 id="modal-props-title" style="margin: 0; font-size: 15px; font-weight: 600;">Workflow Properties &amp; Metadata</h2>
+            <p class="modal-subtitle" style="margin: 2px 0 0; font-size: 11px; color: var(--text-secondary);">Workflow documentation, author provenance, and runtime settings</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close="modal-workflow-props" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label style="font-size: 11px; font-weight: 600;">Workflow Name</label>
+          <input type="text" class="form-control form-control-sm" id="prop-wf-name">
+        </div>
+        <div class="form-row" style="margin-bottom: 10px;">
+          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 600;">Author</label>
+            <input type="text" class="form-control form-control-sm" id="prop-wf-author">
+          </div>
+          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 600;">Version</label>
+            <input type="text" class="form-control form-control-sm" id="prop-wf-version" value="2.1.0">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="font-size: 11px; font-weight: 600;">Description &amp; Purpose</label>
+          <textarea class="form-control form-control-sm" id="prop-wf-desc" rows="3" placeholder="Describe the business objective, transformation logic, or outputs of this workflow..."></textarea>
+        </div>
+
+        <div class="cfg-section-title" style="font-size: 11px; margin-bottom: 6px;">Canvas &amp; Graph Statistics</div>
+        <div id="prop-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 11px;">
+          <div class="prop-stat-box" style="padding: 8px; border-radius: 4px; background: var(--bg-hover); text-align: center;">
+            <div style="font-weight: 700; font-size: 15px; color: var(--color-primary);" id="stat-node-count">0</div>
+            <div style="color: var(--text-secondary); font-size: 10px;">Tools</div>
+          </div>
+          <div class="prop-stat-box" style="padding: 8px; border-radius: 4px; background: var(--bg-hover); text-align: center;">
+            <div style="font-weight: 700; font-size: 15px; color: var(--color-primary);" id="stat-conn-count">0</div>
+            <div style="color: var(--text-secondary); font-size: 10px;">Wires</div>
+          </div>
+          <div class="prop-stat-box" style="padding: 8px; border-radius: 4px; background: var(--bg-hover); text-align: center;">
+            <div style="font-weight: 700; font-size: 15px; color: var(--color-primary);" id="stat-viewport-zoom">100%</div>
+            <div style="color: var(--text-secondary); font-size: 10px;">Zoom Level</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-secondary" data-close="modal-workflow-props">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-workflow-props">Apply Properties</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Auto-Save Crash Recovery Modal -->
+  <div id="modal-workflow-recovery" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-recov-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </span>
+          <div>
+            <h2 id="modal-recov-title" style="margin: 0; font-size: 15px; font-weight: 600;">Unsaved Workflow Session Detected</h2>
+            <p class="modal-subtitle" style="margin: 2px 0 0; font-size: 11px; color: var(--text-secondary);">Crash recovery / auto-save backup found</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close="modal-workflow-recovery" title="Close (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <p style="font-size: 12px; margin-top: 0; line-height: 1.5; color: var(--text-primary);">
+          DataFlow detected an auto-saved workflow that was not saved before the previous session was closed:
+        </p>
+        <div id="recovery-details-card" style="padding: 12px; border-radius: 6px; background: var(--bg-hover); border: 1px solid var(--border-subtle); margin: 12px 0; font-size: 11.5px;">
+          <!-- Dynamically populated with recovery workflow stats -->
+        </div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 0;">
+          Restoring will load this snapshot onto your canvas. Discarding will permanently remove this auto-save.
+        </p>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-danger btn-sm" id="btn-discard-recovery">Discard Auto-Save</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" data-close="modal-workflow-recovery">Cancel</button>
+          <button class="btn btn-primary btn-sm" id="btn-apply-recovery">Restore Session</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Workflow-to-SQL Export Modal -->
+  <div id="modal-export-sql" class="app-modal" style="display: none;" role="dialog" aria-labelledby="modal-sql-title" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-xl" style="max-width: 950px; width: 92vw; height: 86vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+          </span>
+          <div>
+            <h2 id="modal-sql-title" style="margin: 0; font-size: 15px; font-weight: 600;">Export Workflow as SQL Script</h2>
+            <p class="modal-subtitle" style="margin: 2px 0 0; font-size: 11px; color: var(--text-secondary);">Compile visual DAG into executable Common Table Expressions (CTEs)</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close="modal-export-sql" title="Close (Esc)">✕</button>
+      </div>
+
+      <div class="sql-modal-toolbar" style="padding: 10px 16px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-hover); flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <label for="sql-dialect-select" style="font-size: 11.5px; font-weight: 600;">Dialect:</label>
+            <select id="sql-dialect-select" class="form-control form-control-sm" style="width: 175px; font-weight: 500; font-size: 11.5px;">
+              <option value="snowflake">Snowflake</option>
+              <option value="postgres">PostgreSQL</option>
+              <option value="duckdb">DuckDB</option>
+              <option value="bigquery">Google BigQuery</option>
+              <option value="sqlite">SQLite</option>
+              <option value="ansi" selected>ANSI SQL (Standard)</option>
+            </select>
+          </div>
+
+          <label style="display: flex; align-items: center; gap: 5px; font-size: 11.5px; cursor: pointer;">
+            <input type="checkbox" id="sql-opt-comments" checked>
+            <span>Include Comments</span>
+          </label>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="sql-tab-buttons" style="display: flex; background: var(--bg-canvas); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 2px;">
+            <button id="tab-btn-sql-script" class="btn btn-sm btn-ghost active" style="padding: 4px 12px; font-size: 11px; border-radius: 3px; font-weight: 600;">SQL Script</button>
+            <button id="tab-btn-sql-tables" class="btn btn-sm btn-ghost" style="padding: 4px 12px; font-size: 11px; border-radius: 3px; font-weight: 600;">Table Mappings</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-body" style="padding: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+        <!-- Tab 1: SQL Code Preview -->
+        <div id="tab-pane-sql-script" class="sql-tab-pane" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+          <div id="sql-stats-bar" style="padding: 6px 16px; background: rgba(0,0,0,0.18); font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle);">
+            <span id="sql-stats-summary"><strong style="color: var(--color-primary);">CTEs:</strong> Loading...</span>
+            <span id="sql-stats-terminal"><strong>Terminal Output:</strong> -</span>
+          </div>
+          <div class="sql-code-container" style="flex: 1; overflow: auto; background: var(--bg-canvas); position: relative; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; line-height: 1.6;">
+            <pre id="sql-code-pre" style="margin: 0; padding: 16px; min-height: 100%;"><code id="export-sql-code">-- Loading SQL script...</code></pre>
+          </div>
+        </div>
+
+        <!-- Tab 2: Table Mappings -->
+        <div id="tab-pane-sql-tables" class="sql-tab-pane" style="flex: 1; display: none; padding: 16px; overflow: auto;">
+          <p style="font-size: 12px; margin-top: 0; color: var(--text-secondary); line-height: 1.5;">
+            Map local CSV / Excel files from <strong>Input Data</strong> nodes to production database tables or views:
+          </p>
+          <div id="sql-table-mappings-list" style="margin-top: 10px;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border-subtle);">
+        <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;" id="sql-status-note">
+          <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22c55e;"></span>
+          <span>100% database pushdown compatible</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" data-close="modal-export-sql">Close</button>
+          <button class="btn btn-secondary btn-sm" id="btn-copy-sql" title="Copy SQL to clipboard">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span id="copy-sql-text">Copy SQL</span>
+          </button>
+          <button class="btn btn-primary btn-sm" id="btn-download-sql" title="Download .sql file">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download .sql</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Scripts -->
+  <script src="/static/js/user_settings.js"></script>
+  <script src="/static/js/core/event_bus.js"></script>
+  <script src="/static/js/core/history.js"></script>
+  <script src="/static/js/palette.js"></script>
+  <script src="/static/js/canvas.js"></script>
+  <script src="/static/js/file_explorer.js"></script>
+  <script src="/static/js/config_panel.js"></script>
+  <script src="/static/js/results_panel.js"></script>
+  <script src="/static/js/overview_minimap.js"></script>
+  <script src="/static/js/template_library.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/menu_bar.js"></script>
+</body>
+</html>

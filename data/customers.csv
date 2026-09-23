@@ -1,0 +1,1001 @@
+CustomerID,CustomerName,Email,Region,Segment,SignupDate
+CUST-0001,Patricia Smith,patricia.smith45@example.com,Europe,Consumer,2022-05-23
+CUST-0002,Patricia Moore,patricia.moore21@example.com,Middle East,Small Business,2022-02-02
+CUST-0003,James Williams,james.williams37@example.com,Europe,Corporate,2023-07-29
+CUST-0004,Michael Moore,michael.moore63@example.com,Europe,Small Business,2023-08-27
+CUST-0005,David Smith,david.smith30@example.com,Latin America,Home Office,2022-10-12
+CUST-0006,John Miller,john.miller53@example.com,North America,Corporate,2023-01-25
+CUST-0007,Patricia Lopez,patricia.lopez54@example.com,Middle East,Home Office,2024-04-06
+CUST-0008,Mary Anderson,mary.anderson78@example.com,North America,Small Business,2022-03-22
+CUST-0009,Sarah Martinez,sarah.martinez90@example.com,Middle East,Home Office,2023-08-15
+CUST-0010,Michael Williams,michael.williams15@example.com,Europe,Home Office,2022-03-23
+CUST-0011,Linda Brown,linda.brown58@example.com,Asia-Pacific,Small Business,2023-10-13
+CUST-0012,Barbara Garcia,barbara.garcia57@example.com,Asia-Pacific,Consumer,2023-11-18
+CUST-0013,David Williams,david.williams87@example.com,Europe,Consumer,2022-06-17
+CUST-0014,Joseph Gonzalez,joseph.gonzalez44@example.com,Middle East,Consumer,2023-12-03
+CUST-0015,William Johnson,william.johnson39@example.com,North America,Home Office,2023-02-15
+CUST-0016,David Williams,david.williams37@example.com,Middle East,Home Office,2022-08-06
+CUST-0017,Jessica Gonzalez,jessica.gonzalez92@example.com,Latin America,Consumer,2022-09-29
+CUST-0018,John Davis,john.davis81@example.com,Middle East,Home Office,2024-02-04
+CUST-0019,Charles Wilson,charles.wilson84@example.com,Latin America,Home Office,2022-08-13
+CUST-0020,John Taylor,john.taylor73@example.com,North America,Corporate,2024-05-31
+CUST-0021,Patricia Jones,patricia.jones90@example.com,Europe,Small Business,2023-09-03
+CUST-0022,Robert Gonzalez,robert.gonzalez58@example.com,Middle East,Small Business,2023-06-26
+CUST-0023,David Moore,david.moore11@example.com,North America,Home Office,2024-02-27
+CUST-0024,William Brown,william.brown47@example.com,Latin America,Consumer,2023-04-10
+CUST-0025,James Rodriguez,james.rodriguez74@example.com,Europe,Corporate,2024-06-10
+CUST-0026,Elizabeth Taylor,elizabeth.taylor87@example.com,Europe,Consumer,2023-01-18
+CUST-0027,Jennifer Moore,jennifer.moore77@example.com,North America,Home Office,2023-05-16
+CUST-0028,James Brown,james.brown56@example.com,Asia-Pacific,Consumer,2022-03-01
+CUST-0029,Linda Jackson,linda.jackson20@example.com,North America,Small Business,2024-04-15
+CUST-0030,Robert Moore,robert.moore26@example.com,Europe,Small Business,2023-07-17
+CUST-0031,Jennifer Rodriguez,jennifer.rodriguez77@example.com,Middle East,Small Business,2022-08-05
+CUST-0032,Sarah Miller,sarah.miller49@example.com,Latin America,Home Office,2023-03-25
+CUST-0033,Thomas Anderson,thomas.anderson25@example.com,Europe,Consumer,2022-03-07
+CUST-0034,William Smith,william.smith85@example.com,Middle East,Consumer,2023-08-26
+CUST-0035,Linda Smith,linda.smith19@example.com,North America,Consumer,2022-03-11
+CUST-0036,Mary Hernandez,mary.hernandez19@example.com,Middle East,Consumer,2022-10-13
+CUST-0037,Jessica Miller,jessica.miller79@example.com,Europe,Small Business,2022-09-06
+CUST-0038,Jessica Wilson,jessica.wilson34@example.com,North America,Corporate,2023-11-06
+CUST-0039,Susan Lopez,susan.lopez64@example.com,Latin America,Small Business,2024-06-03
+CUST-0040,Mary Brown,mary.brown17@example.com,Latin America,Home Office,2024-03-30
+CUST-0041,Patricia Davis,patricia.davis34@example.com,Europe,Small Business,2022-05-24
+CUST-0042,Susan Garcia,susan.garcia45@example.com,Latin America,Consumer,2024-06-14
+CUST-0043,Robert Anderson,robert.anderson80@example.com,North America,Corporate,2023-10-30
+CUST-0044,Sarah Smith,sarah.smith21@example.com,Europe,Consumer,2023-02-21
+CUST-0045,Jessica Thomas,jessica.thomas37@example.com,Latin America,Corporate,2022-06-18
+CUST-0046,Richard Smith,richard.smith59@example.com,Asia-Pacific,Small Business,2022-10-20
+CUST-0047,Susan Moore,susan.moore94@example.com,Latin America,Consumer,2022-07-14
+CUST-0048,Elizabeth Miller,elizabeth.miller17@example.com,Middle East,Corporate,2024-02-05
+CUST-0049,William Johnson,william.johnson16@example.com,Middle East,Small Business,2023-05-30
+CUST-0050,Thomas Garcia,thomas.garcia17@example.com,Middle East,Corporate,2024-05-21
+CUST-0051,Jennifer Williams,jennifer.williams86@example.com,North America,Consumer,2023-02-18
+CUST-0052,Patricia Jackson,patricia.jackson41@example.com,Middle East,Corporate,2023-09-27
+CUST-0053,Robert Wilson,robert.wilson94@example.com,Middle East,Home Office,2022-09-25
+CUST-0054,Michael Hernandez,michael.hernandez40@example.com,Asia-Pacific,Small Business,2022-05-15
+CUST-0055,Elizabeth Anderson,elizabeth.anderson50@example.com,North America,Corporate,2023-04-15
+CUST-0056,Karen Jackson,karen.jackson22@example.com,North America,Consumer,2023-06-03
+CUST-0057,David Jones,david.jones54@example.com,North America,Consumer,2023-01-14
+CUST-0058,Elizabeth Garcia,elizabeth.garcia66@example.com,Middle East,Home Office,2023-09-19
+CUST-0059,Thomas Smith,thomas.smith95@example.com,Middle East,Home Office,2023-11-11
+CUST-0060,Patricia Jones,patricia.jones43@example.com,North America,Corporate,2024-01-31
+CUST-0061,Sarah Jones,sarah.jones44@example.com,Asia-Pacific,Consumer,2024-01-05
+CUST-0062,William Miller,william.miller97@example.com,Asia-Pacific,Small Business,2022-09-15
+CUST-0063,Mary Williams,mary.williams91@example.com,Latin America,Home Office,2022-02-15
+CUST-0064,James Hernandez,james.hernandez26@example.com,Asia-Pacific,Consumer,2024-01-30
+CUST-0065,Joseph Moore,joseph.moore64@example.com,Middle East,Corporate,2022-04-25
+CUST-0066,Robert Jones,robert.jones79@example.com,North America,Home Office,2023-08-20
+CUST-0067,Sarah Jones,sarah.jones65@example.com,Europe,Corporate,2022-11-12
+CUST-0068,Barbara Johnson,barbara.johnson55@example.com,Europe,Consumer,2023-11-14
+CUST-0069,Patricia Lopez,patricia.lopez81@example.com,Latin America,Consumer,2022-08-31
+CUST-0070,Jennifer Garcia,jennifer.garcia62@example.com,North America,Consumer,2024-01-25
+CUST-0071,William Wilson,william.wilson95@example.com,Europe,Home Office,2022-06-13
+CUST-0072,Patricia Gonzalez,patricia.gonzalez14@example.com,Latin America,Consumer,2022-07-24
+CUST-0073,Joseph Lopez,joseph.lopez49@example.com,Europe,Consumer,2022-01-25
+CUST-0074,Michael Gonzalez,michael.gonzalez52@example.com,Asia-Pacific,Corporate,2024-03-02
+CUST-0075,David Lopez,david.lopez92@example.com,Middle East,Small Business,2023-11-27
+CUST-0076,Sarah Hernandez,sarah.hernandez13@example.com,North America,Home Office,2022-07-02
+CUST-0077,Charles Rodriguez,charles.rodriguez14@example.com,North America,Small Business,2022-12-20
+CUST-0078,William Wilson,william.wilson87@example.com,Middle East,Corporate,2023-01-30
+CUST-0079,Charles Miller,charles.miller42@example.com,North America,Small Business,2022-01-02
+CUST-0080,Thomas Moore,thomas.moore97@example.com,Europe,Home Office,2023-03-18
+CUST-0081,Robert Hernandez,robert.hernandez89@example.com,Asia-Pacific,Corporate,2024-01-08
+CUST-0082,Elizabeth Taylor,elizabeth.taylor49@example.com,Latin America,Home Office,2023-02-17
+CUST-0083,Elizabeth Moore,elizabeth.moore26@example.com,Europe,Small Business,2023-11-12
+CUST-0084,Richard Garcia,richard.garcia88@example.com,Middle East,Home Office,2023-02-20
+CUST-0085,Sarah Smith,sarah.smith48@example.com,Asia-Pacific,Consumer,2023-03-17
+CUST-0086,Charles Martin,charles.martin93@example.com,Asia-Pacific,Small Business,2023-03-29
+CUST-0087,Joseph Miller,joseph.miller75@example.com,Latin America,Consumer,2023-11-06
+CUST-0088,Robert Martinez,robert.martinez75@example.com,Middle East,Home Office,2022-04-06
+CUST-0089,Linda Martinez,linda.martinez38@example.com,Europe,Consumer,2022-01-26
+CUST-0090,Mary Davis,mary.davis70@example.com,Middle East,Corporate,2023-04-12
+CUST-0091,Susan Jackson,susan.jackson34@example.com,Latin America,Small Business,2023-02-14
+CUST-0092,Linda Jones,linda.jones93@example.com,North America,Corporate,2024-03-08
+CUST-0093,Susan Davis,susan.davis32@example.com,Middle East,Small Business,2022-02-21
+CUST-0094,Sarah Davis,sarah.davis25@example.com,Latin America,Consumer,2024-03-31
+CUST-0095,Joseph Taylor,joseph.taylor81@example.com,Middle East,Home Office,2024-02-13
+CUST-0096,Joseph Martin,joseph.martin74@example.com,Latin America,Small Business,2022-06-12
+CUST-0097,Jessica Anderson,jessica.anderson43@example.com,Europe,Home Office,2024-02-24
+CUST-0098,Thomas Thomas,thomas.thomas90@example.com,Europe,Home Office,2023-03-27
+CUST-0099,Robert Martinez,robert.martinez40@example.com,Asia-Pacific,Home Office,2022-11-24
+CUST-0100,Sarah Williams,sarah.williams27@example.com,Europe,Consumer,2023-01-28
+CUST-0101,John Miller,john.miller18@example.com,Latin America,Small Business,2022-12-05
+CUST-0102,Sarah Anderson,sarah.anderson63@example.com,North America,Consumer,2024-05-02
+CUST-0103,Susan Gonzalez,susan.gonzalez84@example.com,North America,Small Business,2023-05-04
+CUST-0104,James Lopez,james.lopez48@example.com,Latin America,Small Business,2023-07-06
+CUST-0105,Sarah Martin,sarah.martin38@example.com,Latin America,Consumer,2022-10-07
+CUST-0106,Susan Thomas,susan.thomas13@example.com,Latin America,Home Office,2023-11-16
+CUST-0107,Richard Garcia,richard.garcia69@example.com,Europe,Corporate,2023-02-08
+CUST-0108,Charles Jackson,charles.jackson94@example.com,North America,Corporate,2023-10-21
+CUST-0109,Susan Jones,susan.jones69@example.com,Europe,Corporate,2022-09-24
+CUST-0110,Richard Hernandez,richard.hernandez37@example.com,Latin America,Home Office,2022-12-12
+CUST-0111,Richard Rodriguez,richard.rodriguez63@example.com,Asia-Pacific,Corporate,2023-04-27
+CUST-0112,James Moore,james.moore16@example.com,Asia-Pacific,Consumer,2023-10-28
+CUST-0113,Robert Johnson,robert.johnson13@example.com,Europe,Consumer,2024-05-09
+CUST-0114,James Martin,james.martin29@example.com,Europe,Consumer,2023-04-30
+CUST-0115,Patricia Jackson,patricia.jackson37@example.com,Latin America,Home Office,2024-02-25
+CUST-0116,Barbara Garcia,barbara.garcia87@example.com,Middle East,Corporate,2024-03-07
+CUST-0117,Jennifer Martinez,jennifer.martinez23@example.com,Middle East,Corporate,2022-11-16
+CUST-0118,Charles Gonzalez,charles.gonzalez60@example.com,Europe,Corporate,2023-08-30
+CUST-0119,Linda Brown,linda.brown99@example.com,Asia-Pacific,Corporate,2024-03-26
+CUST-0120,Charles Johnson,charles.johnson54@example.com,Middle East,Small Business,2023-11-09
+CUST-0121,Barbara Williams,barbara.williams74@example.com,Asia-Pacific,Corporate,2024-05-19
+CUST-0122,Susan Thomas,susan.thomas23@example.com,Latin America,Home Office,2023-10-13
+CUST-0123,Joseph Jones,joseph.jones65@example.com,Europe,Home Office,2023-09-23
+CUST-0124,Sarah Thomas,sarah.thomas69@example.com,Latin America,Home Office,2022-11-27
+CUST-0125,Linda Williams,linda.williams45@example.com,Latin America,Consumer,2024-02-08
+CUST-0126,Joseph Jackson,joseph.jackson88@example.com,Latin America,Home Office,2022-01-30
+CUST-0127,Jessica Hernandez,jessica.hernandez33@example.com,Latin America,Consumer,2022-12-30
+CUST-0128,David Hernandez,david.hernandez45@example.com,Middle East,Home Office,2023-07-24
+CUST-0129,James Taylor,james.taylor34@example.com,North America,Consumer,2024-01-08
+CUST-0130,Susan Thomas,susan.thomas81@example.com,Europe,Small Business,2023-10-24
+CUST-0131,Jessica Anderson,jessica.anderson12@example.com,North America,Home Office,2022-08-15
+CUST-0132,Richard Davis,richard.davis49@example.com,Middle East,Home Office,2023-04-30
+CUST-0133,Sarah Taylor,sarah.taylor54@example.com,Latin America,Home Office,2022-12-27
+CUST-0134,Joseph Rodriguez,joseph.rodriguez49@example.com,Asia-Pacific,Consumer,2022-05-04
+CUST-0135,Michael Hernandez,michael.hernandez25@example.com,Middle East,Consumer,2022-07-16
+CUST-0136,Michael Thomas,michael.thomas45@example.com,Middle East,Home Office,2022-04-13
+CUST-0137,Michael Martinez,michael.martinez39@example.com,Asia-Pacific,Consumer,2022-11-06
+CUST-0138,James Moore,james.moore26@example.com,Asia-Pacific,Corporate,2022-02-25
+CUST-0139,Sarah Martinez,sarah.martinez99@example.com,Europe,Small Business,2022-04-16
+CUST-0140,James Jackson,james.jackson46@example.com,Latin America,Small Business,2023-03-28
+CUST-0141,William Garcia,william.garcia16@example.com,Asia-Pacific,Small Business,2022-04-27
+CUST-0142,Robert Gonzalez,robert.gonzalez72@example.com,North America,Corporate,2022-06-05
+CUST-0143,John Jackson,john.jackson48@example.com,North America,Consumer,2022-05-02
+CUST-0144,Sarah Wilson,sarah.wilson87@example.com,Middle East,Consumer,2024-03-05
+CUST-0145,Thomas Gonzalez,thomas.gonzalez67@example.com,Latin America,Home Office,2024-05-30
+CUST-0146,Charles Wilson,charles.wilson49@example.com,Middle East,Corporate,2023-09-17
+CUST-0147,Patricia Miller,patricia.miller90@example.com,Europe,Home Office,2023-11-08
+CUST-0148,Robert Garcia,robert.garcia40@example.com,Europe,Corporate,2022-06-10
+CUST-0149,James Wilson,james.wilson67@example.com,Middle East,Small Business,2022-10-26
+CUST-0150,Mary Davis,mary.davis46@example.com,Asia-Pacific,Small Business,2022-03-14
+CUST-0151,Linda Rodriguez,linda.rodriguez90@example.com,Middle East,Consumer,2023-03-12
+CUST-0152,Patricia Moore,patricia.moore38@example.com,Europe,Home Office,2024-04-26
+CUST-0153,John Williams,john.williams17@example.com,Europe,Home Office,2023-09-02
+CUST-0154,Charles Martinez,charles.martinez66@example.com,North America,Small Business,2023-12-07
+CUST-0155,Elizabeth Gonzalez,elizabeth.gonzalez44@example.com,Middle East,Small Business,2023-03-25
+CUST-0156,Robert Martin,robert.martin15@example.com,Latin America,Home Office,2023-09-11
+CUST-0157,David Smith,david.smith21@example.com,Europe,Corporate,2024-02-23
+CUST-0158,David Jackson,david.jackson15@example.com,Europe,Small Business,2023-06-16
+CUST-0159,Joseph Rodriguez,joseph.rodriguez33@example.com,Middle East,Small Business,2023-10-13
+CUST-0160,Jessica Williams,jessica.williams70@example.com,Asia-Pacific,Small Business,2022-12-08
+CUST-0161,William Brown,william.brown30@example.com,Asia-Pacific,Small Business,2023-12-12
+CUST-0162,Jessica Martinez,jessica.martinez94@example.com,Latin America,Corporate,2023-04-11
+CUST-0163,Robert Hernandez,robert.hernandez42@example.com,Asia-Pacific,Corporate,2024-03-02
+CUST-0164,Richard Taylor,richard.taylor10@example.com,Middle East,Small Business,2023-02-28
+CUST-0165,Mary Miller,mary.miller76@example.com,Asia-Pacific,Small Business,2023-10-03
+CUST-0166,Joseph Johnson,joseph.johnson36@example.com,Asia-Pacific,Consumer,2022-10-22
+CUST-0167,Joseph Thomas,joseph.thomas25@example.com,North America,Consumer,2023-12-28
+CUST-0168,Jennifer Martinez,jennifer.martinez80@example.com,North America,Small Business,2022-04-06
+CUST-0169,Linda Brown,linda.brown69@example.com,North America,Consumer,2023-05-26
+CUST-0170,Elizabeth Taylor,elizabeth.taylor44@example.com,Latin America,Small Business,2023-04-29
+CUST-0171,Linda Anderson,linda.anderson80@example.com,Europe,Small Business,2022-07-15
+CUST-0172,Karen Taylor,karen.taylor27@example.com,North America,Home Office,2024-03-02
+CUST-0173,Susan Hernandez,susan.hernandez74@example.com,Asia-Pacific,Corporate,2022-10-17
+CUST-0174,Elizabeth Jackson,elizabeth.jackson84@example.com,Latin America,Consumer,2023-04-03
+CUST-0175,Sarah Thomas,sarah.thomas54@example.com,Asia-Pacific,Small Business,2023-04-12
+CUST-0176,William Miller,william.miller99@example.com,Europe,Small Business,2022-08-28
+CUST-0177,Susan Johnson,susan.johnson50@example.com,Latin America,Small Business,2023-01-31
+CUST-0178,John Thomas,john.thomas14@example.com,Europe,Home Office,2024-06-09
+CUST-0179,Patricia Anderson,patricia.anderson22@example.com,Middle East,Small Business,2022-01-16
+CUST-0180,John Wilson,john.wilson93@example.com,Europe,Corporate,2023-04-26
+CUST-0181,David Hernandez,david.hernandez89@example.com,Latin America,Corporate,2024-05-22
+CUST-0182,William Moore,william.moore58@example.com,Asia-Pacific,Small Business,2024-06-12
+CUST-0183,Sarah Johnson,sarah.johnson89@example.com,North America,Consumer,2023-10-09
+CUST-0184,Elizabeth Davis,elizabeth.davis21@example.com,Latin America,Corporate,2024-02-18
+CUST-0185,Patricia Anderson,patricia.anderson31@example.com,Asia-Pacific,Corporate,2022-02-17
+CUST-0186,William Johnson,william.johnson47@example.com,Asia-Pacific,Home Office,2023-03-18
+CUST-0187,John Davis,john.davis77@example.com,Latin America,Consumer,2022-06-24
+CUST-0188,Jennifer Williams,jennifer.williams88@example.com,Latin America,Consumer,2023-05-25
+CUST-0189,Charles Jones,charles.jones39@example.com,Latin America,Home Office,2023-04-16
+CUST-0190,David Smith,david.smith69@example.com,Asia-Pacific,Consumer,2022-03-17
+CUST-0191,Joseph Lopez,joseph.lopez85@example.com,Asia-Pacific,Small Business,2023-12-08
+CUST-0192,David Anderson,david.anderson48@example.com,Europe,Small Business,2024-05-23
+CUST-0193,Jessica Brown,jessica.brown40@example.com,Latin America,Home Office,2023-08-12
+CUST-0194,Elizabeth Martinez,elizabeth.martinez12@example.com,Latin America,Home Office,2022-01-09
+CUST-0195,Charles Johnson,charles.johnson87@example.com,Latin America,Home Office,2024-03-05
+CUST-0196,Linda Martin,linda.martin55@example.com,Europe,Consumer,2023-09-28
+CUST-0197,David Jones,david.jones90@example.com,North America,Corporate,2022-11-13
+CUST-0198,Joseph Johnson,joseph.johnson84@example.com,Asia-Pacific,Consumer,2022-04-03
+CUST-0199,Elizabeth Hernandez,elizabeth.hernandez63@example.com,Europe,Consumer,2022-05-16
+CUST-0200,Sarah Lopez,sarah.lopez77@example.com,Middle East,Home Office,2024-04-30
+CUST-0201,Jennifer Rodriguez,jennifer.rodriguez71@example.com,Asia-Pacific,Home Office,2024-04-03
+CUST-0202,Patricia Anderson,patricia.anderson19@example.com,Europe,Consumer,2024-05-30
+CUST-0203,Richard Moore,richard.moore56@example.com,North America,Small Business,2022-01-15
+CUST-0204,David Moore,david.moore25@example.com,Latin America,Home Office,2023-11-20
+CUST-0205,David Jackson,david.jackson58@example.com,Asia-Pacific,Corporate,2023-11-23
+CUST-0206,Linda Thomas,linda.thomas13@example.com,Middle East,Home Office,2023-09-17
+CUST-0207,Linda Williams,linda.williams91@example.com,Latin America,Home Office,2023-10-27
+CUST-0208,Susan Brown,susan.brown27@example.com,North America,Corporate,2022-11-08
+CUST-0209,Jessica Brown,jessica.brown22@example.com,Europe,Consumer,2023-02-02
+CUST-0210,Joseph Lopez,joseph.lopez95@example.com,Middle East,Small Business,2023-08-25
+CUST-0211,John Wilson,john.wilson93@example.com,North America,Small Business,2023-09-23
+CUST-0212,Susan Rodriguez,susan.rodriguez14@example.com,Asia-Pacific,Consumer,2023-03-31
+CUST-0213,Joseph Davis,joseph.davis56@example.com,North America,Home Office,2023-07-12
+CUST-0214,Barbara Johnson,barbara.johnson60@example.com,Asia-Pacific,Consumer,2022-05-06
+CUST-0215,Joseph Williams,joseph.williams94@example.com,Europe,Corporate,2022-02-21
+CUST-0216,William Davis,william.davis26@example.com,Middle East,Consumer,2022-03-12
+CUST-0217,Sarah Miller,sarah.miller85@example.com,Europe,Consumer,2022-12-03
+CUST-0218,John Martin,john.martin10@example.com,Asia-Pacific,Consumer,2022-05-14
+CUST-0219,Sarah Rodriguez,sarah.rodriguez32@example.com,North America,Corporate,2022-05-15
+CUST-0220,James Lopez,james.lopez40@example.com,Middle East,Home Office,2022-01-17
+CUST-0221,Jennifer Rodriguez,jennifer.rodriguez16@example.com,Europe,Small Business,2023-06-23
+CUST-0222,Patricia Williams,patricia.williams70@example.com,Latin America,Home Office,2023-06-10
+CUST-0223,Charles Brown,charles.brown67@example.com,Middle East,Consumer,2023-09-22
+CUST-0224,Mary Taylor,mary.taylor48@example.com,Latin America,Corporate,2022-03-04
+CUST-0225,Jessica Gonzalez,jessica.gonzalez64@example.com,North America,Small Business,2023-12-31
+CUST-0226,Joseph Williams,joseph.williams20@example.com,Asia-Pacific,Consumer,2022-03-09
+CUST-0227,John Rodriguez,john.rodriguez89@example.com,Middle East,Home Office,2023-01-26
+CUST-0228,Karen Taylor,karen.taylor47@example.com,Latin America,Small Business,2022-04-12
+CUST-0229,Patricia Moore,patricia.moore37@example.com,Latin America,Small Business,2022-08-22
+CUST-0230,Susan Hernandez,susan.hernandez68@example.com,Latin America,Small Business,2024-01-18
+CUST-0231,Patricia Hernandez,patricia.hernandez64@example.com,Asia-Pacific,Home Office,2023-01-19
+CUST-0232,John Thomas,john.thomas18@example.com,North America,Corporate,2022-04-06
+CUST-0233,Susan Brown,susan.brown57@example.com,Europe,Corporate,2023-08-24
+CUST-0234,Sarah Moore,sarah.moore52@example.com,North America,Small Business,2022-12-29
+CUST-0235,Susan Johnson,susan.johnson46@example.com,Middle East,Home Office,2022-12-27
+CUST-0236,Patricia Jackson,patricia.jackson74@example.com,Europe,Consumer,2023-11-04
+CUST-0237,Jessica Davis,jessica.davis23@example.com,Asia-Pacific,Home Office,2022-04-28
+CUST-0238,David Jackson,david.jackson38@example.com,Latin America,Corporate,2023-09-16
+CUST-0239,David Smith,david.smith33@example.com,Asia-Pacific,Home Office,2022-12-14
+CUST-0240,Barbara Smith,barbara.smith33@example.com,Europe,Small Business,2022-03-13
+CUST-0241,John Smith,john.smith21@example.com,Middle East,Consumer,2023-01-21
+CUST-0242,Susan Anderson,susan.anderson53@example.com,Europe,Home Office,2022-11-16
+CUST-0243,William Jackson,william.jackson86@example.com,North America,Corporate,2022-06-09
+CUST-0244,Jennifer Martin,jennifer.martin16@example.com,North America,Home Office,2023-03-30
+CUST-0245,Susan Thomas,susan.thomas87@example.com,Latin America,Small Business,2022-10-07
+CUST-0246,Michael Taylor,michael.taylor24@example.com,Asia-Pacific,Small Business,2022-04-24
+CUST-0247,Elizabeth Jackson,elizabeth.jackson72@example.com,Middle East,Home Office,2022-02-16
+CUST-0248,Linda Gonzalez,linda.gonzalez86@example.com,North America,Corporate,2022-07-29
+CUST-0249,Elizabeth Miller,elizabeth.miller27@example.com,Asia-Pacific,Home Office,2022-12-02
+CUST-0250,Patricia Smith,patricia.smith73@example.com,Latin America,Consumer,2022-05-13
+CUST-0251,Richard Moore,richard.moore39@example.com,Middle East,Home Office,2022-03-15
+CUST-0252,Richard Johnson,richard.johnson65@example.com,North America,Small Business,2022-03-21
+CUST-0253,William Jackson,william.jackson64@example.com,Middle East,Small Business,2023-12-28
+CUST-0254,Susan Martinez,susan.martinez24@example.com,Latin America,Corporate,2022-11-29
+CUST-0255,Jennifer Martin,jennifer.martin68@example.com,Asia-Pacific,Corporate,2023-03-24
+CUST-0256,Patricia Davis,patricia.davis65@example.com,Middle East,Small Business,2023-06-21
+CUST-0257,Robert Gonzalez,robert.gonzalez49@example.com,Asia-Pacific,Consumer,2022-12-08
+CUST-0258,Jennifer Williams,jennifer.williams75@example.com,North America,Consumer,2024-03-05
+CUST-0259,Barbara Lopez,barbara.lopez92@example.com,Europe,Consumer,2022-04-16
+CUST-0260,John Rodriguez,john.rodriguez35@example.com,Europe,Consumer,2024-02-18
+CUST-0261,Robert Garcia,robert.garcia90@example.com,Latin America,Small Business,2024-02-12
+CUST-0262,Charles Jackson,charles.jackson67@example.com,Middle East,Home Office,2024-06-03
+CUST-0263,William Jones,william.jones66@example.com,North America,Small Business,2023-03-29
+CUST-0264,Elizabeth Rodriguez,elizabeth.rodriguez85@example.com,North America,Home Office,2023-06-04
+CUST-0265,Robert Martinez,robert.martinez69@example.com,Latin America,Corporate,2022-02-28
+CUST-0266,Barbara Martinez,barbara.martinez19@example.com,North America,Small Business,2023-04-19
+CUST-0267,Charles Moore,charles.moore15@example.com,Latin America,Consumer,2022-11-26
+CUST-0268,Karen Thomas,karen.thomas74@example.com,Europe,Corporate,2023-04-07
+CUST-0269,Patricia Hernandez,patricia.hernandez20@example.com,Middle East,Consumer,2022-02-10
+CUST-0270,Linda Anderson,linda.anderson66@example.com,Middle East,Consumer,2023-01-08
+CUST-0271,Barbara Martinez,barbara.martinez59@example.com,Latin America,Home Office,2023-11-27
+CUST-0272,Karen Johnson,karen.johnson90@example.com,Asia-Pacific,Corporate,2022-12-04
+CUST-0273,Patricia Moore,patricia.moore96@example.com,Latin America,Home Office,2022-09-16
+CUST-0274,Karen Jones,karen.jones52@example.com,North America,Consumer,2022-12-25
+CUST-0275,Elizabeth Gonzalez,elizabeth.gonzalez26@example.com,Middle East,Corporate,2022-11-14
+CUST-0276,Sarah Gonzalez,sarah.gonzalez92@example.com,Asia-Pacific,Consumer,2023-11-18
+CUST-0277,Thomas Williams,thomas.williams92@example.com,Latin America,Home Office,2022-01-19
+CUST-0278,Barbara Martinez,barbara.martinez33@example.com,Europe,Home Office,2024-02-24
+CUST-0279,Jessica Miller,jessica.miller38@example.com,Europe,Consumer,2022-03-21
+CUST-0280,Elizabeth Brown,elizabeth.brown74@example.com,Middle East,Corporate,2023-11-09
+CUST-0281,William Martin,william.martin26@example.com,Middle East,Small Business,2022-06-07
+CUST-0282,Jennifer Garcia,jennifer.garcia98@example.com,Middle East,Consumer,2024-01-09
+CUST-0283,Joseph Johnson,joseph.johnson62@example.com,Asia-Pacific,Consumer,2023-03-31
+CUST-0284,Karen Martinez,karen.martinez67@example.com,Europe,Consumer,2022-11-13
+CUST-0285,Jessica Miller,jessica.miller57@example.com,Middle East,Small Business,2023-04-18
+CUST-0286,Elizabeth Gonzalez,elizabeth.gonzalez74@example.com,Middle East,Small Business,2022-06-15
+CUST-0287,Michael Martin,michael.martin27@example.com,Asia-Pacific,Corporate,2023-10-19
+CUST-0288,Jessica Lopez,jessica.lopez80@example.com,North America,Corporate,2022-10-19
+CUST-0289,Robert Garcia,robert.garcia44@example.com,Latin America,Consumer,2024-04-30
+CUST-0290,Susan Williams,susan.williams38@example.com,Latin America,Home Office,2022-01-28
+CUST-0291,Susan Johnson,susan.johnson60@example.com,Middle East,Home Office,2022-08-30
+CUST-0292,Richard Williams,richard.williams57@example.com,Europe,Corporate,2022-11-23
+CUST-0293,Patricia Hernandez,patricia.hernandez28@example.com,Europe,Corporate,2022-10-21
+CUST-0294,Jessica Jones,jessica.jones70@example.com,Latin America,Corporate,2022-03-23
+CUST-0295,James Rodriguez,james.rodriguez37@example.com,Europe,Small Business,2022-04-24
+CUST-0296,Elizabeth Davis,elizabeth.davis48@example.com,North America,Corporate,2022-09-02
+CUST-0297,Susan Martin,susan.martin68@example.com,North America,Corporate,2024-05-06
+CUST-0298,Jessica Martin,jessica.martin78@example.com,North America,Consumer,2024-01-06
+CUST-0299,John Martinez,john.martinez64@example.com,North America,Home Office,2022-09-04
+CUST-0300,Charles Wilson,charles.wilson33@example.com,North America,Home Office,2022-03-11
+CUST-0301,Thomas Moore,thomas.moore74@example.com,Middle East,Corporate,2023-02-04
+CUST-0302,Jessica Johnson,jessica.johnson91@example.com,Latin America,Home Office,2022-09-17
+CUST-0303,James Lopez,james.lopez18@example.com,Asia-Pacific,Consumer,2024-01-21
+CUST-0304,Patricia Jackson,patricia.jackson52@example.com,Europe,Corporate,2022-12-27
+CUST-0305,Sarah Hernandez,sarah.hernandez92@example.com,Europe,Small Business,2023-12-14
+CUST-0306,Jessica Garcia,jessica.garcia27@example.com,North America,Small Business,2022-02-07
+CUST-0307,Elizabeth Miller,elizabeth.miller15@example.com,Europe,Corporate,2022-11-20
+CUST-0308,Elizabeth Taylor,elizabeth.taylor60@example.com,Middle East,Small Business,2022-09-17
+CUST-0309,Mary Miller,mary.miller46@example.com,Asia-Pacific,Corporate,2024-06-05
+CUST-0310,William Rodriguez,william.rodriguez25@example.com,Asia-Pacific,Small Business,2023-02-14
+CUST-0311,Joseph Gonzalez,joseph.gonzalez53@example.com,Europe,Small Business,2023-12-10
+CUST-0312,Jessica Lopez,jessica.lopez76@example.com,Asia-Pacific,Corporate,2024-01-15
+CUST-0313,Susan Williams,susan.williams65@example.com,Middle East,Consumer,2023-07-13
+CUST-0314,Elizabeth Hernandez,elizabeth.hernandez23@example.com,North America,Home Office,2023-11-08
+CUST-0315,Elizabeth Martinez,elizabeth.martinez67@example.com,Middle East,Small Business,2022-06-20
+CUST-0316,Joseph Lopez,joseph.lopez67@example.com,North America,Home Office,2023-09-22
+CUST-0317,Susan Rodriguez,susan.rodriguez91@example.com,North America,Corporate,2023-11-19
+CUST-0318,Richard Lopez,richard.lopez75@example.com,Europe,Corporate,2022-05-27
+CUST-0319,Karen Anderson,karen.anderson14@example.com,Europe,Corporate,2022-08-30
+CUST-0320,Barbara Lopez,barbara.lopez59@example.com,Middle East,Corporate,2023-09-12
+CUST-0321,John Anderson,john.anderson57@example.com,Asia-Pacific,Small Business,2024-02-21
+CUST-0322,Robert Jackson,robert.jackson27@example.com,Middle East,Home Office,2023-02-12
+CUST-0323,William Rodriguez,william.rodriguez41@example.com,North America,Corporate,2024-01-24
+CUST-0324,Jennifer Thomas,jennifer.thomas76@example.com,Latin America,Corporate,2022-09-26
+CUST-0325,David Anderson,david.anderson37@example.com,Middle East,Home Office,2023-12-12
+CUST-0326,Jessica Miller,jessica.miller25@example.com,Europe,Corporate,2023-04-08
+CUST-0327,Jennifer Anderson,jennifer.anderson21@example.com,Asia-Pacific,Home Office,2023-12-28
+CUST-0328,Robert Moore,robert.moore79@example.com,Asia-Pacific,Home Office,2024-05-21
+CUST-0329,Jennifer Garcia,jennifer.garcia56@example.com,Middle East,Consumer,2022-05-05
+CUST-0330,Michael Jones,michael.jones40@example.com,Latin America,Corporate,2023-01-05
+CUST-0331,Sarah Jackson,sarah.jackson57@example.com,Latin America,Consumer,2023-09-19
+CUST-0332,Robert Williams,robert.williams49@example.com,Latin America,Small Business,2023-06-23
+CUST-0333,Susan Wilson,susan.wilson83@example.com,North America,Consumer,2022-11-21
+CUST-0334,Robert Anderson,robert.anderson69@example.com,Middle East,Home Office,2022-05-12
+CUST-0335,Sarah Jackson,sarah.jackson33@example.com,Europe,Small Business,2023-05-30
+CUST-0336,Mary Brown,mary.brown76@example.com,Europe,Home Office,2022-06-18
+CUST-0337,Jennifer Hernandez,jennifer.hernandez38@example.com,Asia-Pacific,Home Office,2024-05-16
+CUST-0338,Robert Rodriguez,robert.rodriguez35@example.com,Middle East,Home Office,2022-05-09
+CUST-0339,Elizabeth Martin,elizabeth.martin78@example.com,North America,Consumer,2023-08-30
+CUST-0340,Charles Jones,charles.jones31@example.com,Middle East,Home Office,2024-05-12
+CUST-0341,Charles Johnson,charles.johnson13@example.com,North America,Corporate,2023-10-19
+CUST-0342,Charles Rodriguez,charles.rodriguez93@example.com,Europe,Small Business,2023-09-25
+CUST-0343,James Thomas,james.thomas90@example.com,Middle East,Home Office,2023-10-20
+CUST-0344,Elizabeth Thomas,elizabeth.thomas41@example.com,Latin America,Home Office,2023-04-10
+CUST-0345,Robert Johnson,robert.johnson30@example.com,Latin America,Small Business,2023-05-11
+CUST-0346,Joseph Miller,joseph.miller53@example.com,Middle East,Consumer,2022-11-17
+CUST-0347,William Lopez,william.lopez61@example.com,Europe,Home Office,2023-06-12
+CUST-0348,Sarah Brown,sarah.brown50@example.com,Europe,Small Business,2022-05-06
+CUST-0349,David Anderson,david.anderson41@example.com,Europe,Corporate,2022-02-21
+CUST-0350,Elizabeth Gonzalez,elizabeth.gonzalez88@example.com,Latin America,Consumer,2024-06-05
+CUST-0351,Jennifer Hernandez,jennifer.hernandez83@example.com,Asia-Pacific,Consumer,2024-02-21
+CUST-0352,Jennifer Thomas,jennifer.thomas75@example.com,Latin America,Small Business,2024-06-19
+CUST-0353,Elizabeth Thomas,elizabeth.thomas12@example.com,North America,Small Business,2023-06-02
+CUST-0354,Joseph Davis,joseph.davis37@example.com,Middle East,Home Office,2022-02-19
+CUST-0355,Mary Martinez,mary.martinez73@example.com,Middle East,Small Business,2022-10-20
+CUST-0356,Sarah Smith,sarah.smith23@example.com,Latin America,Consumer,2022-09-28
+CUST-0357,Barbara Gonzalez,barbara.gonzalez56@example.com,North America,Small Business,2022-02-22
+CUST-0358,Charles Moore,charles.moore34@example.com,Asia-Pacific,Home Office,2022-03-17
+CUST-0359,Richard Taylor,richard.taylor67@example.com,Middle East,Home Office,2024-04-25
+CUST-0360,Karen Martin,karen.martin25@example.com,Europe,Corporate,2023-02-08
+CUST-0361,Barbara Hernandez,barbara.hernandez81@example.com,Asia-Pacific,Consumer,2022-07-23
+CUST-0362,Karen Taylor,karen.taylor61@example.com,Middle East,Corporate,2022-02-16
+CUST-0363,Mary Jones,mary.jones52@example.com,Latin America,Small Business,2022-06-02
+CUST-0364,Karen Taylor,karen.taylor27@example.com,Asia-Pacific,Home Office,2022-06-16
+CUST-0365,Richard Martin,richard.martin48@example.com,Middle East,Home Office,2023-06-04
+CUST-0366,Thomas Moore,thomas.moore72@example.com,Middle East,Home Office,2023-05-02
+CUST-0367,James Lopez,james.lopez52@example.com,North America,Small Business,2023-08-21
+CUST-0368,Elizabeth Smith,elizabeth.smith86@example.com,Latin America,Home Office,2023-11-03
+CUST-0369,Charles Jackson,charles.jackson39@example.com,North America,Small Business,2022-06-24
+CUST-0370,Thomas Martin,thomas.martin58@example.com,Europe,Consumer,2022-02-02
+CUST-0371,Charles Brown,charles.brown34@example.com,North America,Small Business,2022-11-18
+CUST-0372,Susan Jones,susan.jones62@example.com,Europe,Small Business,2023-05-29
+CUST-0373,Karen Thomas,karen.thomas17@example.com,Europe,Consumer,2023-07-29
+CUST-0374,William Thomas,william.thomas77@example.com,Latin America,Home Office,2022-06-27
+CUST-0375,Joseph Moore,joseph.moore53@example.com,Middle East,Home Office,2023-11-24
+CUST-0376,David Martin,david.martin71@example.com,Europe,Consumer,2022-10-13
+CUST-0377,Sarah Martinez,sarah.martinez38@example.com,Asia-Pacific,Home Office,2023-12-23
+CUST-0378,Michael Thomas,michael.thomas50@example.com,Latin America,Home Office,2023-07-28
+CUST-0379,David Martinez,david.martinez25@example.com,Middle East,Small Business,2023-02-09
+CUST-0380,Barbara Jones,barbara.jones47@example.com,North America,Home Office,2024-01-02
+CUST-0381,Robert Lopez,robert.lopez66@example.com,Asia-Pacific,Small Business,2022-08-08
+CUST-0382,Michael Moore,michael.moore44@example.com,Middle East,Home Office,2022-05-21
+CUST-0383,Patricia Martin,patricia.martin85@example.com,Europe,Consumer,2022-02-21
+CUST-0384,Thomas Davis,thomas.davis91@example.com,Europe,Corporate,2022-04-13
+CUST-0385,Susan Hernandez,susan.hernandez70@example.com,North America,Consumer,2022-01-06
+CUST-0386,Sarah Garcia,sarah.garcia62@example.com,Latin America,Small Business,2023-10-29
+CUST-0387,Michael Martinez,michael.martinez51@example.com,Asia-Pacific,Corporate,2024-02-27
+CUST-0388,Robert Jackson,robert.jackson39@example.com,Middle East,Corporate,2022-06-29
+CUST-0389,Susan Garcia,susan.garcia14@example.com,Latin America,Small Business,2022-07-10
+CUST-0390,Elizabeth Johnson,elizabeth.johnson11@example.com,Asia-Pacific,Corporate,2022-12-10
+CUST-0391,Elizabeth Anderson,elizabeth.anderson92@example.com,Middle East,Small Business,2022-05-18
+CUST-0392,Thomas Anderson,thomas.anderson44@example.com,Europe,Corporate,2022-12-05
+CUST-0393,Jennifer Anderson,jennifer.anderson92@example.com,Asia-Pacific,Consumer,2022-01-15
+CUST-0394,William Martinez,william.martinez82@example.com,Europe,Consumer,2023-09-18
+CUST-0395,Richard Wilson,richard.wilson75@example.com,Asia-Pacific,Corporate,2023-02-15
+CUST-0396,Patricia Garcia,patricia.garcia27@example.com,Latin America,Home Office,2022-09-12
+CUST-0397,James Rodriguez,james.rodriguez59@example.com,Europe,Small Business,2024-02-11
+CUST-0398,David Hernandez,david.hernandez48@example.com,Middle East,Corporate,2022-09-25
+CUST-0399,Barbara Davis,barbara.davis17@example.com,North America,Small Business,2022-11-11
+CUST-0400,Jennifer Gonzalez,jennifer.gonzalez97@example.com,Middle East,Home Office,2023-12-08
+CUST-0401,Patricia Martinez,patricia.martinez57@example.com,Middle East,Consumer,2022-08-13
+CUST-0402,John Thomas,john.thomas29@example.com,Latin America,Home Office,2023-03-02
+CUST-0403,Sarah Thomas,sarah.thomas78@example.com,Europe,Consumer,2023-11-28
+CUST-0404,Karen Williams,karen.williams77@example.com,Latin America,Home Office,2022-03-21
+CUST-0405,Charles Brown,charles.brown17@example.com,Middle East,Consumer,2023-08-10
+CUST-0406,Sarah Jones,sarah.jones31@example.com,Asia-Pacific,Small Business,2022-04-30
+CUST-0407,Michael Jackson,michael.jackson72@example.com,North America,Small Business,2024-04-08
+CUST-0408,Mary Anderson,mary.anderson26@example.com,Middle East,Small Business,2023-04-13
+CUST-0409,Charles Johnson,charles.johnson81@example.com,Latin America,Home Office,2024-01-11
+CUST-0410,James Gonzalez,james.gonzalez42@example.com,North America,Consumer,2023-08-16
+CUST-0411,Robert Johnson,robert.johnson64@example.com,Asia-Pacific,Corporate,2023-07-09
+CUST-0412,Mary Williams,mary.williams70@example.com,North America,Home Office,2023-02-23
+CUST-0413,Jennifer Jones,jennifer.jones92@example.com,Latin America,Home Office,2023-01-27
+CUST-0414,Joseph Gonzalez,joseph.gonzalez58@example.com,North America,Consumer,2023-11-01
+CUST-0415,Barbara Brown,barbara.brown32@example.com,Middle East,Small Business,2023-06-26
+CUST-0416,John Davis,john.davis10@example.com,North America,Home Office,2023-04-20
+CUST-0417,Sarah Wilson,sarah.wilson78@example.com,Latin America,Consumer,2022-09-11
+CUST-0418,Joseph Lopez,joseph.lopez29@example.com,Asia-Pacific,Consumer,2024-06-15
+CUST-0419,Patricia Johnson,patricia.johnson94@example.com,Latin America,Corporate,2022-09-04
+CUST-0420,Michael Williams,michael.williams22@example.com,Middle East,Corporate,2023-04-03
+CUST-0421,Karen Johnson,karen.johnson41@example.com,North America,Small Business,2023-03-26
+CUST-0422,Linda Moore,linda.moore37@example.com,North America,Consumer,2023-05-31
+CUST-0423,Elizabeth Davis,elizabeth.davis83@example.com,Asia-Pacific,Home Office,2022-08-31
+CUST-0424,Elizabeth Jones,elizabeth.jones94@example.com,Middle East,Consumer,2023-02-28
+CUST-0425,Elizabeth Rodriguez,elizabeth.rodriguez17@example.com,Middle East,Consumer,2023-10-04
+CUST-0426,Susan Moore,susan.moore73@example.com,North America,Home Office,2023-10-21
+CUST-0427,Richard Taylor,richard.taylor50@example.com,Latin America,Small Business,2022-06-02
+CUST-0428,Elizabeth Gonzalez,elizabeth.gonzalez33@example.com,Middle East,Small Business,2022-09-04
+CUST-0429,Linda Martinez,linda.martinez28@example.com,Latin America,Corporate,2023-07-30
+CUST-0430,Susan Wilson,susan.wilson81@example.com,Middle East,Consumer,2023-02-02
+CUST-0431,Linda Rodriguez,linda.rodriguez36@example.com,Asia-Pacific,Corporate,2023-04-06
+CUST-0432,Barbara Williams,barbara.williams78@example.com,Europe,Corporate,2022-10-02
+CUST-0433,Richard Martin,richard.martin87@example.com,North America,Corporate,2022-07-12
+CUST-0434,Charles Moore,charles.moore37@example.com,Latin America,Consumer,2024-06-09
+CUST-0435,William Martinez,william.martinez11@example.com,Europe,Consumer,2024-01-30
+CUST-0436,Patricia Thomas,patricia.thomas41@example.com,Middle East,Consumer,2023-02-11
+CUST-0437,Linda Moore,linda.moore51@example.com,Asia-Pacific,Small Business,2023-04-23
+CUST-0438,Sarah Lopez,sarah.lopez49@example.com,Asia-Pacific,Home Office,2023-06-10
+CUST-0439,Jessica Anderson,jessica.anderson22@example.com,Latin America,Home Office,2022-07-28
+CUST-0440,Barbara Hernandez,barbara.hernandez62@example.com,North America,Consumer,2024-01-30
+CUST-0441,John Smith,john.smith43@example.com,Middle East,Small Business,2022-10-30
+CUST-0442,John Miller,john.miller52@example.com,Europe,Small Business,2023-08-07
+CUST-0443,Linda Thomas,linda.thomas80@example.com,Asia-Pacific,Home Office,2024-02-21
+CUST-0444,Jessica Thomas,jessica.thomas68@example.com,Europe,Home Office,2022-06-23
+CUST-0445,John Moore,john.moore72@example.com,Europe,Corporate,2023-06-21
+CUST-0446,Mary Williams,mary.williams95@example.com,North America,Corporate,2023-02-27
+CUST-0447,John Davis,john.davis18@example.com,Europe,Corporate,2022-08-12
+CUST-0448,Thomas Anderson,thomas.anderson57@example.com,North America,Small Business,2023-11-07
+CUST-0449,Jessica Smith,jessica.smith10@example.com,Middle East,Small Business,2022-01-13
+CUST-0450,James Taylor,james.taylor45@example.com,Middle East,Home Office,2022-01-18
+CUST-0451,Thomas Wilson,thomas.wilson32@example.com,North America,Corporate,2023-06-21
+CUST-0452,John Davis,john.davis34@example.com,Middle East,Home Office,2024-04-14
+CUST-0453,Barbara Rodriguez,barbara.rodriguez60@example.com,North America,Home Office,2023-02-20
+CUST-0454,Joseph Jackson,joseph.jackson41@example.com,Europe,Home Office,2023-12-02
+CUST-0455,Robert Johnson,robert.johnson21@example.com,Latin America,Small Business,2023-01-22
+CUST-0456,Sarah Thomas,sarah.thomas17@example.com,North America,Consumer,2022-03-26
+CUST-0457,Jessica Wilson,jessica.wilson92@example.com,Asia-Pacific,Corporate,2023-06-25
+CUST-0458,Mary Davis,mary.davis37@example.com,Middle East,Small Business,2022-10-05
+CUST-0459,Mary Williams,mary.williams97@example.com,Asia-Pacific,Corporate,2022-07-03
+CUST-0460,William Smith,william.smith36@example.com,Middle East,Consumer,2024-02-10
+CUST-0461,Richard Williams,richard.williams48@example.com,Europe,Consumer,2023-08-04
+CUST-0462,Richard Moore,richard.moore52@example.com,Latin America,Consumer,2024-03-20
+CUST-0463,Robert Taylor,robert.taylor54@example.com,North America,Corporate,2023-03-24
+CUST-0464,Linda Williams,linda.williams53@example.com,Middle East,Small Business,2024-03-03
+CUST-0465,William Smith,william.smith91@example.com,Asia-Pacific,Small Business,2023-05-18
+CUST-0466,Linda Lopez,linda.lopez80@example.com,Latin America,Small Business,2022-07-10
+CUST-0467,Charles Gonzalez,charles.gonzalez20@example.com,Middle East,Home Office,2024-03-28
+CUST-0468,Linda Williams,linda.williams20@example.com,Asia-Pacific,Consumer,2023-01-25
+CUST-0469,John Gonzalez,john.gonzalez50@example.com,Asia-Pacific,Corporate,2022-04-04
+CUST-0470,James Martinez,james.martinez66@example.com,Asia-Pacific,Home Office,2022-04-15
+CUST-0471,John Williams,john.williams33@example.com,Latin America,Small Business,2023-07-25
+CUST-0472,Sarah Taylor,sarah.taylor62@example.com,North America,Corporate,2022-04-02
+CUST-0473,Barbara Moore,barbara.moore21@example.com,Middle East,Home Office,2024-06-03
+CUST-0474,Richard Smith,richard.smith47@example.com,Latin America,Small Business,2024-03-08
+CUST-0475,Robert Moore,robert.moore41@example.com,Middle East,Consumer,2023-12-03
+CUST-0476,Richard Garcia,richard.garcia27@example.com,Asia-Pacific,Home Office,2022-10-02
+CUST-0477,Jessica Jones,jessica.jones18@example.com,Europe,Small Business,2022-10-10
+CUST-0478,Susan Martinez,susan.martinez71@example.com,North America,Home Office,2022-09-15
+CUST-0479,Linda Thomas,linda.thomas86@example.com,Middle East,Consumer,2023-04-14
+CUST-0480,Patricia Jones,patricia.jones48@example.com,North America,Small Business,2022-12-07
+CUST-0481,Karen Gonzalez,karen.gonzalez52@example.com,Latin America,Home Office,2023-03-17
+CUST-0482,Karen Jones,karen.jones48@example.com,Asia-Pacific,Consumer,2023-05-06
+CUST-0483,William Garcia,william.garcia60@example.com,Asia-Pacific,Home Office,2024-01-23
+CUST-0484,Jessica Jackson,jessica.jackson41@example.com,Asia-Pacific,Small Business,2022-10-15
+CUST-0485,Richard Lopez,richard.lopez24@example.com,Middle East,Consumer,2023-08-30
+CUST-0486,Sarah Garcia,sarah.garcia97@example.com,Middle East,Corporate,2024-01-15
+CUST-0487,Joseph Miller,joseph.miller66@example.com,Asia-Pacific,Corporate,2024-04-18
+CUST-0488,Susan Thomas,susan.thomas27@example.com,Asia-Pacific,Consumer,2022-09-16
+CUST-0489,John Wilson,john.wilson58@example.com,North America,Small Business,2023-09-05
+CUST-0490,Jessica Jackson,jessica.jackson61@example.com,Middle East,Small Business,2023-07-11
+CUST-0491,Mary Lopez,mary.lopez99@example.com,Middle East,Corporate,2022-04-22
+CUST-0492,Linda Lopez,linda.lopez31@example.com,Middle East,Corporate,2023-07-31
+CUST-0493,Richard Hernandez,richard.hernandez65@example.com,North America,Corporate,2022-04-11
+CUST-0494,David Davis,david.davis75@example.com,Middle East,Consumer,2023-04-02
+CUST-0495,Barbara Gonzalez,barbara.gonzalez69@example.com,Middle East,Consumer,2022-12-20
+CUST-0496,James Thomas,james.thomas23@example.com,Asia-Pacific,Small Business,2022-03-29
+CUST-0497,Patricia Jones,patricia.jones54@example.com,Asia-Pacific,Home Office,2023-04-12
+CUST-0498,Michael Taylor,michael.taylor71@example.com,Asia-Pacific,Small Business,2022-04-10
+CUST-0499,Joseph Anderson,joseph.anderson50@example.com,North America,Home Office,2022-02-15
+CUST-0500,Patricia Smith,patricia.smith53@example.com,North America,Consumer,2024-01-29
+CUST-0501,Linda Taylor,linda.taylor32@example.com,Middle East,Consumer,2022-12-05
+CUST-0502,Sarah Wilson,sarah.wilson69@example.com,Europe,Small Business,2023-10-07
+CUST-0503,Jennifer Garcia,jennifer.garcia91@example.com,Latin America,Small Business,2022-01-30
+CUST-0504,Karen Miller,karen.miller67@example.com,Middle East,Small Business,2023-02-03
+CUST-0505,James Miller,james.miller36@example.com,Asia-Pacific,Corporate,2023-08-15
+CUST-0506,Patricia Moore,patricia.moore33@example.com,Asia-Pacific,Home Office,2022-07-21
+CUST-0507,Joseph Brown,joseph.brown43@example.com,Latin America,Home Office,2023-09-04
+CUST-0508,Richard Martin,richard.martin60@example.com,Middle East,Corporate,2022-12-23
+CUST-0509,Barbara Anderson,barbara.anderson89@example.com,Europe,Home Office,2023-09-22
+CUST-0510,Charles Williams,charles.williams96@example.com,Europe,Home Office,2022-05-01
+CUST-0511,Linda Martinez,linda.martinez24@example.com,Europe,Home Office,2023-12-12
+CUST-0512,John Taylor,john.taylor59@example.com,Latin America,Consumer,2023-08-12
+CUST-0513,Richard Wilson,richard.wilson33@example.com,Latin America,Consumer,2023-07-23
+CUST-0514,Jennifer Thomas,jennifer.thomas46@example.com,Europe,Consumer,2022-11-19
+CUST-0515,Joseph Martin,joseph.martin16@example.com,Asia-Pacific,Corporate,2023-05-12
+CUST-0516,John Miller,john.miller59@example.com,Middle East,Small Business,2023-02-23
+CUST-0517,Jessica Wilson,jessica.wilson66@example.com,Latin America,Consumer,2022-03-26
+CUST-0518,Charles Smith,charles.smith38@example.com,Asia-Pacific,Corporate,2022-10-09
+CUST-0519,Linda Moore,linda.moore46@example.com,Europe,Small Business,2023-08-03
+CUST-0520,Jessica Moore,jessica.moore75@example.com,North America,Corporate,2022-10-02
+CUST-0521,Sarah Lopez,sarah.lopez79@example.com,North America,Small Business,2023-07-14
+CUST-0522,Michael Wilson,michael.wilson23@example.com,Europe,Home Office,2024-06-14
+CUST-0523,Mary Anderson,mary.anderson43@example.com,Asia-Pacific,Corporate,2023-03-26
+CUST-0524,Patricia Davis,patricia.davis36@example.com,Middle East,Home Office,2024-05-31
+CUST-0525,Karen Wilson,karen.wilson31@example.com,Middle East,Consumer,2024-03-14
+CUST-0526,Michael Miller,michael.miller17@example.com,Middle East,Home Office,2023-06-30
+CUST-0527,David Martin,david.martin78@example.com,Europe,Home Office,2023-12-22
+CUST-0528,Elizabeth Martinez,elizabeth.martinez83@example.com,Asia-Pacific,Corporate,2022-05-19
+CUST-0529,Susan Johnson,susan.johnson45@example.com,Europe,Consumer,2022-09-13
+CUST-0530,John Hernandez,john.hernandez41@example.com,Latin America,Small Business,2022-05-26
+CUST-0531,Charles Rodriguez,charles.rodriguez90@example.com,Latin America,Small Business,2023-04-08
+CUST-0532,Robert Williams,robert.williams61@example.com,Middle East,Home Office,2023-12-13
+CUST-0533,Barbara Anderson,barbara.anderson72@example.com,Asia-Pacific,Corporate,2024-06-08
+CUST-0534,Robert Anderson,robert.anderson91@example.com,Asia-Pacific,Corporate,2024-03-25
+CUST-0535,Sarah Gonzalez,sarah.gonzalez37@example.com,Latin America,Consumer,2023-05-22
+CUST-0536,David Hernandez,david.hernandez46@example.com,Asia-Pacific,Consumer,2023-08-03
+CUST-0537,Jessica Hernandez,jessica.hernandez97@example.com,North America,Corporate,2022-04-12
+CUST-0538,Joseph Smith,joseph.smith25@example.com,Europe,Small Business,2023-04-13
+CUST-0539,James Wilson,james.wilson35@example.com,Europe,Home Office,2022-06-12
+CUST-0540,David Williams,david.williams93@example.com,Asia-Pacific,Home Office,2022-03-26
+CUST-0541,Barbara Garcia,barbara.garcia16@example.com,Latin America,Home Office,2024-01-14
+CUST-0542,Linda Wilson,linda.wilson93@example.com,North America,Corporate,2022-01-02
+CUST-0543,Michael Thomas,michael.thomas19@example.com,Europe,Consumer,2023-06-16
+CUST-0544,Joseph Smith,joseph.smith11@example.com,Asia-Pacific,Corporate,2024-05-30
+CUST-0545,Susan Jones,susan.jones71@example.com,North America,Consumer,2023-01-28
+CUST-0546,Robert Brown,robert.brown23@example.com,Asia-Pacific,Home Office,2022-11-03
+CUST-0547,John Gonzalez,john.gonzalez27@example.com,Europe,Corporate,2023-06-28
+CUST-0548,Charles Smith,charles.smith88@example.com,Europe,Small Business,2022-12-26
+CUST-0549,Michael Jones,michael.jones62@example.com,Middle East,Small Business,2024-05-30
+CUST-0550,Michael Williams,michael.williams22@example.com,Europe,Corporate,2023-08-27
+CUST-0551,Richard Lopez,richard.lopez64@example.com,Asia-Pacific,Consumer,2022-09-11
+CUST-0552,David Williams,david.williams41@example.com,Middle East,Home Office,2024-03-08
+CUST-0553,James Martinez,james.martinez36@example.com,Middle East,Consumer,2024-02-05
+CUST-0554,Richard Martinez,richard.martinez92@example.com,North America,Consumer,2023-05-22
+CUST-0555,Richard Brown,richard.brown40@example.com,Latin America,Corporate,2023-06-25
+CUST-0556,James Lopez,james.lopez50@example.com,Europe,Small Business,2024-05-31
+CUST-0557,Charles Wilson,charles.wilson56@example.com,Middle East,Consumer,2024-02-21
+CUST-0558,Jessica Williams,jessica.williams12@example.com,Middle East,Corporate,2022-01-15
+CUST-0559,David Miller,david.miller15@example.com,North America,Small Business,2023-06-03
+CUST-0560,Elizabeth Taylor,elizabeth.taylor63@example.com,Latin America,Small Business,2022-03-26
+CUST-0561,Sarah Moore,sarah.moore88@example.com,Europe,Home Office,2022-03-27
+CUST-0562,Elizabeth Williams,elizabeth.williams75@example.com,Europe,Consumer,2023-07-04
+CUST-0563,William Gonzalez,william.gonzalez85@example.com,North America,Home Office,2023-12-17
+CUST-0564,Susan Davis,susan.davis17@example.com,Europe,Corporate,2023-03-21
+CUST-0565,Patricia Anderson,patricia.anderson88@example.com,Middle East,Corporate,2022-11-13
+CUST-0566,Jennifer Brown,jennifer.brown11@example.com,Europe,Corporate,2022-06-17
+CUST-0567,Jessica Lopez,jessica.lopez76@example.com,Middle East,Home Office,2022-06-20
+CUST-0568,Barbara Jones,barbara.jones44@example.com,North America,Corporate,2022-12-10
+CUST-0569,Susan Rodriguez,susan.rodriguez77@example.com,North America,Home Office,2023-12-31
+CUST-0570,Charles Williams,charles.williams73@example.com,Latin America,Home Office,2022-02-26
+CUST-0571,Jessica Jackson,jessica.jackson31@example.com,Asia-Pacific,Consumer,2022-09-19
+CUST-0572,Patricia Jackson,patricia.jackson96@example.com,North America,Consumer,2024-01-29
+CUST-0573,Thomas Smith,thomas.smith15@example.com,North America,Consumer,2022-02-17
+CUST-0574,Jessica Lopez,jessica.lopez59@example.com,Europe,Consumer,2024-05-28
+CUST-0575,Mary Moore,mary.moore93@example.com,Latin America,Consumer,2022-11-26
+CUST-0576,Linda Wilson,linda.wilson50@example.com,Asia-Pacific,Corporate,2023-08-09
+CUST-0577,Barbara Brown,barbara.brown74@example.com,North America,Consumer,2022-08-17
+CUST-0578,Thomas Johnson,thomas.johnson61@example.com,North America,Small Business,2024-06-05
+CUST-0579,Elizabeth Martinez,elizabeth.martinez51@example.com,North America,Small Business,2022-01-09
+CUST-0580,Barbara Miller,barbara.miller47@example.com,Middle East,Home Office,2024-01-28
+CUST-0581,Karen Davis,karen.davis69@example.com,Asia-Pacific,Small Business,2024-03-02
+CUST-0582,Michael Moore,michael.moore41@example.com,Europe,Corporate,2023-02-24
+CUST-0583,James Davis,james.davis79@example.com,Asia-Pacific,Corporate,2022-12-10
+CUST-0584,James Gonzalez,james.gonzalez49@example.com,North America,Consumer,2023-06-27
+CUST-0585,Linda Wilson,linda.wilson72@example.com,North America,Consumer,2023-12-30
+CUST-0586,David Williams,david.williams15@example.com,Europe,Small Business,2023-12-19
+CUST-0587,Barbara Anderson,barbara.anderson20@example.com,Middle East,Corporate,2023-06-02
+CUST-0588,John Gonzalez,john.gonzalez19@example.com,Middle East,Corporate,2023-03-22
+CUST-0589,John Davis,john.davis47@example.com,Asia-Pacific,Home Office,2024-03-31
+CUST-0590,Richard Hernandez,richard.hernandez50@example.com,Latin America,Home Office,2022-08-28
+CUST-0591,Robert Miller,robert.miller27@example.com,Middle East,Corporate,2022-06-09
+CUST-0592,Patricia Garcia,patricia.garcia67@example.com,Latin America,Home Office,2023-02-21
+CUST-0593,Patricia Moore,patricia.moore55@example.com,Europe,Small Business,2022-11-12
+CUST-0594,Joseph Rodriguez,joseph.rodriguez25@example.com,North America,Consumer,2024-04-06
+CUST-0595,Elizabeth Martin,elizabeth.martin15@example.com,Europe,Home Office,2022-06-01
+CUST-0596,Robert Davis,robert.davis55@example.com,Latin America,Corporate,2023-11-25
+CUST-0597,Elizabeth Rodriguez,elizabeth.rodriguez32@example.com,North America,Small Business,2024-05-25
+CUST-0598,Joseph Moore,joseph.moore80@example.com,Europe,Corporate,2023-04-19
+CUST-0599,Patricia Jones,patricia.jones25@example.com,North America,Corporate,2024-04-30
+CUST-0600,Linda Jones,linda.jones35@example.com,Latin America,Home Office,2023-12-04
+CUST-0601,Robert Jackson,robert.jackson85@example.com,Asia-Pacific,Corporate,2022-01-23
+CUST-0602,Robert Miller,robert.miller92@example.com,Latin America,Consumer,2022-04-05
+CUST-0603,William Brown,william.brown15@example.com,Latin America,Corporate,2022-06-22
+CUST-0604,Charles Wilson,charles.wilson60@example.com,Latin America,Corporate,2023-01-27
+CUST-0605,Susan Garcia,susan.garcia55@example.com,Europe,Consumer,2022-10-09
+CUST-0606,David Anderson,david.anderson29@example.com,North America,Consumer,2023-10-25
+CUST-0607,Elizabeth Thomas,elizabeth.thomas62@example.com,Middle East,Small Business,2022-03-04
+CUST-0608,Robert Rodriguez,robert.rodriguez59@example.com,Europe,Small Business,2022-07-24
+CUST-0609,Thomas Davis,thomas.davis90@example.com,Middle East,Corporate,2023-01-27
+CUST-0610,Barbara Thomas,barbara.thomas79@example.com,Latin America,Home Office,2023-08-03
+CUST-0611,Thomas Hernandez,thomas.hernandez59@example.com,Asia-Pacific,Consumer,2022-01-27
+CUST-0612,William Martin,william.martin38@example.com,North America,Home Office,2022-03-01
+CUST-0613,Jessica Taylor,jessica.taylor55@example.com,Middle East,Consumer,2022-06-13
+CUST-0614,Patricia Davis,patricia.davis94@example.com,Europe,Home Office,2023-07-01
+CUST-0615,Mary Davis,mary.davis83@example.com,Latin America,Home Office,2024-05-09
+CUST-0616,Jennifer Garcia,jennifer.garcia40@example.com,Middle East,Home Office,2024-04-05
+CUST-0617,Barbara Jackson,barbara.jackson13@example.com,Asia-Pacific,Consumer,2023-07-31
+CUST-0618,Michael Thomas,michael.thomas79@example.com,Asia-Pacific,Consumer,2023-05-18
+CUST-0619,Mary Williams,mary.williams17@example.com,Europe,Consumer,2022-01-21
+CUST-0620,Thomas Thomas,thomas.thomas10@example.com,Asia-Pacific,Consumer,2024-04-05
+CUST-0621,John Hernandez,john.hernandez32@example.com,Asia-Pacific,Corporate,2022-01-23
+CUST-0622,John Jackson,john.jackson28@example.com,North America,Home Office,2022-03-16
+CUST-0623,Barbara Gonzalez,barbara.gonzalez85@example.com,North America,Home Office,2022-11-06
+CUST-0624,William Jones,william.jones30@example.com,Latin America,Small Business,2023-10-27
+CUST-0625,William Garcia,william.garcia81@example.com,Middle East,Home Office,2022-08-17
+CUST-0626,Charles Garcia,charles.garcia58@example.com,Asia-Pacific,Home Office,2022-05-11
+CUST-0627,Jennifer Smith,jennifer.smith99@example.com,Middle East,Small Business,2024-05-21
+CUST-0628,Charles Johnson,charles.johnson33@example.com,Middle East,Home Office,2024-04-08
+CUST-0629,Karen Davis,karen.davis91@example.com,Middle East,Corporate,2023-05-24
+CUST-0630,John Hernandez,john.hernandez19@example.com,Europe,Home Office,2022-11-24
+CUST-0631,Jennifer Williams,jennifer.williams95@example.com,Asia-Pacific,Small Business,2022-01-12
+CUST-0632,David Miller,david.miller41@example.com,North America,Home Office,2022-09-20
+CUST-0633,Patricia Smith,patricia.smith16@example.com,Latin America,Small Business,2024-01-21
+CUST-0634,Susan Garcia,susan.garcia62@example.com,Latin America,Small Business,2022-12-26
+CUST-0635,Sarah Gonzalez,sarah.gonzalez22@example.com,Latin America,Consumer,2022-06-16
+CUST-0636,Joseph Williams,joseph.williams14@example.com,Asia-Pacific,Corporate,2022-11-23
+CUST-0637,David Brown,david.brown19@example.com,Asia-Pacific,Consumer,2023-01-20
+CUST-0638,Jennifer Williams,jennifer.williams80@example.com,North America,Home Office,2023-09-01
+CUST-0639,Karen Thomas,karen.thomas13@example.com,Latin America,Consumer,2023-09-14
+CUST-0640,Susan Garcia,susan.garcia16@example.com,North America,Home Office,2022-07-30
+CUST-0641,Michael Wilson,michael.wilson99@example.com,Middle East,Home Office,2023-11-08
+CUST-0642,Elizabeth Martinez,elizabeth.martinez40@example.com,North America,Corporate,2023-02-07
+CUST-0643,Charles Moore,charles.moore72@example.com,Europe,Corporate,2023-01-05
+CUST-0644,James Wilson,james.wilson21@example.com,Asia-Pacific,Small Business,2022-07-24
+CUST-0645,Patricia Smith,patricia.smith36@example.com,Europe,Home Office,2022-03-25
+CUST-0646,Jessica Brown,jessica.brown49@example.com,Latin America,Small Business,2023-05-16
+CUST-0647,David Williams,david.williams92@example.com,Middle East,Small Business,2022-07-09
+CUST-0648,Barbara Gonzalez,barbara.gonzalez57@example.com,Europe,Small Business,2022-02-15
+CUST-0649,David Anderson,david.anderson69@example.com,Asia-Pacific,Consumer,2024-05-07
+CUST-0650,David Jackson,david.jackson17@example.com,Europe,Corporate,2022-03-29
+CUST-0651,Barbara Moore,barbara.moore62@example.com,Middle East,Consumer,2023-07-21
+CUST-0652,Mary Gonzalez,mary.gonzalez76@example.com,Latin America,Small Business,2023-08-10
+CUST-0653,Linda Thomas,linda.thomas48@example.com,North America,Small Business,2024-05-24
+CUST-0654,Mary Taylor,mary.taylor83@example.com,Middle East,Consumer,2022-05-04
+CUST-0655,Joseph Garcia,joseph.garcia31@example.com,Europe,Consumer,2022-05-10
+CUST-0656,Mary Wilson,mary.wilson20@example.com,Latin America,Consumer,2024-04-22
+CUST-0657,John Martin,john.martin43@example.com,Asia-Pacific,Corporate,2022-03-31
+CUST-0658,Richard Moore,richard.moore60@example.com,Middle East,Home Office,2024-05-27
+CUST-0659,David Taylor,david.taylor68@example.com,North America,Small Business,2022-04-26
+CUST-0660,Susan Jones,susan.jones28@example.com,Middle East,Corporate,2022-04-19
+CUST-0661,Charles Brown,charles.brown46@example.com,Middle East,Home Office,2024-06-17
+CUST-0662,Susan Rodriguez,susan.rodriguez59@example.com,Latin America,Small Business,2022-02-08
+CUST-0663,Jennifer Rodriguez,jennifer.rodriguez61@example.com,Europe,Small Business,2022-02-09
+CUST-0664,Richard Hernandez,richard.hernandez98@example.com,Europe,Corporate,2024-02-03
+CUST-0665,Jessica Rodriguez,jessica.rodriguez57@example.com,North America,Home Office,2024-04-17
+CUST-0666,Elizabeth Martinez,elizabeth.martinez45@example.com,Latin America,Corporate,2024-06-08
+CUST-0667,Linda Jones,linda.jones48@example.com,Latin America,Home Office,2022-10-03
+CUST-0668,Susan Martin,susan.martin92@example.com,North America,Consumer,2023-03-29
+CUST-0669,Michael Wilson,michael.wilson72@example.com,Middle East,Home Office,2024-04-20
+CUST-0670,Mary Taylor,mary.taylor30@example.com,North America,Home Office,2023-12-28
+CUST-0671,Thomas Gonzalez,thomas.gonzalez27@example.com,Middle East,Corporate,2022-06-27
+CUST-0672,Michael Miller,michael.miller17@example.com,Europe,Corporate,2023-04-13
+CUST-0673,Mary Lopez,mary.lopez35@example.com,Asia-Pacific,Home Office,2024-04-23
+CUST-0674,Joseph Taylor,joseph.taylor60@example.com,North America,Corporate,2022-09-05
+CUST-0675,Barbara Thomas,barbara.thomas86@example.com,Latin America,Consumer,2024-06-10
+CUST-0676,Jessica Jackson,jessica.jackson80@example.com,Asia-Pacific,Home Office,2022-06-17
+CUST-0677,David Williams,david.williams46@example.com,North America,Small Business,2022-02-20
+CUST-0678,Jennifer Jackson,jennifer.jackson37@example.com,Europe,Consumer,2023-11-25
+CUST-0679,Michael Rodriguez,michael.rodriguez93@example.com,Latin America,Corporate,2024-06-04
+CUST-0680,James Thomas,james.thomas26@example.com,Europe,Corporate,2022-08-18
+CUST-0681,David Martin,david.martin49@example.com,Asia-Pacific,Small Business,2023-01-21
+CUST-0682,Barbara Anderson,barbara.anderson42@example.com,Europe,Small Business,2022-11-06
+CUST-0683,Thomas Martin,thomas.martin60@example.com,Middle East,Corporate,2022-01-08
+CUST-0684,Thomas Lopez,thomas.lopez81@example.com,Middle East,Home Office,2022-11-02
+CUST-0685,Patricia Thomas,patricia.thomas18@example.com,Asia-Pacific,Home Office,2023-10-18
+CUST-0686,William Rodriguez,william.rodriguez43@example.com,Asia-Pacific,Consumer,2022-06-03
+CUST-0687,Thomas Davis,thomas.davis17@example.com,Middle East,Small Business,2023-11-08
+CUST-0688,William Jones,william.jones13@example.com,Latin America,Home Office,2022-09-23
+CUST-0689,Susan Gonzalez,susan.gonzalez59@example.com,North America,Consumer,2022-12-18
+CUST-0690,Linda Moore,linda.moore91@example.com,Latin America,Home Office,2023-06-04
+CUST-0691,Elizabeth Garcia,elizabeth.garcia94@example.com,Middle East,Consumer,2022-10-28
+CUST-0692,Patricia Thomas,patricia.thomas26@example.com,Asia-Pacific,Consumer,2023-11-28
+CUST-0693,William Williams,william.williams38@example.com,Asia-Pacific,Consumer,2024-02-02
+CUST-0694,Elizabeth Wilson,elizabeth.wilson52@example.com,Asia-Pacific,Home Office,2023-08-23
+CUST-0695,Elizabeth Anderson,elizabeth.anderson25@example.com,Latin America,Corporate,2024-06-06
+CUST-0696,Charles Jackson,charles.jackson89@example.com,North America,Small Business,2022-07-19
+CUST-0697,Thomas Brown,thomas.brown97@example.com,Latin America,Home Office,2023-02-28
+CUST-0698,Mary Jones,mary.jones27@example.com,Europe,Home Office,2023-02-24
+CUST-0699,Charles Anderson,charles.anderson28@example.com,Asia-Pacific,Consumer,2024-03-08
+CUST-0700,Robert Thomas,robert.thomas52@example.com,Europe,Home Office,2023-10-12
+CUST-0701,Mary Smith,mary.smith67@example.com,Asia-Pacific,Consumer,2024-02-19
+CUST-0702,Jennifer Jackson,jennifer.jackson30@example.com,Latin America,Corporate,2022-05-13
+CUST-0703,Karen Wilson,karen.wilson91@example.com,Latin America,Small Business,2023-03-16
+CUST-0704,Jessica Gonzalez,jessica.gonzalez10@example.com,North America,Consumer,2024-01-19
+CUST-0705,Barbara Smith,barbara.smith51@example.com,Middle East,Consumer,2022-01-19
+CUST-0706,James Davis,james.davis38@example.com,Asia-Pacific,Home Office,2022-05-13
+CUST-0707,Patricia Gonzalez,patricia.gonzalez74@example.com,Middle East,Home Office,2022-06-21
+CUST-0708,Robert Johnson,robert.johnson48@example.com,Asia-Pacific,Small Business,2024-01-16
+CUST-0709,Thomas Martin,thomas.martin77@example.com,Asia-Pacific,Small Business,2023-12-05
+CUST-0710,John Hernandez,john.hernandez72@example.com,Asia-Pacific,Consumer,2022-06-18
+CUST-0711,Richard Smith,richard.smith39@example.com,Europe,Consumer,2022-08-05
+CUST-0712,James Jackson,james.jackson74@example.com,Europe,Corporate,2023-01-11
+CUST-0713,Mary Gonzalez,mary.gonzalez91@example.com,Asia-Pacific,Corporate,2023-09-01
+CUST-0714,Mary Brown,mary.brown93@example.com,North America,Corporate,2023-12-08
+CUST-0715,Patricia Wilson,patricia.wilson66@example.com,Latin America,Corporate,2023-07-15
+CUST-0716,David Thomas,david.thomas99@example.com,Europe,Consumer,2023-12-13
+CUST-0717,James Martinez,james.martinez63@example.com,North America,Home Office,2023-09-30
+CUST-0718,Karen Jones,karen.jones63@example.com,North America,Corporate,2022-10-17
+CUST-0719,Patricia Brown,patricia.brown73@example.com,Europe,Consumer,2024-03-07
+CUST-0720,David Taylor,david.taylor35@example.com,Asia-Pacific,Small Business,2022-10-30
+CUST-0721,Jennifer Johnson,jennifer.johnson80@example.com,Latin America,Consumer,2023-12-06
+CUST-0722,Jessica Hernandez,jessica.hernandez40@example.com,North America,Corporate,2023-11-19
+CUST-0723,Robert Brown,robert.brown83@example.com,Latin America,Consumer,2022-04-03
+CUST-0724,Thomas Williams,thomas.williams22@example.com,Asia-Pacific,Consumer,2023-04-13
+CUST-0725,Elizabeth Rodriguez,elizabeth.rodriguez69@example.com,North America,Corporate,2024-04-12
+CUST-0726,Jennifer Johnson,jennifer.johnson47@example.com,Asia-Pacific,Home Office,2023-03-13
+CUST-0727,Patricia Brown,patricia.brown15@example.com,North America,Consumer,2023-11-11
+CUST-0728,Jennifer Hernandez,jennifer.hernandez55@example.com,Latin America,Home Office,2024-06-18
+CUST-0729,Robert Lopez,robert.lopez53@example.com,Europe,Corporate,2023-02-15
+CUST-0730,Richard Anderson,richard.anderson44@example.com,Latin America,Small Business,2024-03-30
+CUST-0731,Susan Garcia,susan.garcia24@example.com,Europe,Corporate,2024-05-14
+CUST-0732,Jennifer Brown,jennifer.brown63@example.com,Middle East,Small Business,2024-04-01
+CUST-0733,Charles Anderson,charles.anderson33@example.com,Middle East,Small Business,2024-03-08
+CUST-0734,Barbara Martin,barbara.martin13@example.com,Europe,Small Business,2023-05-15
+CUST-0735,Patricia Wilson,patricia.wilson66@example.com,North America,Corporate,2022-09-25
+CUST-0736,William Smith,william.smith96@example.com,Middle East,Consumer,2023-11-17
+CUST-0737,William Taylor,william.taylor76@example.com,Middle East,Corporate,2023-03-20
+CUST-0738,Linda Thomas,linda.thomas54@example.com,Latin America,Consumer,2024-05-09
+CUST-0739,Sarah Martin,sarah.martin16@example.com,North America,Consumer,2023-06-02
+CUST-0740,Jessica Thomas,jessica.thomas31@example.com,North America,Small Business,2022-11-25
+CUST-0741,Linda Hernandez,linda.hernandez45@example.com,North America,Consumer,2023-07-18
+CUST-0742,Richard Gonzalez,richard.gonzalez40@example.com,North America,Small Business,2023-03-31
+CUST-0743,Charles Anderson,charles.anderson21@example.com,Latin America,Small Business,2022-11-20
+CUST-0744,Patricia Thomas,patricia.thomas93@example.com,North America,Corporate,2023-02-18
+CUST-0745,Susan Johnson,susan.johnson81@example.com,Middle East,Corporate,2024-04-25
+CUST-0746,Robert Martin,robert.martin89@example.com,Asia-Pacific,Consumer,2023-11-02
+CUST-0747,Joseph Hernandez,joseph.hernandez56@example.com,North America,Consumer,2024-05-14
+CUST-0748,Joseph Hernandez,joseph.hernandez81@example.com,Middle East,Small Business,2024-01-04
+CUST-0749,Barbara Anderson,barbara.anderson24@example.com,North America,Consumer,2022-01-03
+CUST-0750,William Lopez,william.lopez91@example.com,Asia-Pacific,Home Office,2023-12-20
+CUST-0751,Patricia Johnson,patricia.johnson31@example.com,Latin America,Consumer,2024-04-21
+CUST-0752,Susan Brown,susan.brown42@example.com,Middle East,Consumer,2022-07-12
+CUST-0753,Patricia Gonzalez,patricia.gonzalez37@example.com,Latin America,Consumer,2024-01-04
+CUST-0754,William Brown,william.brown63@example.com,North America,Corporate,2024-03-01
+CUST-0755,Joseph Anderson,joseph.anderson94@example.com,Middle East,Consumer,2023-05-26
+CUST-0756,James Taylor,james.taylor16@example.com,Middle East,Small Business,2024-05-08
+CUST-0757,Charles Thomas,charles.thomas75@example.com,Europe,Consumer,2024-01-19
+CUST-0758,John Brown,john.brown59@example.com,Middle East,Home Office,2023-06-01
+CUST-0759,Richard Wilson,richard.wilson87@example.com,Europe,Home Office,2023-02-12
+CUST-0760,William Martinez,william.martinez67@example.com,Europe,Consumer,2023-02-27
+CUST-0761,Karen Taylor,karen.taylor48@example.com,Middle East,Home Office,2023-12-30
+CUST-0762,Sarah Miller,sarah.miller35@example.com,Europe,Home Office,2023-12-05
+CUST-0763,Barbara Jones,barbara.jones93@example.com,Europe,Home Office,2023-12-29
+CUST-0764,Patricia Lopez,patricia.lopez81@example.com,Latin America,Small Business,2023-11-22
+CUST-0765,Sarah Martinez,sarah.martinez64@example.com,North America,Corporate,2022-01-26
+CUST-0766,Richard Jones,richard.jones16@example.com,North America,Consumer,2022-10-01
+CUST-0767,Jennifer Martinez,jennifer.martinez97@example.com,Asia-Pacific,Consumer,2024-05-09
+CUST-0768,Mary Martinez,mary.martinez36@example.com,Middle East,Corporate,2023-01-03
+CUST-0769,Joseph Brown,joseph.brown88@example.com,Middle East,Consumer,2024-01-31
+CUST-0770,Sarah Gonzalez,sarah.gonzalez40@example.com,Middle East,Home Office,2023-12-11
+CUST-0771,Mary Gonzalez,mary.gonzalez59@example.com,Latin America,Home Office,2023-07-20
+CUST-0772,Mary Smith,mary.smith42@example.com,Europe,Small Business,2024-04-29
+CUST-0773,Linda Lopez,linda.lopez85@example.com,Middle East,Consumer,2024-03-05
+CUST-0774,Michael Martinez,michael.martinez67@example.com,Europe,Corporate,2022-07-11
+CUST-0775,Jennifer Taylor,jennifer.taylor25@example.com,Latin America,Corporate,2023-03-15
+CUST-0776,David Moore,david.moore43@example.com,Europe,Consumer,2023-08-22
+CUST-0777,David Smith,david.smith52@example.com,Latin America,Consumer,2022-02-10
+CUST-0778,John Hernandez,john.hernandez86@example.com,North America,Home Office,2023-05-18
+CUST-0779,Charles Moore,charles.moore55@example.com,North America,Home Office,2023-06-23
+CUST-0780,Linda Garcia,linda.garcia76@example.com,North America,Consumer,2023-03-02
+CUST-0781,Sarah Moore,sarah.moore61@example.com,North America,Home Office,2022-08-15
+CUST-0782,Michael Hernandez,michael.hernandez52@example.com,Asia-Pacific,Home Office,2022-08-12
+CUST-0783,Karen Taylor,karen.taylor70@example.com,Middle East,Corporate,2022-04-28
+CUST-0784,Barbara Anderson,barbara.anderson40@example.com,Middle East,Consumer,2022-02-10
+CUST-0785,William Gonzalez,william.gonzalez24@example.com,Latin America,Home Office,2023-07-08
+CUST-0786,Elizabeth Smith,elizabeth.smith76@example.com,Asia-Pacific,Small Business,2023-05-14
+CUST-0787,Mary Martinez,mary.martinez93@example.com,Europe,Home Office,2023-06-11
+CUST-0788,Robert Brown,robert.brown31@example.com,Middle East,Corporate,2023-10-04
+CUST-0789,Robert Miller,robert.miller95@example.com,Europe,Small Business,2024-05-05
+CUST-0790,Patricia Miller,patricia.miller78@example.com,Latin America,Corporate,2024-02-04
+CUST-0791,John Smith,john.smith68@example.com,Asia-Pacific,Corporate,2022-03-31
+CUST-0792,Robert Johnson,robert.johnson32@example.com,Asia-Pacific,Corporate,2023-08-12
+CUST-0793,Linda Rodriguez,linda.rodriguez62@example.com,Latin America,Small Business,2023-10-08
+CUST-0794,Richard Wilson,richard.wilson50@example.com,North America,Small Business,2023-11-21
+CUST-0795,Patricia Moore,patricia.moore10@example.com,Middle East,Corporate,2024-02-14
+CUST-0796,Charles Johnson,charles.johnson99@example.com,North America,Home Office,2023-05-30
+CUST-0797,Patricia Martinez,patricia.martinez97@example.com,Asia-Pacific,Corporate,2022-10-16
+CUST-0798,Joseph Gonzalez,joseph.gonzalez60@example.com,North America,Small Business,2022-06-10
+CUST-0799,Sarah Davis,sarah.davis27@example.com,Latin America,Home Office,2023-10-12
+CUST-0800,John Martinez,john.martinez96@example.com,Asia-Pacific,Corporate,2023-07-21
+CUST-0801,Sarah Jones,sarah.jones25@example.com,North America,Corporate,2023-08-10
+CUST-0802,Karen Gonzalez,karen.gonzalez78@example.com,Middle East,Corporate,2022-11-09
+CUST-0803,Michael Lopez,michael.lopez37@example.com,Latin America,Consumer,2022-06-14
+CUST-0804,Jennifer Davis,jennifer.davis88@example.com,Asia-Pacific,Consumer,2022-04-28
+CUST-0805,Jennifer Jackson,jennifer.jackson16@example.com,Middle East,Small Business,2023-10-23
+CUST-0806,Sarah Williams,sarah.williams47@example.com,North America,Home Office,2022-04-11
+CUST-0807,Michael Jackson,michael.jackson72@example.com,Asia-Pacific,Home Office,2022-05-12
+CUST-0808,Linda Brown,linda.brown46@example.com,Middle East,Corporate,2022-07-18
+CUST-0809,William Thomas,william.thomas67@example.com,Asia-Pacific,Home Office,2023-12-12
+CUST-0810,Charles Jones,charles.jones82@example.com,Middle East,Home Office,2024-04-07
+CUST-0811,William Wilson,william.wilson31@example.com,North America,Home Office,2022-09-10
+CUST-0812,Linda Wilson,linda.wilson45@example.com,Asia-Pacific,Consumer,2023-11-27
+CUST-0813,William Thomas,william.thomas69@example.com,Latin America,Home Office,2024-03-04
+CUST-0814,Elizabeth Thomas,elizabeth.thomas80@example.com,North America,Consumer,2023-10-24
+CUST-0815,Karen Williams,karen.williams45@example.com,Europe,Consumer,2022-09-27
+CUST-0816,Robert Williams,robert.williams12@example.com,Middle East,Corporate,2024-04-12
+CUST-0817,Charles Jackson,charles.jackson61@example.com,Middle East,Consumer,2022-02-07
+CUST-0818,Sarah Rodriguez,sarah.rodriguez79@example.com,Middle East,Small Business,2023-11-01
+CUST-0819,John Lopez,john.lopez60@example.com,Europe,Home Office,2022-05-18
+CUST-0820,Joseph Taylor,joseph.taylor75@example.com,North America,Small Business,2023-01-08
+CUST-0821,Thomas Smith,thomas.smith94@example.com,Europe,Consumer,2024-02-15
+CUST-0822,Thomas Jones,thomas.jones67@example.com,Europe,Consumer,2023-08-03
+CUST-0823,Charles Jones,charles.jones71@example.com,Asia-Pacific,Corporate,2022-08-13
+CUST-0824,Jessica Davis,jessica.davis18@example.com,Asia-Pacific,Home Office,2022-08-28
+CUST-0825,Mary Miller,mary.miller76@example.com,Asia-Pacific,Small Business,2023-04-26
+CUST-0826,Joseph Johnson,joseph.johnson15@example.com,Asia-Pacific,Corporate,2023-12-22
+CUST-0827,Thomas Rodriguez,thomas.rodriguez43@example.com,Middle East,Consumer,2023-01-21
+CUST-0828,Richard Lopez,richard.lopez85@example.com,North America,Home Office,2023-01-21
+CUST-0829,Linda Taylor,linda.taylor61@example.com,Asia-Pacific,Home Office,2023-05-14
+CUST-0830,Jessica Martin,jessica.martin10@example.com,Middle East,Consumer,2023-03-27
+CUST-0831,Jennifer Davis,jennifer.davis19@example.com,Middle East,Home Office,2022-08-05
+CUST-0832,John Garcia,john.garcia30@example.com,Asia-Pacific,Corporate,2023-11-08
+CUST-0833,Linda Wilson,linda.wilson52@example.com,North America,Small Business,2023-11-23
+CUST-0834,Jessica Thomas,jessica.thomas36@example.com,Middle East,Consumer,2023-10-25
+CUST-0835,Susan Smith,susan.smith41@example.com,North America,Consumer,2023-08-11
+CUST-0836,Charles Garcia,charles.garcia27@example.com,Middle East,Corporate,2023-08-10
+CUST-0837,John Johnson,john.johnson31@example.com,Asia-Pacific,Consumer,2023-06-14
+CUST-0838,Richard Martin,richard.martin82@example.com,North America,Home Office,2022-03-29
+CUST-0839,Michael Anderson,michael.anderson87@example.com,Latin America,Small Business,2022-06-24
+CUST-0840,Linda Wilson,linda.wilson86@example.com,Europe,Consumer,2023-10-01
+CUST-0841,Thomas Rodriguez,thomas.rodriguez31@example.com,Asia-Pacific,Small Business,2023-09-03
+CUST-0842,Charles Williams,charles.williams39@example.com,Latin America,Small Business,2022-05-16
+CUST-0843,Patricia Smith,patricia.smith35@example.com,Middle East,Small Business,2024-04-26
+CUST-0844,John Martin,john.martin22@example.com,Europe,Small Business,2023-09-22
+CUST-0845,Karen Johnson,karen.johnson78@example.com,Middle East,Corporate,2022-04-06
+CUST-0846,Jessica Jones,jessica.jones87@example.com,Middle East,Corporate,2024-03-04
+CUST-0847,Susan Taylor,susan.taylor63@example.com,Asia-Pacific,Corporate,2023-12-16
+CUST-0848,Thomas Wilson,thomas.wilson39@example.com,Latin America,Small Business,2022-12-25
+CUST-0849,Charles Jackson,charles.jackson22@example.com,Latin America,Consumer,2022-09-18
+CUST-0850,Jessica Davis,jessica.davis20@example.com,Asia-Pacific,Small Business,2022-09-21
+CUST-0851,Michael Smith,michael.smith10@example.com,Middle East,Corporate,2023-06-17
+CUST-0852,James Gonzalez,james.gonzalez93@example.com,Europe,Home Office,2023-02-23
+CUST-0853,Barbara Brown,barbara.brown29@example.com,Latin America,Home Office,2022-09-25
+CUST-0854,Sarah Wilson,sarah.wilson82@example.com,Asia-Pacific,Home Office,2023-11-28
+CUST-0855,Richard Miller,richard.miller62@example.com,Middle East,Small Business,2022-07-03
+CUST-0856,Barbara Moore,barbara.moore81@example.com,Latin America,Home Office,2022-11-11
+CUST-0857,Charles Lopez,charles.lopez60@example.com,Europe,Corporate,2024-02-05
+CUST-0858,Linda Anderson,linda.anderson99@example.com,Europe,Corporate,2022-08-08
+CUST-0859,Thomas Gonzalez,thomas.gonzalez53@example.com,Middle East,Corporate,2022-06-14
+CUST-0860,Richard Smith,richard.smith21@example.com,Europe,Small Business,2023-09-07
+CUST-0861,Susan Williams,susan.williams18@example.com,Asia-Pacific,Consumer,2023-01-15
+CUST-0862,Robert Martin,robert.martin14@example.com,Latin America,Small Business,2023-09-21
+CUST-0863,Thomas Martinez,thomas.martinez86@example.com,North America,Consumer,2023-10-18
+CUST-0864,Jessica Anderson,jessica.anderson11@example.com,Europe,Home Office,2022-07-19
+CUST-0865,Mary Martin,mary.martin75@example.com,Middle East,Consumer,2023-09-22
+CUST-0866,Jennifer Johnson,jennifer.johnson56@example.com,Europe,Corporate,2022-06-11
+CUST-0867,Robert Rodriguez,robert.rodriguez61@example.com,Asia-Pacific,Small Business,2023-02-20
+CUST-0868,Charles Miller,charles.miller76@example.com,North America,Corporate,2022-04-03
+CUST-0869,Sarah Martinez,sarah.martinez81@example.com,Middle East,Home Office,2022-12-22
+CUST-0870,David Davis,david.davis87@example.com,Europe,Small Business,2023-02-18
+CUST-0871,Charles Smith,charles.smith43@example.com,Europe,Small Business,2023-06-03
+CUST-0872,Patricia Moore,patricia.moore19@example.com,Middle East,Home Office,2022-12-15
+CUST-0873,Patricia Taylor,patricia.taylor42@example.com,Middle East,Home Office,2023-12-12
+CUST-0874,Joseph Gonzalez,joseph.gonzalez82@example.com,Latin America,Consumer,2024-02-15
+CUST-0875,William Anderson,william.anderson97@example.com,Latin America,Corporate,2023-05-09
+CUST-0876,Patricia Rodriguez,patricia.rodriguez18@example.com,Latin America,Consumer,2023-11-25
+CUST-0877,Linda Hernandez,linda.hernandez62@example.com,Asia-Pacific,Corporate,2023-12-19
+CUST-0878,David Davis,david.davis46@example.com,North America,Small Business,2023-11-21
+CUST-0879,William Williams,william.williams80@example.com,Europe,Small Business,2022-11-18
+CUST-0880,Barbara Miller,barbara.miller83@example.com,Asia-Pacific,Consumer,2024-02-04
+CUST-0881,Michael Thomas,michael.thomas35@example.com,Europe,Consumer,2024-06-12
+CUST-0882,David Miller,david.miller39@example.com,Europe,Consumer,2024-05-06
+CUST-0883,Karen Lopez,karen.lopez29@example.com,North America,Corporate,2022-03-22
+CUST-0884,Jessica Martin,jessica.martin10@example.com,Middle East,Corporate,2024-05-18
+CUST-0885,Jessica Lopez,jessica.lopez89@example.com,Asia-Pacific,Small Business,2023-08-12
+CUST-0886,David Thomas,david.thomas33@example.com,Middle East,Home Office,2023-02-12
+CUST-0887,Linda Jackson,linda.jackson26@example.com,North America,Small Business,2023-05-05
+CUST-0888,Sarah Johnson,sarah.johnson74@example.com,Asia-Pacific,Small Business,2024-05-31
+CUST-0889,Jennifer Anderson,jennifer.anderson25@example.com,Middle East,Small Business,2022-11-20
+CUST-0890,James Smith,james.smith96@example.com,Europe,Small Business,2023-08-18
+CUST-0891,Patricia Hernandez,patricia.hernandez56@example.com,Middle East,Home Office,2022-07-11
+CUST-0892,Sarah Rodriguez,sarah.rodriguez40@example.com,Asia-Pacific,Small Business,2023-09-20
+CUST-0893,William Lopez,william.lopez33@example.com,Latin America,Small Business,2022-08-04
+CUST-0894,Susan Lopez,susan.lopez56@example.com,Latin America,Home Office,2023-04-07
+CUST-0895,Jennifer Jackson,jennifer.jackson26@example.com,Middle East,Consumer,2024-04-13
+CUST-0896,Patricia Rodriguez,patricia.rodriguez40@example.com,Middle East,Small Business,2024-05-26
+CUST-0897,Richard Miller,richard.miller28@example.com,Europe,Small Business,2024-04-05
+CUST-0898,James Garcia,james.garcia63@example.com,Latin America,Consumer,2024-05-19
+CUST-0899,Thomas Moore,thomas.moore50@example.com,Latin America,Home Office,2022-09-14
+CUST-0900,Sarah Jackson,sarah.jackson16@example.com,Latin America,Corporate,2023-12-09
+CUST-0901,Jennifer Johnson,jennifer.johnson37@example.com,Asia-Pacific,Small Business,2024-05-09
+CUST-0902,Patricia Anderson,patricia.anderson52@example.com,Asia-Pacific,Home Office,2023-01-04
+CUST-0903,Sarah Moore,sarah.moore42@example.com,Asia-Pacific,Corporate,2023-02-26
+CUST-0904,Patricia Lopez,patricia.lopez96@example.com,Middle East,Consumer,2023-08-14
+CUST-0905,Charles Moore,charles.moore32@example.com,Asia-Pacific,Home Office,2022-11-29
+CUST-0906,Thomas Thomas,thomas.thomas67@example.com,North America,Small Business,2023-09-21
+CUST-0907,Elizabeth Anderson,elizabeth.anderson90@example.com,Europe,Consumer,2023-10-18
+CUST-0908,William Wilson,william.wilson90@example.com,Middle East,Small Business,2024-05-19
+CUST-0909,Robert Williams,robert.williams30@example.com,Asia-Pacific,Consumer,2022-11-18
+CUST-0910,William Martinez,william.martinez44@example.com,Middle East,Small Business,2022-10-05
+CUST-0911,Joseph Lopez,joseph.lopez85@example.com,Middle East,Small Business,2023-02-28
+CUST-0912,Jennifer Garcia,jennifer.garcia12@example.com,Europe,Consumer,2023-11-09
+CUST-0913,David Williams,david.williams36@example.com,Europe,Small Business,2022-04-16
+CUST-0914,Patricia Williams,patricia.williams70@example.com,Middle East,Corporate,2022-01-27
+CUST-0915,Richard Taylor,richard.taylor20@example.com,North America,Home Office,2023-09-25
+CUST-0916,John Williams,john.williams93@example.com,Latin America,Home Office,2022-08-23
+CUST-0917,Linda Martinez,linda.martinez66@example.com,Europe,Consumer,2023-06-24
+CUST-0918,Jennifer Smith,jennifer.smith14@example.com,Asia-Pacific,Home Office,2024-06-03
+CUST-0919,Jessica Anderson,jessica.anderson79@example.com,Asia-Pacific,Small Business,2022-05-19
+CUST-0920,Sarah Garcia,sarah.garcia85@example.com,Middle East,Small Business,2023-10-09
+CUST-0921,Charles Wilson,charles.wilson77@example.com,Middle East,Home Office,2022-12-22
+CUST-0922,Jessica Moore,jessica.moore39@example.com,North America,Small Business,2022-11-12
+CUST-0923,Barbara Wilson,barbara.wilson43@example.com,Europe,Home Office,2022-01-11
+CUST-0924,James Taylor,james.taylor27@example.com,Asia-Pacific,Home Office,2023-04-26
+CUST-0925,Sarah Smith,sarah.smith98@example.com,Latin America,Small Business,2022-11-03
+CUST-0926,James Wilson,james.wilson47@example.com,Middle East,Consumer,2024-03-26
+CUST-0927,James Moore,james.moore57@example.com,Europe,Small Business,2023-07-29
+CUST-0928,Susan Gonzalez,susan.gonzalez41@example.com,Europe,Small Business,2024-04-28
+CUST-0929,Richard Davis,richard.davis43@example.com,North America,Small Business,2023-10-03
+CUST-0930,Linda Taylor,linda.taylor88@example.com,Asia-Pacific,Home Office,2023-10-27
+CUST-0931,Sarah Rodriguez,sarah.rodriguez62@example.com,Europe,Corporate,2022-07-06
+CUST-0932,John Martinez,john.martinez24@example.com,Latin America,Small Business,2022-10-06
+CUST-0933,Karen Thomas,karen.thomas34@example.com,Asia-Pacific,Corporate,2022-06-05
+CUST-0934,Mary Moore,mary.moore12@example.com,Europe,Corporate,2022-10-16
+CUST-0935,David Jones,david.jones66@example.com,North America,Consumer,2022-04-03
+CUST-0936,John Smith,john.smith73@example.com,Europe,Home Office,2023-03-07
+CUST-0937,Elizabeth Thomas,elizabeth.thomas57@example.com,Latin America,Corporate,2022-12-05
+CUST-0938,Robert Jones,robert.jones17@example.com,Asia-Pacific,Small Business,2022-03-15
+CUST-0939,Sarah Thomas,sarah.thomas33@example.com,Europe,Home Office,2024-04-16
+CUST-0940,Richard Smith,richard.smith25@example.com,Europe,Small Business,2024-02-29
+CUST-0941,Joseph Davis,joseph.davis14@example.com,Europe,Small Business,2024-01-23
+CUST-0942,Patricia Taylor,patricia.taylor95@example.com,Europe,Small Business,2023-02-03
+CUST-0943,Elizabeth Hernandez,elizabeth.hernandez30@example.com,North America,Corporate,2022-09-17
+CUST-0944,Jessica Martinez,jessica.martinez35@example.com,Asia-Pacific,Corporate,2024-06-03
+CUST-0945,Michael Brown,michael.brown40@example.com,Latin America,Home Office,2022-01-16
+CUST-0946,Jennifer Rodriguez,jennifer.rodriguez84@example.com,North America,Small Business,2024-03-19
+CUST-0947,Linda Smith,linda.smith15@example.com,Middle East,Small Business,2023-12-06
+CUST-0948,Karen Jones,karen.jones57@example.com,North America,Consumer,2022-06-11
+CUST-0949,Jessica Williams,jessica.williams97@example.com,Middle East,Home Office,2024-02-17
+CUST-0950,Mary Johnson,mary.johnson55@example.com,Europe,Corporate,2022-05-09
+CUST-0951,Jessica Davis,jessica.davis50@example.com,Middle East,Home Office,2024-04-04
+CUST-0952,Joseph Miller,joseph.miller12@example.com,Latin America,Home Office,2024-01-12
+CUST-0953,John Rodriguez,john.rodriguez15@example.com,Latin America,Small Business,2023-07-27
+CUST-0954,Elizabeth Moore,elizabeth.moore99@example.com,Latin America,Consumer,2023-08-04
+CUST-0955,Jennifer Moore,jennifer.moore54@example.com,Asia-Pacific,Small Business,2022-10-09
+CUST-0956,Karen Moore,karen.moore30@example.com,North America,Consumer,2023-04-06
+CUST-0957,Elizabeth Rodriguez,elizabeth.rodriguez79@example.com,Asia-Pacific,Small Business,2022-01-01
+CUST-0958,Thomas Gonzalez,thomas.gonzalez33@example.com,North America,Home Office,2024-03-05
+CUST-0959,Karen Davis,karen.davis51@example.com,North America,Small Business,2022-07-14
+CUST-0960,Thomas Thomas,thomas.thomas80@example.com,Europe,Home Office,2022-11-27
+CUST-0961,Susan Hernandez,susan.hernandez24@example.com,North America,Corporate,2022-02-14
+CUST-0962,John Garcia,john.garcia14@example.com,Europe,Corporate,2023-05-13
+CUST-0963,Michael Brown,michael.brown14@example.com,Middle East,Small Business,2023-11-05
+CUST-0964,Jessica Taylor,jessica.taylor89@example.com,Middle East,Home Office,2022-02-20
+CUST-0965,Barbara Davis,barbara.davis87@example.com,North America,Corporate,2022-08-02
+CUST-0966,Jessica Williams,jessica.williams69@example.com,North America,Home Office,2023-07-26
+CUST-0967,Susan Lopez,susan.lopez17@example.com,Middle East,Home Office,2023-06-26
+CUST-0968,Mary Williams,mary.williams48@example.com,North America,Consumer,2023-06-16
+CUST-0969,Patricia Brown,patricia.brown39@example.com,Middle East,Small Business,2022-07-14
+CUST-0970,Michael Taylor,michael.taylor94@example.com,Europe,Consumer,2023-07-26
+CUST-0971,Sarah Wilson,sarah.wilson23@example.com,Middle East,Home Office,2023-11-22
+CUST-0972,Joseph Wilson,joseph.wilson23@example.com,Europe,Consumer,2023-07-18
+CUST-0973,Richard Taylor,richard.taylor53@example.com,Europe,Small Business,2022-12-27
+CUST-0974,William Moore,william.moore51@example.com,Asia-Pacific,Small Business,2024-02-22
+CUST-0975,Susan Hernandez,susan.hernandez87@example.com,Europe,Consumer,2023-01-20
+CUST-0976,Sarah Rodriguez,sarah.rodriguez56@example.com,Latin America,Small Business,2023-02-11
+CUST-0977,James Johnson,james.johnson46@example.com,Middle East,Corporate,2023-06-15
+CUST-0978,John Martinez,john.martinez10@example.com,Asia-Pacific,Consumer,2022-08-08
+CUST-0979,William Smith,william.smith98@example.com,Asia-Pacific,Consumer,2022-04-07
+CUST-0980,Mary Anderson,mary.anderson55@example.com,Europe,Consumer,2022-09-29
+CUST-0981,Barbara Jackson,barbara.jackson41@example.com,Europe,Home Office,2024-04-10
+CUST-0982,Elizabeth Williams,elizabeth.williams83@example.com,Latin America,Consumer,2024-01-22
+CUST-0983,Robert Hernandez,robert.hernandez71@example.com,Europe,Small Business,2024-04-25
+CUST-0984,Charles Brown,charles.brown86@example.com,Asia-Pacific,Corporate,2024-01-19
+CUST-0985,Charles Gonzalez,charles.gonzalez20@example.com,North America,Home Office,2022-12-23
+CUST-0986,Susan Wilson,susan.wilson25@example.com,Europe,Corporate,2023-10-12
+CUST-0987,Richard Johnson,richard.johnson49@example.com,Middle East,Corporate,2022-11-23
+CUST-0988,Sarah Jackson,sarah.jackson29@example.com,Asia-Pacific,Consumer,2022-06-06
+CUST-0989,Mary Gonzalez,mary.gonzalez67@example.com,Middle East,Corporate,2022-08-16
+CUST-0990,Susan Martinez,susan.martinez60@example.com,Europe,Consumer,2022-12-11
+CUST-0991,Robert Thomas,robert.thomas83@example.com,North America,Small Business,2022-09-26
+CUST-0992,Robert Gonzalez,robert.gonzalez74@example.com,Latin America,Consumer,2024-02-20
+CUST-0993,John Thomas,john.thomas81@example.com,Europe,Small Business,2023-02-09
+CUST-0994,Charles Miller,charles.miller81@example.com,Middle East,Consumer,2022-09-06
+CUST-0995,Robert Rodriguez,robert.rodriguez65@example.com,Asia-Pacific,Corporate,2022-04-26
+CUST-0996,Susan Wilson,susan.wilson56@example.com,Asia-Pacific,Consumer,2022-11-25
+CUST-0997,Barbara Martin,barbara.martin93@example.com,North America,Home Office,2022-06-23
+CUST-0998,Barbara Martin,barbara.martin66@example.com,Middle East,Consumer,2023-03-28
+CUST-0999,Mary Davis,mary.davis35@example.com,Asia-Pacific,Consumer,2024-02-15
+CUST-1000,Robert Brown,robert.brown16@example.com,Europe,Consumer,2024-06-08
