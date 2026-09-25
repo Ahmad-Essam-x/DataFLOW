@@ -581,6 +581,51 @@ class TestAlteryxTools(unittest.TestCase):
         res = node.execute({"I": df}, self.context)["O"]
         self.assertEqual(list(res.columns), ["Total_Qty", "Region_Key", "Total_Sales"])
 
+    def test_summarize_groupby_only_text_fields_outputs_only_group_columns(self):
+        """Verifies that configuring only GroupBy text fields outputs ONLY the group columns, excluding unselected columns."""
+        df = pd.DataFrame({
+            "Category": ["Electronics", "Electronics", "Furniture", "Furniture", "Electronics"],
+            "Subcategory": ["Phone", "Phone", "Chair", "Table", "Laptop"],
+            "Price": [800, 900, 150, 300, 1200],
+            "Supplier": ["Acme", "Acme", "Ikea", "Ikea", "Dell"],
+            "Notes": ["Flagship", "Budget", "Office", "Dining", "Pro"]
+        })
+        node = SummarizeNode("sum_grp_only", {
+            "actions": [
+                {"field": "Category", "action": "GroupBy"},
+                {"field": "Subcategory", "action": "GroupBy"}
+            ]
+        })
+        res = node.execute({"I": df}, self.context)["O"]
+
+        # Output columns must ONLY be Category and Subcategory
+        self.assertEqual(list(res.columns), ["Category", "Subcategory"])
+        self.assertNotIn("Price", res.columns)
+        self.assertNotIn("Supplier", res.columns)
+        self.assertNotIn("Notes", res.columns)
+
+        # Output rows must be unique combinations
+        self.assertEqual(len(res), 4)  # (Electronics, Phone), (Furniture, Chair), (Furniture, Table), (Electronics, Laptop)
+
+    def test_summarize_groupby_only_with_rename(self):
+        """Verifies that GroupBy-only configuration respects custom output column naming."""
+        df = pd.DataFrame({
+            "Dept": ["Sales", "Sales", "IT", "HR"],
+            "Salary": [50000, 60000, 80000, 70000],
+            "City": ["NYC", "LA", "NYC", "Chicago"]
+        })
+        node = SummarizeNode("sum_grp_ren", {
+            "actions": [
+                {"field": "Dept", "action": "GroupBy", "output_name": "Department_Name"}
+            ]
+        })
+        res = node.execute({"I": df}, self.context)["O"]
+
+        self.assertEqual(list(res.columns), ["Department_Name"])
+        self.assertNotIn("Salary", res.columns)
+        self.assertNotIn("City", res.columns)
+        self.assertEqual(sorted(res["Department_Name"].tolist()), ["HR", "IT", "Sales"])
+
 
 if __name__ == "__main__":
     unittest.main()

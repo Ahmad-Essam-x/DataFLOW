@@ -96,14 +96,14 @@ class SummarizeNode(BaseNode):
         # Perform aggregation
         if group_cols:
             grp_keys = [f for _, f, _ in group_cols]
-            grouped = df.groupby(grp_keys, as_index=False, dropna=False)
-
-            # Planned target names for group keys
+            unique_grp_keys = list(dict.fromkeys(grp_keys))
             target_grp_names = set(target or orig for _, orig, target in group_cols)
 
             if not agg_specs:
-                res_df = grouped.first()
+                # GroupBy only: deduplicate and return unique combinations of group keys only
+                res_df = df[unique_grp_keys].drop_duplicates().reset_index(drop=True)
             else:
+                grouped = df.groupby(grp_keys, as_index=False, dropna=False)
                 agg_dict = {}
                 used_names = set(grp_keys) | target_grp_names
                 for idx, f, op, out_name, act in agg_specs:
@@ -119,6 +119,7 @@ class SummarizeNode(BaseNode):
 
             # Rename group columns if custom out_name given
             rename_grp = {}
+            seen_origs = set()
             for idx, orig, target in group_cols:
                 final_target = target or orig
                 if target and orig != target:
@@ -126,7 +127,13 @@ class SummarizeNode(BaseNode):
                     while final_target in res_df.columns or final_target in rename_grp.values():
                         final_target = f"{target}_{counter}"
                         counter += 1
-                    rename_grp[orig] = final_target
+                    if orig not in seen_origs:
+                        rename_grp[orig] = final_target
+                        seen_origs.add(orig)
+                    else:
+                        res_df[final_target] = res_df[orig]
+                else:
+                    seen_origs.add(orig)
                 action_target_map.append((idx, final_target))
 
             if rename_grp:
@@ -157,9 +164,6 @@ class SummarizeNode(BaseNode):
         ordered_cols = []
         for _, col in action_target_map:
             if col in res_df.columns and col not in ordered_cols:
-                ordered_cols.append(col)
-        for col in res_df.columns:
-            if col not in ordered_cols:
                 ordered_cols.append(col)
         res_df = res_df[ordered_cols]
 
