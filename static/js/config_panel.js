@@ -8471,7 +8471,11 @@ class ConfigPanel {
 
             // Update canvas node execution visuals
             if (this.canvas) {
-              this.canvas.updateNodeExecutionVisuals(res.node_results || {});
+              if (typeof this.canvas.updateExecutionVisuals === 'function') {
+                this.canvas.updateExecutionVisuals(res.node_results || {}, true);
+              } else if (typeof this.canvas.updateNodeExecutionVisuals === 'function') {
+                this.canvas.updateNodeExecutionVisuals(res.node_results || {}, true);
+              }
             }
 
             if (window.showToast) {

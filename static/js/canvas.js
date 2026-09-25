@@ -3320,12 +3320,28 @@ class Canvas {
     }
   }
 
-  updateExecutionVisuals(nodeResults = {}) {
-    this.lastExecutionResults = nodeResults;
-    document.querySelectorAll('.port-record-badge').forEach(b => b.remove());
+  updateNodeExecutionVisuals(nodeResults = {}, isPartial = true) {
+    return this.updateExecutionVisuals(nodeResults, isPartial);
+  }
+
+  updateExecutionVisuals(nodeResults = {}, isPartial = false) {
+    this.lastExecutionResults = Object.assign(this.lastExecutionResults || {}, nodeResults);
+    if (!isPartial) {
+      document.querySelectorAll('.port-record-badge').forEach(b => b.remove());
+    } else {
+      Object.keys(nodeResults).forEach(nid => {
+        const card = document.getElementById(`node-elem-${nid}`);
+        if (card) {
+          card.querySelectorAll('.port-record-badge').forEach(b => b.remove());
+        }
+      });
+    }
 
     this.nodes.forEach(node => {
       const res = nodeResults[node.id];
+      if (!res && isPartial) {
+        return;
+      }
       const badge = document.getElementById(`badge-${node.id}`);
       const pill = document.getElementById(`pill-${node.id}`);
       const card = document.getElementById(`node-elem-${node.id}`);
@@ -3713,7 +3729,7 @@ class Canvas {
         }
 
         // Update canvas node execution visuals
-        this.updateNodeExecutionVisuals(res.node_results || {});
+        this.updateExecutionVisuals(res.node_results || {}, true);
 
         if (window.showToast) {
           window.showToast('success', 'Execution Finished', `Finished running '${node.name}' (${recCount.toLocaleString()} records in ${duration}).`);
