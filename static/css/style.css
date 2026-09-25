@@ -2686,28 +2686,30 @@ body.light-theme .data-table td.cell-selected {
   border-color: #7c3aed !important;
 }
 
-/* Theme Toggle Button */
+/* Theme Toggle Button (Square Icon) */
 .btn-theme-toggle {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
   cursor: pointer;
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-strong);
-  color: var(--text-primary);
-  border-radius: 20px;
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  transition: all 0.15s ease;
   user-select: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .btn-theme-toggle:hover {
-  background: var(--bg-main);
+  background: var(--border-strong);
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--text-primary);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
@@ -2725,8 +2727,7 @@ body.light-theme .data-table td.cell-selected {
 }
 
 #theme-toggle-label {
-  letter-spacing: 0.2px;
-  white-space: nowrap;
+  display: none !important;
 }
 
 /* Documentation Category Tab */
@@ -3181,7 +3182,38 @@ body.light-theme .data-table td.cell-selected {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
   transition: all 0.15s ease;
+}
+
+.btn-run-workflow kbd {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-family: var(--font-sans);
+  padding: 1px 0;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #dcfce7;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  margin-left: 0;
+  white-space: nowrap;
+  transition: max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, margin 0.2s ease, padding 0.2s ease;
+}
+
+.btn-run-workflow:hover kbd {
+  max-width: 80px;
+  opacity: 1;
+  margin-left: 4px;
+  padding: 1px 5px;
 }
 
 .btn-run-workflow.is-running {
@@ -3196,8 +3228,9 @@ body.light-theme .data-table td.cell-selected {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px;
-  font-size: 13px;
+  height: 28px;
+  padding: 4px 8px;
+  font-size: 12px;
   font-weight: 500;
   border-radius: 6px;
   background: rgba(239, 68, 68, 0.08);
@@ -3206,14 +3239,31 @@ body.light-theme .data-table td.cell-selected {
   cursor: not-allowed;
   opacity: 0.5;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .btn-stop-workflow kbd {
-  background: rgba(0, 0, 0, 0.25);
+  display: inline-flex;
+  align-items: center;
   font-size: 10px;
-  padding: 2px 5px;
+  padding: 1px 0;
   border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
   color: inherit;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  margin-left: 0;
+  white-space: nowrap;
+  transition: max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, margin 0.2s ease, padding 0.2s ease;
+}
+
+.btn-stop-workflow:hover:not(:disabled) kbd {
+  max-width: 60px;
+  opacity: 1;
+  margin-left: 4px;
+  padding: 1px 5px;
 }
 
 .btn-stop-workflow.btn-stop-active:not(:disabled) {
