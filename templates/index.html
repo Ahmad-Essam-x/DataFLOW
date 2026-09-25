@@ -45,6 +45,20 @@
             <span class="action-label">New Workflow</span>
             <kbd>Ctrl+N</kbd>
           </button>
+          <button class="menubar-action" data-action="tab:new">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="12" y1="8" x2="12" y2="14"></line><line x1="9" y1="11" x2="15" y2="11"></line></svg>
+            </span>
+            <span class="action-label">New Tab</span>
+            <kbd>Ctrl+T</kbd>
+          </button>
+          <button class="menubar-action" data-action="tab:close">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </span>
+            <span class="action-label">Close Tab</span>
+            <kbd>Ctrl+W</kbd>
+          </button>
           <button class="menubar-action" data-action="file:open">
             <span class="action-icon">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
@@ -372,6 +386,17 @@
     </div>
   </nav>
 
+  <!-- ====================== WORKFLOW TAB STRIP ====================== -->
+  <div id="workflow-tab-strip" class="workflow-tab-strip" role="tablist" aria-label="Open Workflows">
+    <!-- Tab pills are injected dynamically by TabManager -->
+    <button id="btn-new-tab" class="tab-new-btn" title="New Workflow Tab (Ctrl+T)" aria-label="New Workflow Tab">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+  </div>
+
   <!-- Top Navigation & Global Toolbar -->
   <header id="top-bar">
     <div class="brand">
@@ -569,29 +594,32 @@
 
     <!-- Center: Interactive Drag-and-Drop Canvas -->
     <section id="canvas-container">
-      <div id="canvas-wrapper">
-        <!-- SVG Layer for Bezier Connections -->
-        <svg id="canvas-svg" class="canvas-svg">
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"></path>
-            </marker>
-            <marker id="arrow-selected" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"></path>
-            </marker>
-          </defs>
-          <g id="wires-group"></g>
-          <path id="temp-wire" class="wire temp-wire" d=""></path>
-        </svg>
+      <!-- Tab 1 host — adopted by TabManager on init. Additional tab hosts are injected dynamically. -->
+      <div class="tab-canvas-host active-tab-host" id="tab-canvas-host-static" data-tab-id="static">
+        <div id="canvas-wrapper" class="canvas-wrapper">
+          <!-- SVG Layer for Bezier Connections -->
+          <svg id="canvas-svg" class="canvas-svg" viewBox="-50000 -50000 100000 100000">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"></path>
+              </marker>
+              <marker id="arrow-selected" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"></path>
+              </marker>
+            </defs>
+            <g id="wires-group"></g>
+            <path id="temp-wire" class="wire temp-wire" d=""></path>
+          </svg>
 
-        <!-- HTML Containers Layer (Below nodes) -->
-        <div id="containers-layer"></div>
+          <!-- HTML Containers Layer (Below nodes) -->
+          <div id="containers-layer" class="containers-layer"></div>
 
-        <!-- HTML Comments Layer -->
-        <div id="comments-layer"></div>
+          <!-- HTML Comments Layer -->
+          <div id="comments-layer" class="comments-layer"></div>
 
-        <!-- HTML Nodes Layer -->
-        <div id="nodes-layer"></div>
+          <!-- HTML Nodes Layer -->
+          <div id="nodes-layer" class="nodes-layer"></div>
+        </div>
       </div>
 
       <!-- Canvas Dropzone Overlay for CSV / Excel Drag & Drop -->
@@ -712,6 +740,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="grid-search-input" placeholder="Search rows in view..." spellcheck="false">
           </div>
+          <div id="results-sort-indicator" class="results-sort-indicator" style="display: none;"></div>
           <div class="table-view-options">
             <button id="btn-toggle-histograms" class="btn btn-ghost btn-sm active" title="Toggle in-grid column distribution histograms">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="8"></rect><rect x="10" y="8" width="4" height="12"></rect><rect x="17" y="4" width="4" height="16"></rect></svg>
@@ -1438,6 +1467,7 @@
   <script src="/static/js/results_panel.js"></script>
   <script src="/static/js/overview_minimap.js"></script>
   <script src="/static/js/template_library.js"></script>
+  <script src="/static/js/tab_manager.js"></script>
   <script src="/static/js/app.js"></script>
   <script src="/static/js/menu_bar.js"></script>
 </body>

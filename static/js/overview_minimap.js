@@ -9,7 +9,7 @@
 
 class CanvasMiniMap {
   constructor(canvas) {
-    this.canvas = canvas;
+    this._canvas = canvas;
     this.container = document.getElementById('canvas-overview-navigator');
     this.header = document.getElementById('overview-header');
     this.body = document.getElementById('overview-body');
@@ -47,6 +47,15 @@ class CanvasMiniMap {
     this.init();
   }
 
+  get canvas() {
+    return (window.appTabManager && window.appTabManager.activeCanvas) || window.appCanvas || this._canvas;
+  }
+
+  set canvas(c) {
+    this._canvas = c;
+    this.hookCanvas();
+  }
+
   init() {
     if (!this.container) return;
 
@@ -60,28 +69,30 @@ class CanvasMiniMap {
   }
 
   hookCanvas() {
-    if (!this.canvas) return;
+    const c = this.canvas;
+    if (!c || c._minimapHooked) return;
+    c._minimapHooked = true;
 
     // Hook onTransformChange to sync viewport in real time
-    const origOnTransform = this.canvas.onTransformChange;
-    this.canvas.onTransformChange = () => {
+    const origOnTransform = c.onTransformChange;
+    c.onTransformChange = () => {
       if (typeof origOnTransform === 'function') origOnTransform();
-      this.render();
+      if (this.visible && !this.collapsed) this.render();
     };
 
     // Hook onWorkflowChange to sync nodes, containers, comments, wires
-    const origOnWorkflow = this.canvas.onWorkflowChange;
-    this.canvas.onWorkflowChange = () => {
+    const origOnWorkflow = c.onWorkflowChange;
+    c.onWorkflowChange = () => {
       if (typeof origOnWorkflow === 'function') origOnWorkflow();
-      this.render();
+      if (this.visible && !this.collapsed) this.render();
     };
   }
 
   bindEvents() {
-    // Header click collapses or restores
+    // Header click collapses or restores (ignoring button clicks)
     if (this.header) {
       this.header.addEventListener('click', (e) => {
-        if (e.target === this.closeBtn) return;
+        if (e.target.closest('.overview-btn')) return;
         this.toggleCollapsed();
       });
     }
@@ -157,7 +168,9 @@ class CanvasMiniMap {
     else localStorage.setItem('dataflow_overview_enabled', this.visible);
     this.applyVisibility();
 
-    if (window.menuBar && typeof window.menuBar.syncMenuStates === 'function') {
+    if (window.appMenuBar && typeof window.appMenuBar.syncMenuStates === 'function') {
+      window.appMenuBar.syncMenuStates();
+    } else if (window.menuBar && typeof window.menuBar.syncMenuStates === 'function') {
       window.menuBar.syncMenuStates();
     }
 

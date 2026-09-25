@@ -5,6 +5,11 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // ── TabManager: Multi-Workflow Tab System ────────────────────────────────────
+  // Instantiate TabManager early; it will adopt the static canvas as Tab 1.
+  const tabManager = new TabManager();
+  window.appTabManager = tabManager;
+
   // Session tracking for execution isolation
   let clientSessionId = localStorage.getItem('dataflow_session_id');
   if (!clientSessionId) {
@@ -19,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.appResultsPanel = resultsPanel;
 
   const canvas = new Canvas('canvas-container', {
+    tabId: 1,
     onSelectNode: (node) => {
       configPanel.render(node);
       resultsPanel.showNodeResults(node);
@@ -53,6 +59,50 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.CanvasMiniMap) {
     window.appMiniMap = new CanvasMiniMap(canvas);
   }
+
+  // ── Register initial canvas as Tab 1 with TabManager ───────────────────────
+  {
+    const staticHostEl = document.getElementById('tab-canvas-host-static');
+    const tab1History = window.appHistory || new HistoryManager(canvas);
+    window.appHistory = tab1History;
+
+    // Build the first TabContext from the already-constructed singletons
+    const tab1Ctx = new TabContext({
+      id: 1,
+      name: (document.getElementById('workflow-name-input') || {}).value || 'New Workflow',
+      canvas: canvas,
+      configPanel: configPanel,
+      resultsPanel: resultsPanel,
+      history: tab1History,
+      sessionId: clientSessionId,
+      hostEl: staticHostEl
+    });
+    tab1Ctx.workflowFile = { handle: null, name: null, path: null };
+    window.activeWorkflowFile = tab1Ctx.workflowFile;
+
+    tabManager.tabs.push(tab1Ctx);
+    tabManager.activeTabId = 1;
+    tabManager._tabIdCounter = 1;
+
+    // Initialise the strip DOM (button bindings etc.)
+    tabManager.init();
+
+    // Render the first tab pill
+    tabManager._renderStrip();
+
+    // Expose workflow file via TabManager
+    Object.defineProperty(window, 'activeWorkflowFile', {
+      get: () => tabManager.getActiveWorkflowFile(),
+      set: (v) => tabManager.setActiveWorkflowFile(v),
+      configurable: true
+    });
+  }
+
+  // Active canvas helper — ensures all features operate on the active tab's canvas
+  function getActiveCanvas() {
+    return (window.appTabManager && window.appTabManager.activeCanvas) || window.appCanvas || canvas;
+  }
+  window.getActiveCanvas = getActiveCanvas;
 
   // 1b. Setup UI Scale & Display Zoom
   const UI_ZOOM_LEVELS = [0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0];
@@ -252,11 +302,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const runBtn = document.getElementById('btn-run');
   const stopBtn = document.getElementById('btn-stop');
 
-  function getToolDisplayName(ev) {
+  function getToolDisplayName(ev, canvasInstance = null) {
     if (!ev) return 'Tool';
+    const c = canvasInstance || (window.appTabManager && window.appTabManager.activeCanvas) || canvas;
     let name = ev.node_name || ev.name;
-    if ((!name || name === 'undefined') && ev.node_id && canvas && canvas.nodes) {
-      const node = canvas.nodes.find(n => n.id === ev.node_id);
+    if ((!name || name === 'undefined') && ev.node_id && c && c.nodes) {
+      const node = c.nodes.find(n => n.id === ev.node_id);
       if (node) {
         name = node.name || (node.data && node.data.name) || node.type;
       }
@@ -268,7 +319,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function stopWorkflow() {
-    if (!window._isWorkflowRunning) return;
+    const activeTab = window.appTabManager ? window.appTabManager.activeTab : null;
+    if (!activeTab || !activeTab.isRunning) return;
 
     if (stopBtn) {
       stopBtn.classList.add('is-stopping');
@@ -279,14 +331,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      const cancelUrl = '/api/cancel' + (window.activeRunId ? `/${encodeURIComponent(window.activeRunId)}` : '');
+      const cancelUrl = '/api/cancel' + (activeTab.activeRunId ? `/${encodeURIComponent(activeTab.activeRunId)}` : '');
       await fetch(cancelUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ run_id: window.activeRunId || null })
+        body: JSON.stringify({ run_id: activeTab.activeRunId || null })
       });
       if (window.showToast) {
-        window.showToast('warning', 'Cancelling...', 'Cancellation signal sent to the execution engine.');
+        window.showToast('warning', 'Cancelling...', `Cancellation signal sent for '${activeTab.name}'.`);
       }
     } catch (e) {
       console.warn('Cancel request failed:', e);
@@ -294,50 +346,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function runWorkflow() {
-    if (window._isWorkflowRunning) return;
+    const targetTab = window.appTabManager ? window.appTabManager.activeTab : null;
+    if (!targetTab) return;
+    if (targetTab.isRunning) {
+      if (window.showToast) window.showToast('info', 'Already Running', `'${targetTab.name}' is already running.`);
+      return;
+    }
 
-    const wfData = canvas.getWorkflowData();
+    const targetCanvas = targetTab.canvas;
+    const wfData = targetCanvas.getWorkflowData();
     if (!wfData.nodes || wfData.nodes.length === 0) {
       window.showToast('info', 'Canvas is Empty', 'Add tools to the canvas before running the workflow.');
       return;
     }
 
-    // Set UI to running state
-    window._isWorkflowRunning = true;
-    if (runBtn) {
-      runBtn.classList.add('loading', 'is-running');
-      runBtn.disabled = true;
-      runBtn.innerHTML = `
-        <span class="spinner-sm" aria-hidden="true"></span>
-        <span>Running...</span>
-      `;
-    }
+    // Set target tab to running state
+    targetTab.isRunning = true;
+    targetTab.logs = [];
+    targetTab.lastResult = null;
+    targetCanvas.setRunningState(true);
 
-    if (stopBtn) {
-      stopBtn.disabled = false;
-      stopBtn.classList.add('btn-stop-active');
-      stopBtn.classList.remove('is-stopping');
-      stopBtn.innerHTML = `
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-          <rect x="5" y="5" width="14" height="14" rx="2"></rect>
-        </svg>
-        <span>Stop</span>
-        <kbd>Esc</kbd>
-      `;
-    }
-
-    canvas.setRunningState(true);
-
-    // Initialize run block in results panel
-    if (resultsPanel && typeof resultsPanel.startRun === 'function') {
-      resultsPanel.startRun();
+    // If this tab is currently visible, update toolbar Run/Stop buttons and results panel
+    if (window.appTabManager && window.appTabManager.activeTabId === targetTab.id) {
+      window._isWorkflowRunning = true;
+      if (stopBtn) stopBtn.classList.add('btn-stop-active');
+      window.appTabManager._syncRunStopButtons(targetTab);
+      if (resultsPanel && typeof resultsPanel.startRun === 'function') {
+        resultsPanel.startRun();
+      }
     }
 
     try {
       const execTimeout = parseInt(
         window.userSettings ? window.userSettings.get('execution_timeout', 60) : (localStorage.getItem('dataflow_execution_timeout') || '60')
       , 10);
-      const autoCache = canvas.autoCacheUpstream !== undefined ? canvas.autoCacheUpstream :
+      const autoCache = targetCanvas.autoCacheUpstream !== undefined ? targetCanvas.autoCacheUpstream :
         (window.userSettings ? Boolean(window.userSettings.get('auto_cache_upstream', false)) : (localStorage.getItem('dataflow_auto_cache_upstream') === 'true'));
       const useAmp = window.userSettings ? Boolean(window.userSettings.get('use_amp_engine', true)) : true;
       const maxThreads = window.userSettings ? window.userSettings.get('max_engine_threads', 'auto') : 'auto';
@@ -346,12 +389,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-ID': window.clientSessionId || '',
-          ...(window.activeRunId ? { 'X-Run-ID': window.activeRunId } : {})
+          'X-Session-ID': targetTab.sessionId || '',
+          ...(targetTab.activeRunId ? { 'X-Run-ID': targetTab.activeRunId } : {})
         },
         body: JSON.stringify({
           ...wfData,
-          session_id: window.clientSessionId,
+          session_id: targetTab.sessionId,
           execution_timeout: execTimeout,
           auto_cache_upstream: autoCache,
           use_amp_engine: useAmp,
@@ -382,7 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const jsonStr = trimmed.replace(/^data:\s*/, '');
           try {
             const ev = JSON.parse(jsonStr);
-            handleStreamEvent(ev);
+            handleStreamEventForTab(ev, targetTab);
             if (ev.event === 'workflow_completed' || ev.event === 'workflow_cancelled') {
               lastCompletedEvent = ev;
             }
@@ -395,149 +438,163 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (buffer.trim().startsWith('data:')) {
         try {
           const ev = JSON.parse(buffer.trim().replace(/^data:\s*/, ''));
-          handleStreamEvent(ev);
+          handleStreamEventForTab(ev, targetTab);
           if (ev.event === 'workflow_completed' || ev.event === 'workflow_cancelled') lastCompletedEvent = ev;
         } catch (e) {}
       }
 
       if (!lastCompletedEvent) {
-        await runWorkflowFallback(wfData);
+        await runWorkflowFallback(wfData, targetTab);
       }
 
     } catch (streamErr) {
       console.warn('Streaming execution fallback to static /api/run:', streamErr);
-      await runWorkflowFallback(wfData);
+      await runWorkflowFallback(wfData, targetTab);
     } finally {
-      window._isWorkflowRunning = false;
-      if (runBtn) {
-        runBtn.classList.remove('loading', 'is-running');
-        runBtn.disabled = false;
-        runBtn.innerHTML = `
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-          <span>Run Workflow</span>
-          <kbd>Ctrl+Enter</kbd>
-        `;
+      targetTab.isRunning = false;
+      targetCanvas.setRunningState(false);
+      if (window.appTabManager && window.appTabManager.activeTabId === targetTab.id) {
+        window._isWorkflowRunning = false;
+        window.appTabManager._syncRunStopButtons(targetTab);
       }
-      if (stopBtn) {
-        stopBtn.classList.remove('btn-stop-active', 'is-stopping');
-        stopBtn.disabled = true;
-        stopBtn.innerHTML = `
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-            <rect x="5" y="5" width="14" height="14" rx="2"></rect>
-          </svg>
-          <span>Stop</span>
-          <kbd>Esc</kbd>
-        `;
-      }
-      canvas.setRunningState(false);
     }
   }
 
-  function handleStreamEvent(ev) {
+  function handleStreamEventForTab(ev, targetTab) {
+    const targetCanvas = targetTab.canvas;
     const timeStr = new Date().toLocaleTimeString();
-    const toolName = getToolDisplayName(ev);
+    const toolName = getToolDisplayName(ev, targetCanvas);
     const toolIdStr = ev.node_id ? ` (#${ev.node_id})` : '';
+
+    if (ev.run_id) {
+      targetTab.activeRunId = ev.run_id;
+      if (window.appTabManager && window.appTabManager.activeTabId === targetTab.id) {
+        window.activeRunId = ev.run_id;
+      }
+    }
+
+    const isActiveTab = window.appTabManager && window.appTabManager.activeTabId === targetTab.id;
 
     switch (ev.event) {
       case 'node_started':
-        if (ev.run_id) {
-          window.activeRunId = ev.run_id;
-        }
-        canvas.updateNodeExecutionStep({
+        targetCanvas.updateNodeExecutionStep({
           node_id: ev.node_id,
           status: 'running'
         });
-        resultsPanel.appendLog({
+        const startLog = {
           time: timeStr,
           level: 'INFO',
           message: `Running tool '${toolName}'${toolIdStr}...`
-        });
+        };
+        targetTab.logs.push(startLog);
+        if (isActiveTab && resultsPanel) {
+          resultsPanel.appendLog(startLog);
+        }
         break;
 
       case 'node_completed':
-        canvas.updateNodeExecutionStep({
+        targetCanvas.updateNodeExecutionStep({
           node_id: ev.node_id,
           status: 'success',
           duration_ms: ev.duration_ms,
           record_counts: ev.record_counts
         });
-        resultsPanel.appendLog({
+        const compLog = {
           time: timeStr,
           level: 'INFO',
           message: `✓ Tool '${toolName}'${toolIdStr} completed in ${ev.duration_ms}ms`
-        });
+        };
+        targetTab.logs.push(compLog);
+        if (isActiveTab && resultsPanel) {
+          resultsPanel.appendLog(compLog);
+        }
         break;
 
       case 'node_error':
-        canvas.updateNodeExecutionStep({
+        targetCanvas.updateNodeExecutionStep({
           node_id: ev.node_id,
           status: 'error'
         });
-        resultsPanel.appendLog({
+        const errLog = {
           time: timeStr,
           level: 'ERROR',
           message: `✗ Tool '${toolName}'${toolIdStr} error: ${ev.error}`
-        });
+        };
+        targetTab.logs.push(errLog);
+        if (isActiveTab && resultsPanel) {
+          resultsPanel.appendLog(errLog);
+        }
         break;
 
       case 'workflow_completed':
-        if (ev.run_id) {
-          window.activeRunId = ev.run_id;
-        }
-        window.appLastResult = ev;
-        canvas.updateExecutionVisuals(ev.node_results || {});
-        resultsPanel.finalizeRun(ev);
+        targetTab.lastResult = ev;
+        targetCanvas.updateExecutionVisuals(ev.node_results || {});
 
-        if (ev.success) {
-          document.querySelectorAll('.node-card.has-error').forEach(el => el.classList.remove('has-error'));
-          window.showToast('success', 'Workflow Succeeded', `Completed all ${Object.keys(ev.node_results || {}).length} tools in ${ev.total_duration_ms}ms.`);
-        } else {
-          const diag = ev.diagnostic;
-          if (diag) {
-            window.showToast('error', diag.title, diag.message);
-            resultsPanel.switchToTab('messages-view');
-            if (diag.node_id) {
-              canvas.highlightErrorNode(diag.node_id);
-            }
-          } else {
-            window.showToast('error', 'Execution Error', ev.error || 'Workflow execution encountered an error.');
+        if (isActiveTab) {
+          window.appLastResult = ev;
+          if (stopBtn) stopBtn.classList.remove('btn-stop-active', 'is-stopping');
+          if (resultsPanel) {
+            resultsPanel.finalizeRun(ev);
           }
-        }
-
-        if (canvas.selectedNodeId) {
-          const selNode = canvas.nodes.find(n => n.id === canvas.selectedNodeId);
-          resultsPanel.showNodeResults(selNode);
+          if (ev.success) {
+            document.querySelectorAll('.node-card.has-error').forEach(el => el.classList.remove('has-error'));
+            window.showToast('success', 'Workflow Succeeded', `Completed all ${Object.keys(ev.node_results || {}).length} tools in ${ev.total_duration_ms}ms.`);
+          } else {
+            const diag = ev.diagnostic;
+            if (diag) {
+              window.showToast('error', diag.title, diag.message);
+              if (resultsPanel) resultsPanel.switchToTab('messages-view');
+              if (diag.node_id) {
+                targetCanvas.highlightErrorNode(diag.node_id);
+              }
+            } else {
+              window.showToast('error', 'Execution Error', ev.error || 'Workflow execution encountered an error.');
+            }
+          }
+          if (targetCanvas.selectedNodeId && resultsPanel) {
+            const selNode = targetCanvas.nodes.find(n => n.id === targetCanvas.selectedNodeId);
+            resultsPanel.showNodeResults(selNode);
+          }
+        } else {
+          // Toast notification for background tab completion
+          if (ev.success) {
+            window.showToast('info', `${targetTab.name} Finished`, `Completed all ${Object.keys(ev.node_results || {}).length} tools in ${ev.total_duration_ms}ms.`);
+          } else {
+            window.showToast('warning', `${targetTab.name} Failed`, ev.error || 'Background workflow encountered an error.');
+          }
         }
         break;
 
       case 'workflow_cancelled':
-        if (ev.run_id) {
-          window.activeRunId = ev.run_id;
-        }
-        resultsPanel.appendLog({
+        targetTab.lastResult = ev;
+        const cancelLog = {
           time: timeStr,
           level: 'WARNING',
           message: ev.message || 'Workflow Cancelled by User.'
-        });
-        resultsPanel.finalizeRun({
-          cancelled: true,
-          success: false,
-          total_duration_ms: ev.total_duration_ms,
-          logs: ev.logs || []
-        });
-        window.showToast('warning', 'Workflow Cancelled', ev.message || 'Workflow execution was cancelled by the user.');
+        };
+        targetTab.logs.push(cancelLog);
+        if (isActiveTab && resultsPanel) {
+          if (stopBtn) stopBtn.classList.remove('btn-stop-active', 'is-stopping');
+          resultsPanel.appendLog(cancelLog);
+          resultsPanel.finalizeRun({
+            cancelled: true,
+            success: false,
+            total_duration_ms: ev.total_duration_ms || 0,
+            logs: targetTab.logs
+          });
+        }
+        window.showToast('warning', `${targetTab.name} Cancelled`, 'Workflow execution was cancelled.');
         break;
     }
   }
 
-  async function runWorkflowFallback(wfData) {
+  async function runWorkflowFallback(wfData, targetTab) {
+    if (!targetTab) return;
     try {
       const execTimeout = parseInt(
         window.userSettings ? window.userSettings.get('execution_timeout', 60) : (localStorage.getItem('dataflow_execution_timeout') || '60')
       , 10);
-      const autoCache = canvas.autoCacheUpstream !== undefined ? canvas.autoCacheUpstream :
+      const autoCache = targetTab.canvas.autoCacheUpstream !== undefined ? targetTab.canvas.autoCacheUpstream :
         (window.userSettings ? Boolean(window.userSettings.get('auto_cache_upstream', false)) : (localStorage.getItem('dataflow_auto_cache_upstream') === 'true'));
 
       const useAmp = window.userSettings ? Boolean(window.userSettings.get('use_amp_engine', true)) : true;
@@ -547,12 +604,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-ID': window.clientSessionId || '',
-          ...(window.activeRunId ? { 'X-Run-ID': window.activeRunId } : {})
+          'X-Session-ID': targetTab.sessionId || '',
+          ...(targetTab.activeRunId ? { 'X-Run-ID': targetTab.activeRunId } : {})
         },
         body: JSON.stringify({
           ...wfData,
-          session_id: window.clientSessionId,
+          session_id: targetTab.sessionId,
           execution_timeout: execTimeout,
           auto_cache_upstream: autoCache,
           use_amp_engine: useAmp,
@@ -562,23 +619,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const result = await res.json();
       if (result.run_id) {
-        window.activeRunId = result.run_id;
+        targetTab.activeRunId = result.run_id;
       }
-      handleStreamEvent({ ...result, event: 'workflow_completed' });
+      handleStreamEventForTab({ ...result, event: 'workflow_completed' }, targetTab);
     } catch (err) {
-      resultsPanel.appendLog({
+      const errLog = {
         time: new Date().toLocaleTimeString(),
         level: 'ERROR',
         message: `Execution failed: ${err.message}`
-      });
-      resultsPanel.finalizeRun({
-        success: false,
-        diagnostic: {
-          error_code: 'NETWORK_OR_SERVER_ERROR',
-          title: 'Execution Failed',
-          message: err.message
-        }
-      });
+      };
+      targetTab.logs.push(errLog);
+      if (window.appTabManager && window.appTabManager.activeTabId === targetTab.id && resultsPanel) {
+        resultsPanel.appendLog(errLog);
+        resultsPanel.finalizeRun({
+          success: false,
+          diagnostic: {
+            error_code: 'NETWORK_OR_SERVER_ERROR',
+            title: 'Execution Failed',
+            message: err.message
+          }
+        });
+      }
       window.showToast('error', 'Execution Failed', err.message);
     }
   }
@@ -608,6 +669,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || 'Workflow';
     document.title = `* ${wfName} - ${baseDocumentTitle}`;
+    // Sync active tab pill
+    if (window.appTabManager) window.appTabManager.markActiveDirty();
   }
   window.markWorkflowDirty = markWorkflowDirty;
 
@@ -622,12 +685,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || 'Workflow';
     document.title = `${wfName} - ${baseDocumentTitle}`;
+    // Sync active tab pill
+    if (window.appTabManager) window.appTabManager.markActiveClean();
   }
   window.markWorkflowClean = markWorkflowClean;
 
   // Unsaved changes safety guard on window exit / refresh
   window.addEventListener('beforeunload', (e) => {
-    if (isWorkflowDirty && canvas.nodes && canvas.nodes.length > 0) {
+    const hasDirty = (window.appTabManager && window.appTabManager.tabs.some(t => t.isDirty && t.canvas.nodes && t.canvas.nodes.length > 0)) || 
+                     (isWorkflowDirty && getActiveCanvas().nodes && getActiveCanvas().nodes.length > 0);
+    if (hasDirty) {
       e.preventDefault();
       e.returnValue = 'You have unsaved changes in your workflow. Are you sure you want to leave?';
       return e.returnValue;
@@ -638,6 +705,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (nameInputEl) {
     nameInputEl.addEventListener('input', () => {
       markWorkflowDirty();
+      // Keep active tab pill title in sync as user types
+      if (window.appTabManager) {
+        window.appTabManager.syncActiveTabName(nameInputEl.value.trim() || 'Untitled');
+      }
     });
   }
 
@@ -650,7 +721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentName = (nameInput ? nameInput.value.trim() : '') || 'my_workflow';
     const cleanStem = currentName.replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_').toLowerCase();
     const suggestedName = `${cleanStem}.json`;
-    const wfData = canvas.getWorkflowData();
+    const wfData = getActiveCanvas().getWorkflowData();
     wfData.name = currentName;
 
     // 1. Primary Method: Native Windows Explorer Save As Dialog via Chromium File System Access API
@@ -777,7 +848,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || window.activeWorkflowFile.name || 'Workflow';
-    const wfData = canvas.getWorkflowData();
+    const wfData = getActiveCanvas().getWorkflowData();
     wfData.name = wfName;
 
     // 1. Direct write to Windows Explorer file handle
@@ -928,7 +999,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function exportWorkflowJson() {
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || 'workflow';
-    const wfData = canvas.getWorkflowData();
+    const wfData = getActiveCanvas().getWorkflowData();
     wfData.name = wfName;
     const blob = new Blob([JSON.stringify(wfData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -943,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function exportWorkflowPackage() {
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || 'workflow';
-    const wfData = canvas.getWorkflowData();
+    const wfData = getActiveCanvas().getWorkflowData();
     wfData.name = wfName;
 
     try {
@@ -1003,7 +1074,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.importWorkflowPackage = importWorkflowPackage;
 
   function handleWorkflowLoaded(wf, defaultName = 'Workflow') {
-    canvas.loadWorkflow(wf);
+    const currentCanvas = getActiveCanvas();
+    currentCanvas.loadWorkflow(wf);
     const nameInput = document.getElementById('workflow-name-input');
     if (nameInput) {
       nameInput.value = wf.name || defaultName;
@@ -1013,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     resultsPanel.clear();
 
     if (wf.nodes && wf.nodes.length > 0) {
-      canvas.selectNode(wf.nodes[0].id);
+      currentCanvas.selectNode(wf.nodes[0].id);
     } else {
       configPanel.render(null);
       resultsPanel.showNodeResults(null);
@@ -1033,6 +1105,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
       window.appMenuBar.addRecentWorkflow(wfName, wfPath, wf);
+    }
+    // Sync tab pill name
+    if (window.appTabManager) {
+      window.appTabManager.syncActiveTabName(wfName);
     }
     markWorkflowClean();
     window.showToast('success', 'Workflow Loaded', `Opened '${wfName}'.`);
@@ -1058,7 +1134,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function openWorkflowDependenciesModal() {
     const modal = document.getElementById('modal-workflow-deps');
     if (!modal) return;
-    const wfData = canvas.getWorkflowData();
+    const activeCanvas = getActiveCanvas();
+    const wfData = activeCanvas.getWorkflowData();
     const tbody = document.getElementById('deps-table-body');
     const banner = document.getElementById('deps-summary-banner');
     if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: var(--text-muted);">Inspecting workflow assets...</td></tr>`;
@@ -1137,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (selBtn) {
             selBtn.addEventListener('click', () => {
               modal.style.display = 'none';
-              canvas.selectNode(dep.node_id);
+              getActiveCanvas().selectNode(dep.node_id);
             });
           }
           tbody.appendChild(tr);
@@ -1245,7 +1322,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   function openWorkflowPropertiesModal() {
     const modal = document.getElementById('modal-workflow-props');
     if (!modal) return;
-    const wfData = canvas.getWorkflowData();
+    const activeCanvas = getActiveCanvas();
+    const wfData = activeCanvas ? activeCanvas.getWorkflowData() : { nodes: [], connections: [] };
     const metadata = wfData.metadata || {};
 
     const nameInput = document.getElementById('prop-wf-name');
@@ -1264,7 +1342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (statNodes) statNodes.textContent = (wfData.nodes || []).length;
     if (statConns) statConns.textContent = (wfData.connections || []).length;
-    if (statZoom) statZoom.textContent = `${Math.round((canvas.zoom || 1.0) * 100)}%`;
+    if (statZoom) statZoom.textContent = `${Math.round(((activeCanvas && activeCanvas.zoom) || 1.0) * 100)}%`;
 
     modal.style.display = 'flex';
   }
@@ -1285,10 +1363,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (topNameInput) topNameInput.value = newName;
       }
 
-      if (!canvas.workflowMetadata) canvas.workflowMetadata = {};
-      canvas.workflowMetadata.author = authorInput ? authorInput.value.trim() : '';
-      canvas.workflowMetadata.version = versionInput ? versionInput.value.trim() : '2.1.0';
-      canvas.workflowMetadata.description = descInput ? descInput.value.trim() : '';
+      const activeCanvas = getActiveCanvas();
+      if (activeCanvas) {
+        if (!activeCanvas.workflowMetadata) activeCanvas.workflowMetadata = {};
+        activeCanvas.workflowMetadata.author = authorInput ? authorInput.value.trim() : '';
+        activeCanvas.workflowMetadata.version = versionInput ? versionInput.value.trim() : '2.1.0';
+        activeCanvas.workflowMetadata.description = descInput ? descInput.value.trim() : '';
+      }
 
       markWorkflowDirty();
       if (modal) modal.style.display = 'none';
@@ -1299,18 +1380,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Auto-Save Background Timer (every 30s)
   setInterval(async () => {
     if (!isWorkflowDirty) return;
-    if (!canvas.nodes || canvas.nodes.length === 0) return;
+    const activeCanvas = getActiveCanvas();
+    if (!activeCanvas || !activeCanvas.nodes || activeCanvas.nodes.length === 0) return;
 
     try {
-      const wfData = canvas.getWorkflowData();
+      const wfData = activeCanvas.getWorkflowData();
       const nameInput = document.getElementById('workflow-name-input');
       wfData.name = (nameInput ? nameInput.value.trim() : '') || 'Untitled Workflow';
+
+      // Use active tab's session ID for isolated autosave
+      const sessionId = (window.appTabManager && window.appTabManager.activeTab)
+        ? window.appTabManager.activeTab.sessionId
+        : (window.clientSessionId || '');
 
       await fetch('/api/workflow/autosave', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-ID': window.clientSessionId || ''
+          'X-Session-ID': sessionId
         },
         body: JSON.stringify(wfData)
       });
@@ -1459,8 +1546,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!container) return;
 
     const inputNodes = [];
-    if (canvas && canvas.nodes) {
-      canvas.nodes.forEach(node => {
+    const activeCanvas = getActiveCanvas();
+    if (activeCanvas && activeCanvas.nodes) {
+      activeCanvas.nodes.forEach(node => {
         if (node.type === 'input_data') {
           inputNodes.push(node);
         }
@@ -1545,7 +1633,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || 'Workflow';
-    const wfData = canvas ? canvas.getWorkflowData() : { nodes: [], connections: [] };
+    const activeCanvas = getActiveCanvas();
+    const wfData = activeCanvas ? activeCanvas.getWorkflowData() : { nodes: [], connections: [] };
     wfData.name = wfName;
 
     try {
@@ -1799,9 +1888,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       switch (normCmd) {
         // --- FILE ---
         case 'file:new':
-          if (!isWorkflowDirty || confirm('Create a new blank workflow? Any unsaved changes will be cleared.')) {
-            canvas.loadWorkflow({ nodes: [], connections: [] });
-            canvas.cachedNodeIds.clear();
+          // Opens a new blank tab (Ctrl+N)
+          if (window.appTabManager) {
+            window.appTabManager.createTab(null, 'New Workflow');
+          } else if (!isWorkflowDirty || confirm('Create a new blank workflow? Any unsaved changes will be cleared.')) {
+            const curC = getActiveCanvas();
+            if (curC) {
+              curC.loadWorkflow({ nodes: [], connections: [] });
+              if (curC.cachedNodeIds) curC.cachedNodeIds.clear();
+            }
             resultsPanel.clear();
             configPanel.render(null);
             const nameInput = document.getElementById('workflow-name-input');
@@ -1810,6 +1905,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.appHistory) window.appHistory.pushSnapshot('New Workflow');
             if (window.showToast) window.showToast('info', 'New Workflow', 'Created blank canvas.');
           }
+          break;
+
+        // --- TABS ---
+        case 'tab:new':
+          if (window.appTabManager) {
+            window.appTabManager.createTab(null, 'New Workflow');
+          }
+          break;
+
+        case 'tab:close':
+          if (window.appTabManager) {
+            window.appTabManager.closeTab(window.appTabManager.activeTabId);
+          }
+          break;
+
+        case 'tab:next':
+          if (window.appTabManager) window.appTabManager.activateNextTab();
+          break;
+
+        case 'tab:prev':
+          if (window.appTabManager) window.appTabManager.activatePrevTab();
           break;
 
         case 'file:open':
@@ -1876,31 +1992,31 @@ document.addEventListener('DOMContentLoaded', async () => {
           break;
 
         case 'edit:cut':
-          canvas.cutSelection();
+          getActiveCanvas()?.cutSelection();
           break;
 
         case 'edit:copy':
-          canvas.copySelection();
+          getActiveCanvas()?.copySelection();
           break;
 
         case 'edit:paste':
-          canvas.pasteClipboard();
+          getActiveCanvas()?.pasteClipboard();
           break;
 
         case 'edit:duplicate':
-          canvas.duplicateSelected();
+          getActiveCanvas()?.duplicateSelected();
           break;
 
         case 'edit:delete':
-          canvas.deleteSelected();
+          getActiveCanvas()?.deleteSelected();
           break;
 
         case 'edit:select-all':
-          canvas.selectAll();
+          getActiveCanvas()?.selectAll();
           break;
 
         case 'edit:find':
-          canvas.openSpotlight();
+          getActiveCanvas()?.openSpotlight();
           break;
 
         // --- VIEW ---
@@ -1967,19 +2083,24 @@ document.addEventListener('DOMContentLoaded', async () => {
           break;
 
         case 'view:canvas-zoom-in':
-          canvas.zoomIn();
+          getActiveCanvas()?.zoomIn();
           break;
 
         case 'view:canvas-zoom-out':
-          canvas.zoomOut();
+          getActiveCanvas()?.zoomOut();
           break;
 
         case 'view:canvas-zoom-reset':
-          canvas.resetZoom();
+          getActiveCanvas()?.resetZoom();
+          break;
+
+        case 'view:canvas-zoom-fit':
+        case 'view:zoom-fit':
+          getActiveCanvas()?.zoomToFit();
           break;
 
         case 'view:autolayout':
-          canvas.autoLayout();
+          getActiveCanvas()?.autoLayout();
           if (window.showToast) window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean layers.');
           break;
 
@@ -2018,10 +2139,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         case 'view:toggle-wire-probes':
         case 'view:toggle_probes':
-        case 'options:toggle-wire-probes':
-          canvas.setWireProbesEnabled(!canvas.wireProbesEnabled);
+        case 'options:toggle-wire-probes': {
+          const curC = getActiveCanvas();
+          if (curC) curC.setWireProbesEnabled(!curC.wireProbesEnabled);
           if (window.appMenuBar) window.appMenuBar.syncMenuStates();
           break;
+        }
 
         case 'view:badge-duration:3000':
         case 'view:badge-duration:5000':
@@ -2029,7 +2152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         case 'view:badge-duration:always':
         case 'view:badge-duration:off': {
           const durationVal = commandId.replace('view:badge-duration:', '');
-          canvas.setNodeBadgeDuration(durationVal);
+          getActiveCanvas()?.setNodeBadgeDuration(durationVal);
           if (window.appMenuBar) window.appMenuBar.syncMenuStates();
           const labelMap = {
             '3000': '3 seconds auto-hide',
@@ -2134,19 +2257,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Ctrl+T: New Tab (allowed even inside inputs)
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
+      e.preventDefault();
+      app.executeCommand('tab:new');
+      return;
+    }
+
+    // Ctrl+W: Close Active Tab (allowed even inside inputs)
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'w' || e.key === 'W')) {
+      e.preventDefault();
+      app.executeCommand('tab:close');
+      return;
+    }
+
+    // Ctrl+Tab: Next Tab (allowed even inside inputs)
+    if (isCtrlOrMeta && !e.shiftKey && e.key === 'Tab') {
+      e.preventDefault();
+      app.executeCommand('tab:next');
+      return;
+    }
+
+    // Ctrl+Shift+Tab: Previous Tab (allowed even inside inputs)
+    if (isCtrlOrMeta && e.shiftKey && e.key === 'Tab') {
+      e.preventDefault();
+      app.executeCommand('tab:prev');
+      return;
+    }
+
+    // Ctrl + N: New Workflow (allowed even inside inputs)
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'n' || e.key === 'N')) {
+      e.preventDefault();
+      app.executeCommand('file:new');
+      return;
+    }
+
     // When focused in text inputs, only intercept explicitly desired shortcuts
     if (isInput) {
       if (isCtrlOrMeta && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         app.executeCommand('file:save');
       }
-      return;
-    }
-
-    // Ctrl + N: New Workflow (prevent browser new window)
-    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'n' || e.key === 'N')) {
-      e.preventDefault();
-      app.executeCommand('file:new');
       return;
     }
 
@@ -2239,7 +2390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const autoLayoutBtn = document.getElementById('btn-autolayout');
   if (autoLayoutBtn) {
     autoLayoutBtn.addEventListener('click', () => {
-      canvas.autoLayout();
+      getActiveCanvas()?.autoLayout();
       window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean left-to-right execution layers.');
     });
   }
@@ -2249,7 +2400,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
       if (confirm('Clear entire workflow canvas?')) {
-        canvas.loadWorkflow({ nodes: [], connections: [] });
+        const curC = getActiveCanvas();
+        if (curC) {
+          curC.loadWorkflow({ nodes: [], connections: [] });
+          if (curC.cachedNodeIds) curC.cachedNodeIds.clear();
+        }
         resultsPanel.clear();
         configPanel.render(null);
         if (window.appHistory) {
@@ -2264,9 +2419,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const zoomInBtn = document.getElementById('btn-zoom-in');
   const zoomOutBtn = document.getElementById('btn-zoom-out');
   const zoomResetBtn = document.getElementById('btn-zoom-reset');
-  if (zoomInBtn) zoomInBtn.addEventListener('click', () => canvas.zoomIn());
-  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => canvas.zoomOut());
-  if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => canvas.resetZoom());
+  const zoomText = document.getElementById('zoom-level-text');
+  if (zoomInBtn) zoomInBtn.addEventListener('click', () => getActiveCanvas()?.zoomIn());
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => getActiveCanvas()?.zoomOut());
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => getActiveCanvas()?.resetZoom());
+  if (zoomText) {
+    zoomText.style.cursor = 'pointer';
+    zoomText.title = 'Click to reset (100%), double-click to fit workflow in view';
+    zoomText.addEventListener('click', () => getActiveCanvas()?.resetZoom());
+    zoomText.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      getActiveCanvas()?.zoomToFit();
+    });
+  }
 
   // 7. Split Pane Resizers
   setupResizers();
@@ -2296,6 +2461,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     palette.setTools(toolsData.tools);
     canvas.setToolsRegistry(toolsData.tools);
     configPanel.setSampleDatasets(samplesData.datasets || []);
+    // Store tools + datasets on TabManager so new tabs inherit them
+    if (window.appTabManager) {
+      window.appTabManager._toolsData = toolsData.tools;
+      window.appTabManager._sampleDatasets = samplesData.datasets || [];
+    }
 
     await refreshSavedWorkflows();
     

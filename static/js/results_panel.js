@@ -59,6 +59,10 @@ class ResultsPanel {
     this.activeMsgFilter = 'all';
     this.totalMsgCounts = { all: 0, error: 0, warning: 0, info: 0 };
 
+    // Column Sorting State
+    this.sortBy = null;
+    this.sortDir = 'asc';
+
     this.initEvents();
   }
 
@@ -146,6 +150,7 @@ class ResultsPanel {
         const nodeName = node ? (node.name || node.type) : this.currentNodeId;
         const filename = `${nodeName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}_export.csv`;
         let url = `/api/export/${this.currentNodeId}?port=${this.currentPort}&format=csv&filename=${encodeURIComponent(filename)}`;
+        if (this.sortBy) url += `&sort_by=${encodeURIComponent(this.sortBy)}&sort_dir=${encodeURIComponent(this.sortDir)}`;
         if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
         if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
         window.location.href = url;
@@ -158,6 +163,7 @@ class ResultsPanel {
         const nodeName = node ? (node.name || node.type) : this.currentNodeId;
         const filename = `${nodeName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}_export.xlsx`;
         let url = `/api/export/${this.currentNodeId}?port=${this.currentPort}&format=excel&filename=${encodeURIComponent(filename)}`;
+        if (this.sortBy) url += `&sort_by=${encodeURIComponent(this.sortBy)}&sort_dir=${encodeURIComponent(this.sortDir)}`;
         if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
         if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
         window.location.href = url;
@@ -286,6 +292,8 @@ class ResultsPanel {
     this.currentPort = 'O';
     this.currentPage = 1;
     this.searchQuery = '';
+    this.sortBy = null;
+    this.sortDir = 'asc';
     if (this.searchInput) this.searchInput.value = '';
     if (this.nodeBadge) this.nodeBadge.textContent = 'No tool selected';
     if (this.portTabsContainer) this.portTabsContainer.innerHTML = '';
@@ -301,6 +309,7 @@ class ResultsPanel {
     this.closeColumnExplorer();
     this.clearCellSelection();
     this.closeContextMenu();
+    this.updateSortIndicator();
     const colsBtnLabel = document.getElementById('columns-btn-label');
     if (colsBtnLabel) colsBtnLabel.textContent = 'Columns';
     this.lastRenderedData = null;
@@ -320,10 +329,15 @@ class ResultsPanel {
   }
 
   showNodeResults(node, port = null) {
+    const prevNodeId = this.currentNodeId;
     this.currentNodeId = node ? node.id : null;
     this.currentPage = 1;
     this.searchQuery = '';
     if (this.searchInput) this.searchInput.value = '';
+    if (prevNodeId !== this.currentNodeId) {
+      this.sortBy = null;
+      this.sortDir = 'asc';
+    }
 
     if (!node) {
       this.clear();
@@ -408,6 +422,9 @@ class ResultsPanel {
 
     try {
       let url = `/api/node-data/${nodeId}?port=${port}&page=${this.currentPage}&page_size=${this.pageSize}&search=${encodeURIComponent(this.searchQuery)}&sample_mode=${encodeURIComponent(this.sampleMode)}`;
+      if (this.sortBy) {
+        url += `&sort_by=${encodeURIComponent(this.sortBy)}&sort_dir=${encodeURIComponent(this.sortDir)}`;
+      }
       if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
       if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
       const data = await this.safeFetchJson(url);
@@ -417,16 +434,19 @@ class ResultsPanel {
         this.recordCountText.textContent = '0 records';
         this.paginationText.textContent = 'Page 1 of 1';
         if (this.partialBanner) this.partialBanner.style.display = 'none';
+        this.updateSortIndicator();
         return;
       }
 
       this.renderGrid(data);
+      this.updateSortIndicator();
       if (this.currentTab === 'chart-view') {
         this.updateChartColumns();
       }
     } catch (err) {
       this.gridWrapper.innerHTML = `<div class="results-empty-msg" style="color: var(--color-error)">Error loading data: ${err.message}</div>`;
       if (this.partialBanner) this.partialBanner.style.display = 'none';
+      this.updateSortIndicator();
     }
   }
 
@@ -534,14 +554,34 @@ class ResultsPanel {
                 joinThTitle = `Source: ${src === 'R' ? 'Right Table (R)' : 'Left Table (L)'}`;
               }
 
-              return `<th class="${joinThClass}" data-col-idx="${colIdx}" data-col-name="${this.escapeHtml(c.name)}" ${joinThTitle ? `title="${joinThTitle}"` : ''}>
+              const isSorted = (this.sortBy === c.name);
+              const sortDir = isSorted ? this.sortDir : null;
+              let sortThClass = isSorted ? ` th-sorted th-sorted-${sortDir}` : '';
+
+              return `<th class="${joinThClass}${sortThClass}" data-col-idx="${colIdx}" data-col-name="${this.escapeAttr(c.name)}" ${joinThTitle ? `title="${joinThTitle}"` : ''}>
                 <div class="col-quality-bar" title="OK: ${q.ok_pct}% (${q.ok_count || 0}) | Null: ${q.null_pct}% (${q.null_count || 0}) | Empty: ${q.blank_pct}% (${q.blank_count || 0})">
                   <div class="quality-seg seg-ok" data-col="${this.escapeHtml(c.name)}" data-seg="ok" style="width: ${q.ok_pct}%" title="Valid / OK: ${q.ok_pct}% (${q.ok_count || 0})"></div>
                   <div class="quality-seg seg-null" data-col="${this.escapeHtml(c.name)}" data-seg="null" style="width: ${q.null_pct}%" title="Null: ${q.null_pct}% (${q.null_count || 0})"></div>
                   <div class="quality-seg seg-empty" data-col="${this.escapeHtml(c.name)}" data-seg="empty" style="width: ${q.blank_pct}%" title="Empty / Blank: ${q.blank_pct}% (${q.blank_count || 0})"></div>
                 </div>
                 <div class="th-content">
-                  <span class="th-name" title="${this.escapeHtml(c.name)} (Click to select column)">${inputPillHtml}${this.escapeHtml(c.name)}</span>
+                  <div class="th-title-row">
+                    <span class="th-name" title="${this.escapeHtml(c.name)} (Click to select column, right-click for options)">${inputPillHtml}${this.escapeHtml(c.name)}</span>
+                    <div class="th-actions">
+                      <button type="button" class="th-sort-btn ${isSorted ? 'is-sorted sorted-' + sortDir : ''}" data-col="${this.escapeAttr(c.name)}" title="Sort ${this.escapeAttr(c.name)}: ${isSorted ? (sortDir === 'asc' ? 'Ascending (click for Descending)' : 'Descending (click to clear)') : 'Click to Sort Ascending'}">
+                        ${isSorted ? (sortDir === 'asc' ? `
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                        ` : `
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                        `) : `
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>
+                        `}
+                      </button>
+                      <button type="button" class="th-menu-btn" data-col="${this.escapeAttr(c.name)}" title="Column Options (Sort, Copy, Hide...)">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                      </button>
+                    </div>
+                  </div>
                   <span class="th-dtype">${this.formatAlteryxTypeBadge(c.dtype)}</span>
                 </div>
                 ${hist.length > 0 ? `
@@ -759,10 +799,42 @@ class ResultsPanel {
       });
     });
 
+    // Sort button click
+    this.gridWrapper.querySelectorAll('.th-sort-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const col = btn.dataset.col;
+        if (col) this.toggleSort(col);
+      });
+    });
+
+    // Column options menu button click
+    this.gridWrapper.querySelectorAll('.th-menu-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const col = btn.dataset.col;
+        const th = btn.closest('th');
+        const colIdx = th ? parseInt(th.dataset.colIdx, 10) : 0;
+        const rect = btn.getBoundingClientRect();
+        this.openColumnMenu(rect.left, rect.bottom + 4, col, colIdx);
+      });
+    });
+
+    // Column header right-click context menu
+    this.gridWrapper.querySelectorAll('th[data-col-idx]').forEach(th => {
+      th.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const col = th.dataset.colName;
+        const colIdx = parseInt(th.dataset.colIdx, 10);
+        this.openColumnMenu(e.clientX, e.clientY, col, colIdx);
+      });
+    });
+
     // Column selection on column header click
     this.gridWrapper.querySelectorAll('th[data-col-idx]').forEach(th => {
       th.addEventListener('click', (e) => {
-        if (e.target.closest('.col-quality-bar') || e.target.closest('.col-hist-sparkline')) {
+        if (e.target.closest('.col-quality-bar') || e.target.closest('.col-hist-sparkline') || e.target.closest('.th-sort-btn') || e.target.closest('.th-menu-btn')) {
           return;
         }
         e.stopPropagation();
@@ -1022,6 +1094,23 @@ class ResultsPanel {
         <span>Select All</span>
         <span class="menu-shortcut">Ctrl+A</span>
       </button>
+      ${colName ? `
+        <div class="grid-context-menu-divider"></div>
+        <button class="grid-context-menu-item" id="ctx-sort-asc">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          <span>Sort Ascending (${this.escapeHtml(colName)})</span>
+        </button>
+        <button class="grid-context-menu-item" id="ctx-sort-desc">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+          <span>Sort Descending (${this.escapeHtml(colName)})</span>
+        </button>
+        ${this.sortBy ? `
+          <button class="grid-context-menu-item" id="ctx-clear-sort">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span>Clear Sort (${this.escapeHtml(this.sortBy)})</span>
+          </button>
+        ` : ''}
+      ` : ''}
       ${isTruncated ? `
         <div class="grid-context-menu-divider"></div>
         <button class="grid-context-menu-item" id="ctx-view-full">
@@ -1034,8 +1123,10 @@ class ResultsPanel {
     document.body.appendChild(menu);
     this.activeContextMenu = menu;
 
-    const menuWidth = 210;
-    const menuHeight = isTruncated ? 210 : 175;
+    const menuWidth = 240;
+    const baseHeight = isTruncated ? 210 : 175;
+    const sortHeight = colName ? (this.sortBy ? 85 : 60) : 0;
+    const menuHeight = baseHeight + sortHeight;
     let posX = x;
     let posY = y;
     if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 8;
@@ -1068,9 +1159,191 @@ class ResultsPanel {
       this.closeContextMenu();
     });
 
+    menu.querySelector('#ctx-sort-asc')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      if (colName) this.applySort(colName, 'asc');
+    });
+
+    menu.querySelector('#ctx-sort-desc')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      if (colName) this.applySort(colName, 'desc');
+    });
+
+    menu.querySelector('#ctx-clear-sort')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.clearSort();
+    });
+
     menu.querySelector('#ctx-view-full')?.addEventListener('click', () => {
       this.closeContextMenu();
       this.showCellContentModal(fullText, colName, rowNum);
+    });
+  }
+
+  openColumnMenu(x, y, colName, colIdx) {
+    this.closeContextMenu();
+    if (!colName) return;
+
+    const isSorted = (this.sortBy === colName);
+    const isAsc = isSorted && this.sortDir === 'asc';
+    const isDesc = isSorted && this.sortDir === 'desc';
+
+    const menu = document.createElement('div');
+    menu.className = 'grid-context-menu column-context-menu';
+    menu.innerHTML = `
+      <div class="grid-context-menu-header">
+        <span class="menu-col-title">${this.escapeHtml(colName)}</span>
+      </div>
+      <button class="grid-context-menu-item ${isAsc ? 'is-active' : ''}" id="col-menu-sort-asc">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        <span>Sort Ascending (A → Z, 0 → 9)</span>
+        ${isAsc ? '<span class="menu-shortcut">Active</span>' : ''}
+      </button>
+      <button class="grid-context-menu-item ${isDesc ? 'is-active' : ''}" id="col-menu-sort-desc">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        <span>Sort Descending (Z → A, 9 → 0)</span>
+        ${isDesc ? '<span class="menu-shortcut">Active</span>' : ''}
+      </button>
+      ${this.sortBy ? `
+        <button class="grid-context-menu-item" id="col-menu-clear-sort">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span>Clear Sort</span>
+        </button>
+      ` : ''}
+      <div class="grid-context-menu-divider"></div>
+      <button class="grid-context-menu-item" id="col-menu-select">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="5 12 12 19 19 12"></polyline></svg>
+        <span>Select Column</span>
+      </button>
+      <button class="grid-context-menu-item" id="col-menu-copy-name">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span>Copy Column Name</span>
+      </button>
+      <button class="grid-context-menu-item" id="col-menu-copy-values">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>Copy Column Values</span>
+      </button>
+      <button class="grid-context-menu-item" id="col-menu-hide">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+        <span>Hide Column</span>
+      </button>
+    `;
+
+    document.body.appendChild(menu);
+    this.activeContextMenu = menu;
+
+    const menuWidth = 245;
+    const menuHeight = this.sortBy ? 245 : 215;
+    let posX = x;
+    let posY = y;
+    if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 8;
+    if (posY + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight - 8;
+    menu.style.left = `${Math.max(8, posX)}px`;
+    menu.style.top = `${Math.max(8, posY)}px`;
+
+    menu.querySelector('#col-menu-sort-asc')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.applySort(colName, 'asc');
+    });
+
+    menu.querySelector('#col-menu-sort-desc')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.applySort(colName, 'desc');
+    });
+
+    menu.querySelector('#col-menu-clear-sort')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.clearSort();
+    });
+
+    menu.querySelector('#col-menu-select')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.selectColumn(colIdx);
+    });
+
+    menu.querySelector('#col-menu-copy-name')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      navigator.clipboard.writeText(colName).then(() => {
+        if (window.showToast) window.showToast('success', 'Copied', `Copied column name "${colName}".`);
+      });
+    });
+
+    menu.querySelector('#col-menu-copy-values')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      if (!this.lastRenderedData || !this.lastRenderedData.records) return;
+      const values = this.lastRenderedData.records.map(r => this.formatTsvCell(r[colName]));
+      const tsv = [colName, ...values].join('\n');
+      navigator.clipboard.writeText(tsv).then(() => {
+        if (window.showToast) window.showToast('success', 'Copied', `Copied ${values.length} values for column "${colName}".`);
+      });
+    });
+
+    menu.querySelector('#col-menu-hide')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.hiddenColumns.add(colName);
+      this.renderGrid(this.lastRenderedData);
+    });
+  }
+
+  toggleSort(colName) {
+    if (!colName) return;
+    if (this.sortBy === colName) {
+      if (this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else {
+        this.sortBy = null;
+        this.sortDir = 'asc';
+      }
+    } else {
+      this.sortBy = colName;
+      this.sortDir = 'asc';
+    }
+    this.currentPage = 1;
+    if (this.currentNodeId) {
+      this.loadData(this.currentNodeId, this.currentPort);
+    }
+  }
+
+  applySort(colName, dir = 'asc') {
+    if (!colName) return;
+    this.sortBy = colName;
+    this.sortDir = dir === 'desc' ? 'desc' : 'asc';
+    this.currentPage = 1;
+    if (this.currentNodeId) {
+      this.loadData(this.currentNodeId, this.currentPort);
+    }
+  }
+
+  clearSort() {
+    if (!this.sortBy) return;
+    this.sortBy = null;
+    this.sortDir = 'asc';
+    this.currentPage = 1;
+    if (this.currentNodeId) {
+      this.loadData(this.currentNodeId, this.currentPort);
+    }
+  }
+
+  updateSortIndicator() {
+    const el = document.getElementById('results-sort-indicator');
+    if (!el) return;
+    if (!this.sortBy) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+
+    const isAsc = this.sortDir === 'asc';
+    el.style.display = 'inline-flex';
+    el.innerHTML = `
+      <span class="sort-badge-icon">${isAsc ? '▲' : '▼'}</span>
+      <span class="sort-badge-label">Sorted: <strong>${this.escapeHtml(this.sortBy)}</strong> (${isAsc ? 'Asc' : 'Desc'})</span>
+      <button class="btn-clear-sort" id="btn-clear-active-sort" title="Clear sort">&times;</button>
+    `;
+
+    el.querySelector('#btn-clear-active-sort')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.clearSort();
     });
   }
 

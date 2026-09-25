@@ -1557,11 +1557,14 @@ class WorkflowExecutor:
         search: str = "",
         run_id: Optional[str] = None,
         session_id: Optional[str] = None,
-        sample_mode: str = "page"
+        sample_mode: str = "page",
+        sort_by: Optional[str] = None,
+        sort_dir: str = "asc"
     ) -> Dict[str, Any]:
         """
         Returns paginated or sampled records and metadata for a specific node and output port.
         Supports sample_mode: 'page' (default), 'random', or 'head'.
+        Supports sorting by single or multiple columns via sort_by and sort_dir.
         """
         run_entry = self.cache_manager.get_run(run_id=run_id, session_id=session_id)
         effective_cache = run_entry.data_cache if run_entry else self.data_cache
@@ -1617,6 +1620,62 @@ class WorkflowExecutor:
                 filtered_df = df[mask]
             else:
                 filtered_df = df.iloc[0:0]
+
+        # Optional column sorting across entire dataset
+        actual_sort_by = None
+        actual_sort_dir = "asc"
+        if sort_by and len(filtered_df) > 0:
+            if "," in sort_by:
+                cols_to_sort = []
+                asc_list = []
+                for part in sort_by.split(","):
+                    part = part.strip()
+                    if not part:
+                        continue
+                    if ":" in part:
+                        cname, cdir = part.split(":", 1)
+                        cname = cname.strip()
+                        casc = cdir.strip().lower() != "desc"
+                    else:
+                        cname = part
+                        casc = (str(sort_dir).lower() != "desc")
+                    if cname in filtered_df.columns:
+                        cols_to_sort.append(cname)
+                        asc_list.append(casc)
+                if cols_to_sort:
+                    actual_sort_by = sort_by
+                    actual_sort_dir = sort_dir
+                    try:
+                        filtered_df = filtered_df.sort_values(
+                            by=cols_to_sort,
+                            ascending=asc_list,
+                            na_position="last"
+                        )
+                    except Exception:
+                        pass
+            elif sort_by in filtered_df.columns:
+                actual_sort_by = sort_by
+                actual_sort_dir = "desc" if str(sort_dir).lower() == "desc" else "asc"
+                ascending = (actual_sort_dir == "asc")
+                try:
+                    filtered_df = filtered_df.sort_values(
+                        by=sort_by,
+                        ascending=ascending,
+                        na_position="last",
+                        kind="quicksort"
+                    )
+                except TypeError:
+                    try:
+                        filtered_df = filtered_df.sort_values(
+                            by=sort_by,
+                            ascending=ascending,
+                            na_position="last",
+                            key=lambda col: col.astype(str)
+                        )
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
 
         total_records = len(filtered_df)
         total_pages = max(1, math.ceil(total_records / page_size)) if page_size > 0 else 1
@@ -1685,6 +1744,8 @@ class WorkflowExecutor:
             "is_partial": is_partial,
             "is_wide_table": is_wide_table,
             "sample_mode": actual_sample_mode,
+            "sort_by": actual_sort_by,
+            "sort_dir": actual_sort_dir if actual_sort_by else None,
             "memory_bytes": mem_bytes,
             "memory_formatted": mem_formatted,
             "pagination": {

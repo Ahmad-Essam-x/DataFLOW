@@ -699,22 +699,26 @@ textarea.form-control {
   overflow: hidden;
 }
 
-#canvas-wrapper {
+#canvas-wrapper,
+.canvas-wrapper {
   position: absolute;
   top: 0;
   left: 0;
-  width: 10000px;
-  height: 10000px;
+  width: 0;
+  height: 0;
+  overflow: visible !important;
   transform-origin: 0 0;
+  pointer-events: none;
 }
 
-.canvas-svg {
+.canvas-svg,
+#canvas-svg {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+  top: -50000px;
+  left: -50000px;
+  width: 100000px;
+  height: 100000px;
+  overflow: visible !important;
   pointer-events: none;
   z-index: 5;
 }
@@ -1262,6 +1266,167 @@ textarea.form-control {
   color: var(--text-muted);
   margin-left: 4px;
 }
+
+/* Active Column Sort Toolbar Badge */
+.results-sort-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  color: #38bdf8;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  margin-right: auto;
+  user-select: none;
+  animation: fadeInSort 0.15s ease-out;
+}
+
+@keyframes fadeInSort {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+body.light-theme .results-sort-indicator {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0284c7;
+}
+
+.results-sort-indicator .sort-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+}
+
+.results-sort-indicator .btn-clear-sort {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 3px;
+  margin-left: 2px;
+  cursor: pointer;
+  border-radius: 2px;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.results-sort-indicator .btn-clear-sort:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* Column Header Titles and Sort Controls */
+.th-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.th-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.th-name {
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.th-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.th-sort-btn,
+.th-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+.data-table th:hover .th-sort-btn,
+.data-table th:hover .th-menu-btn {
+  opacity: 0.75;
+}
+
+.th-sort-btn:hover,
+.th-menu-btn:hover {
+  opacity: 1 !important;
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary);
+}
+
+.th-sort-btn.is-sorted {
+  opacity: 1 !important;
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.18);
+}
+
+body.light-theme .th-sort-btn.is-sorted {
+  color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.15);
+}
+
+.data-table th.th-sorted {
+  background: rgba(14, 165, 233, 0.08) !important;
+  box-shadow: inset 0 -2px 0 #0284c7;
+}
+
+body.light-theme .data-table th.th-sorted {
+  background: rgba(2, 132, 199, 0.06) !important;
+  box-shadow: inset 0 -2px 0 #0284c7;
+}
+
+/* Grid Context Menu Header & Active State */
+.grid-context-menu-header {
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+
+.menu-col-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid-context-menu-item.is-active {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+body.light-theme .grid-context-menu-item.is-active {
+  color: #0284c7;
+}
+
 
 /* Join Tool Results Pane Column Header Cell Highlights (Left & Right streams) */
 .data-table th.join-th-l {
@@ -2738,17 +2903,20 @@ body.light-theme .data-table td.cell-selected {
 }
 
 /* Canvas Object Layers */
-#containers-layer, #comments-layer, #nodes-layer {
+.containers-layer, #containers-layer,
+.comments-layer, #comments-layer,
+.nodes-layer, #nodes-layer {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 0;
+  height: 0;
+  overflow: visible !important;
   pointer-events: none;
 }
-#containers-layer { z-index: 2; }
-#comments-layer { z-index: 3; }
-#nodes-layer { z-index: 10; }
+.containers-layer, #containers-layer { z-index: 2; }
+.comments-layer, #comments-layer { z-index: 3; }
+.nodes-layer, #nodes-layer { z-index: 10; }
 
 /* Tool Container (Alteryx Style) */
 .tool-container {
@@ -6996,3 +7164,166 @@ td.cell-truncated::after {
   cursor: not-allowed;
 }
 
+
+/* ============================================================
+   Workflow Tab Strip — Multi-Tab Layout
+   ============================================================ */
+
+.workflow-tab-strip {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  height: 34px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  padding: 0 4px;
+  gap: 2px;
+  z-index: 90;
+  position: relative;
+}
+
+.workflow-tab-strip::-webkit-scrollbar {
+  height: 3px;
+}
+
+.workflow-tab-strip::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 2px;
+}
+
+.workflow-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 8px 0 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 200px;
+  min-width: 90px;
+  border-radius: 4px 4px 0 0;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+  position: relative;
+  user-select: none;
+}
+
+.workflow-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.workflow-tab.active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 500;
+}
+
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-warning, #f59e0b);
+  flex-shrink: 0;
+  display: none;
+  opacity: 0.85;
+}
+
+.workflow-tab.is-dirty .tab-dirty-dot {
+  display: block;
+}
+
+.tab-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.1s, color 0.1s;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.workflow-tab:hover .tab-close-btn,
+.workflow-tab.active .tab-close-btn {
+  opacity: 1;
+}
+
+.tab-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.tab-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+
+.tab-new-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Canvas tab host — each tab gets its own absolutely-positioned canvas area */
+.tab-canvas-host {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow: hidden;
+}
+
+.tab-canvas-host.active-tab-host {
+  display: block;
+}
+
+/* canvas-wrapper inside a tab host allows unlimited dynamic canvas space */
+.tab-canvas-host .canvas-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: visible !important;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+/* ============================================================
+   END Workflow Tab Strip
+   ============================================================ */

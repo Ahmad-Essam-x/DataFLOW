@@ -249,3 +249,28 @@ class TestLargeDatasetPreviewAPI:
         payload = res.get_json()
         assert payload["is_wide_table"] is True
         assert len(payload["columns"]) == 45
+
+    def test_api_node_data_with_sorting_asc_and_desc(self, test_client, large_cache_setup):
+        tall_id = large_cache_setup['tall_id']
+        # Ascending sort by ID
+        url_asc = f"/api/node-data/{tall_id}?port=O&page=1&page_size=10&sort_by=ID&sort_dir=asc"
+        res_asc = test_client.get(url_asc)
+        assert res_asc.status_code == 200
+        payload_asc = res_asc.get_json()
+        assert payload_asc["available"] is True
+        assert payload_asc["sort_by"] == "ID"
+        assert payload_asc["sort_dir"] == "asc"
+        assert payload_asc["records"][0]["ID"] == 1
+        assert payload_asc["records"][1]["ID"] == 2
+
+        # Descending sort by ID across entire dataset (10,000 rows)
+        url_desc = f"/api/node-data/{tall_id}?port=O&page=1&page_size=10&sort_by=ID&sort_dir=desc"
+        res_desc = test_client.get(url_desc)
+        assert res_desc.status_code == 200
+        payload_desc = res_desc.get_json()
+        assert payload_desc["available"] is True
+        assert payload_desc["sort_by"] == "ID"
+        assert payload_desc["sort_dir"] == "desc"
+        assert payload_desc["records"][0]["ID"] == 5000
+        assert payload_desc["records"][1]["ID"] == 4999
+

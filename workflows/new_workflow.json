@@ -2,241 +2,488 @@
   "name": "new_workflow",
   "description": "",
   "metadata": {
-    "description": "",
-    "author": "",
+    "created_at": "2026-09-25T19:23:56",
+    "updated_at": "2026-09-25T19:23:56",
     "version": "2.1.0",
-    "created_at": "2026-09-15T03:56:34",
-    "updated_at": "2026-09-15T03:56:34"
+    "author": "Ahmed Gad",
+    "description": ""
   },
   "viewport": {
-    "zoom": 2.5,
-    "panX": -2455.6007149407974,
-    "panY": -1042.0851617795415
+    "zoom": 0.53,
+    "panX": 474.23000000000013,
+    "panY": 141.47000000000003
   },
   "nodes": [
     {
-      "id": "node_1789432945539_316",
+      "id": "node_1790352754432_141",
       "type": "input_data",
-      "name": "spotify_history.csv",
-      "x": 352,
-      "y": 336,
+      "name": "AR Reconciliation Report.xlsx",
+      "x": 368,
+      "y": 144,
       "config": {
-        "file_path": "d5d81240_spotify_history.csv",
-        "original_file_name": "spotify_history.csv",
-        "file_type": "csv",
+        "file_path": "67a0e40a_ARReconciliationReport.xlsx",
+        "original_file_name": "ARReconciliationReport.xlsx",
+        "file_type": "excel",
         "delimiter": ",",
         "has_header": true,
         "start_row": 1,
         "columns": [
-          "spotify_track_uri",
-          "ts",
-          "platform",
-          "ms_played",
-          "track_name",
-          "artist_name",
-          "album_name",
-          "reason_start",
-          "reason_end",
-          "shuffle",
-          "skipped"
+          "Site Name",
+          "Sponsor",
+          "Protocol Number",
+          "Default Currency",
+          "Spot Fx Rate",
+          "Payment Last Received Date",
+          "Total Revenue",
+          "Total Revenue - CAD",
+          "Total Amount Paid - Default Currency",
+          "Total Amount Paid - CAD",
+          "0-29 - Default Currency",
+          "0-29 - CAD",
+          "30-59 - Default Currency",
+          "30-59 - CAD",
+          "60-89 - Default Currency",
+          "60-89 - CAD",
+          "90-119 - Default Currency",
+          "90-119 - CAD",
+          "120-179 - Default Currency",
+          "120-179 - CAD",
+          "180-364 - Default Currency",
+          "180-364 - CAD",
+          "365+ Default Currency",
+          "365+ - CAD",
+          "11001 - Accounts Receivable (Total Unpaid) excluding Holdback - Default Currency",
+          "11001 - Accounts Receivable (Total Unpaid) excluding Holdback - CAD",
+          "11004 - Unpaid Holdback - Default Currency",
+          "11004 - Unpaid Holdback - CAD",
+          "11002 - Unapplied (Unreconciled) Cash - Default Currency",
+          "11002 - Unapplied (Unreconciled) Cash - CAD",
+          "25005 - Deferred Revenue (Total Overpay) - Default Currency",
+          "25005 - Deferred Revenue (Total Overpay) - CAD",
+          "Net AR - Default Currency",
+          "Net AR - CAD"
         ],
-        "row_count": 149860
+        "row_count": 53,
+        "sheet_name": "Sheet 1"
       },
-      "container_id": null,
+      "container_id": "container_1790353251743_268",
       "is_cached": false
     },
     {
-      "id": "node_1789433024431_384",
+      "id": "node_1790352773436_355",
       "type": "summarize",
       "name": "Summarize",
-      "x": 576,
-      "y": 336,
+      "x": 640,
+      "y": 112,
       "config": {
         "actions": [
           {
-            "field": "platform",
+            "field": "Sponsor",
             "action": "GroupBy",
-            "output_name": "platform"
+            "output_name": "Sponsor"
           },
           {
-            "field": "platform",
-            "action": "Count",
-            "output_name": "Count_platform"
-          }
-        ]
-      },
-      "container_id": null,
-      "is_cached": false
-    },
-    {
-      "id": "node_1789433109238_414",
-      "type": "clean",
-      "name": "Data Clean",
-      "x": 576,
-      "y": 496,
-      "config": {
-        "columns": [
-          "track_name",
-          "artist_name"
-        ],
-        "remove_tabs_linebreaks": true,
-        "case_transformation": "title",
-        "case_mode": "title"
-      },
-      "container_id": null,
-      "is_cached": false
-    },
-    {
-      "id": "node_1789433207027_351",
-      "type": "summarize",
-      "name": "Summarize",
-      "x": 752,
-      "y": 496,
-      "config": {
-        "actions": [
-          {
-            "field": "artist_name",
-            "action": "GroupBy",
-            "output_name": "artist_name"
-          },
-          {
-            "field": "ms_played",
+            "field": "Total Revenue",
             "action": "Sum",
-            "output_name": "Sum_ms_played"
+            "output_name": "Sum_Total Revenue"
           }
         ]
       },
-      "container_id": null,
+      "container_id": "container_1790353251743_268",
       "is_cached": false
     },
     {
-      "id": "node_1789433257247_401",
+      "id": "node_1790352817819_293",
+      "type": "select",
+      "name": "Select",
+      "x": 512,
+      "y": 240,
+      "config": {
+        "fields": [
+          {
+            "original": "Site Name",
+            "keep": true,
+            "rename": "Site Name",
+            "type": "none"
+          },
+          {
+            "original": "Sponsor",
+            "keep": true,
+            "rename": "Sponsor",
+            "type": "none"
+          },
+          {
+            "original": "Protocol Number",
+            "keep": true,
+            "rename": "Protocol Number",
+            "type": "double"
+          },
+          {
+            "original": "Default Currency",
+            "keep": true,
+            "rename": "Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "Spot Fx Rate",
+            "keep": true,
+            "rename": "Spot Fx Rate",
+            "type": "none"
+          },
+          {
+            "original": "Payment Last Received Date",
+            "keep": true,
+            "rename": "Payment Last Received Date",
+            "type": "none"
+          },
+          {
+            "original": "Total Revenue",
+            "keep": true,
+            "rename": "Total Revenue",
+            "type": "none"
+          },
+          {
+            "original": "Total Revenue - CAD",
+            "keep": true,
+            "rename": "Total Revenue - CAD",
+            "type": "none"
+          },
+          {
+            "original": "Total Amount Paid - Default Currency",
+            "keep": true,
+            "rename": "Total Amount Paid - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "Total Amount Paid - CAD",
+            "keep": true,
+            "rename": "Total Amount Paid - CAD",
+            "type": "none"
+          },
+          {
+            "original": "0-29 - Default Currency",
+            "keep": true,
+            "rename": "0-29 - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "0-29 - CAD",
+            "keep": true,
+            "rename": "0-29 - CAD",
+            "type": "none"
+          },
+          {
+            "original": "30-59 - Default Currency",
+            "keep": true,
+            "rename": "30-59 - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "30-59 - CAD",
+            "keep": true,
+            "rename": "30-59 - CAD",
+            "type": "none"
+          },
+          {
+            "original": "60-89 - Default Currency",
+            "keep": true,
+            "rename": "60-89 - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "60-89 - CAD",
+            "keep": true,
+            "rename": "60-89 - CAD",
+            "type": "none"
+          },
+          {
+            "original": "90-119 - Default Currency",
+            "keep": true,
+            "rename": "90-119 - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "90-119 - CAD",
+            "keep": true,
+            "rename": "90-119 - CAD",
+            "type": "none"
+          },
+          {
+            "original": "120-179 - Default Currency",
+            "keep": true,
+            "rename": "120-179 - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "120-179 - CAD",
+            "keep": true,
+            "rename": "120-179 - CAD",
+            "type": "none"
+          },
+          {
+            "original": "180-364 - Default Currency",
+            "keep": true,
+            "rename": "180-364 - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "180-364 - CAD",
+            "keep": true,
+            "rename": "180-364 - CAD",
+            "type": "none"
+          },
+          {
+            "original": "365+ Default Currency",
+            "keep": true,
+            "rename": "365+ Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "365+ - CAD",
+            "keep": true,
+            "rename": "365+ - CAD",
+            "type": "none"
+          },
+          {
+            "original": "11001 - Accounts Receivable (Total Unpaid) excluding Holdback - Default Currency",
+            "keep": true,
+            "rename": "11001 - Accounts Receivable (Total Unpaid) excluding Holdback - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "11001 - Accounts Receivable (Total Unpaid) excluding Holdback - CAD",
+            "keep": true,
+            "rename": "11001 - Accounts Receivable (Total Unpaid) excluding Holdback - CAD",
+            "type": "none"
+          },
+          {
+            "original": "11004 - Unpaid Holdback - Default Currency",
+            "keep": true,
+            "rename": "11004 - Unpaid Holdback - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "11004 - Unpaid Holdback - CAD",
+            "keep": true,
+            "rename": "11004 - Unpaid Holdback - CAD",
+            "type": "none"
+          },
+          {
+            "original": "11002 - Unapplied (Unreconciled) Cash - Default Currency",
+            "keep": true,
+            "rename": "11002 - Unapplied (Unreconciled) Cash - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "11002 - Unapplied (Unreconciled) Cash - CAD",
+            "keep": true,
+            "rename": "11002 - Unapplied (Unreconciled) Cash - CAD",
+            "type": "none"
+          },
+          {
+            "original": "25005 - Deferred Revenue (Total Overpay) - Default Currency",
+            "keep": true,
+            "rename": "25005 - Deferred Revenue (Total Overpay) - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "25005 - Deferred Revenue (Total Overpay) - CAD",
+            "keep": true,
+            "rename": "25005 - Deferred Revenue (Total Overpay) - CAD",
+            "type": "none"
+          },
+          {
+            "original": "Net AR - Default Currency",
+            "keep": true,
+            "rename": "Net AR - Default Currency",
+            "type": "none"
+          },
+          {
+            "original": "Net AR - CAD",
+            "keep": true,
+            "rename": "Net AR - CAD",
+            "type": "none"
+          }
+        ]
+      },
+      "container_id": "container_1790353251743_268",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790352844620_319",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 656,
+      "y": 288,
+      "config": {
+        "actions": [
+          {
+            "field": "Sponsor",
+            "action": "GroupBy",
+            "output_name": "Sponsor"
+          },
+          {
+            "field": "Sponsor",
+            "action": "Count",
+            "output_name": "Count_Sponsor"
+          }
+        ]
+      },
+      "container_id": "container_1790353251743_268",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790352950076_950",
       "type": "formula",
       "name": "Formula",
-      "x": 864,
-      "y": 496,
+      "x": 1072,
+      "y": 96,
       "config": {
         "formulas": [
           {
-            "output_field": "Hrs played",
-            "expression": "[Sum_ms_played]/1000/60/60",
+            "output_field": "total amounttt",
+            "expression": "Replace(Replace([Total Revenue], '$', '') ,',', '')",
             "type": "float"
           }
         ]
       },
-      "container_id": null,
-      "is_cached": true
-    },
-    {
-      "id": "node_1789433329783_163",
-      "type": "sort",
-      "name": "Sort",
-      "x": 992,
-      "y": 496,
-      "config": {
-        "sort_by": [
-          {
-            "column": "Hrs played",
-            "ascending": false
-          }
-        ]
-      },
-      "container_id": null,
+      "container_id": "container_1790353261986_585",
       "is_cached": false
     },
     {
-      "id": "node_1789433670288_249",
-      "type": "join",
-      "name": "Join",
-      "x": 1280,
-      "y": 416,
+      "id": "node_1790353157146_875",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 1408,
+      "y": 96,
       "config": {
-        "select_fields": [
+        "actions": [
           {
-            "field": "artist_name",
-            "source": "L",
-            "selected": true,
-            "rename": "artist_name"
+            "field": "Sponsor",
+            "action": "GroupBy",
+            "output_name": "Sponsor"
           },
           {
-            "field": "Sum_ms_played",
-            "source": "L",
-            "selected": true,
-            "rename": "Sum_ms_played"
-          },
-          {
-            "field": "Hrs played",
-            "source": "L",
-            "selected": true,
-            "rename": "Hrs played"
-          }
-        ],
-        "join_keys": [
-          {
-            "left_key": "artist_name",
-            "right_key": "artist_name"
+            "field": "total amounttt",
+            "action": "Sum",
+            "output_name": "Sum_total amounttt"
           }
         ]
       },
-      "container_id": null,
+      "container_id": "container_1790353261986_585",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790353187588_295",
+      "type": "filter",
+      "name": "Filter",
+      "x": 1248,
+      "y": 208,
+      "config": {
+        "conditions": [
+          {
+            "column": "Sponsor",
+            "operator": "==",
+            "value": "abbvie",
+            "value_max": "",
+            "ignore_case": true
+          }
+        ]
+      },
+      "container_id": "container_1790353261986_585",
       "is_cached": false
     }
   ],
   "connections": [
     {
-      "id": "conn_1789433025942_645",
-      "source": "node_1789432945539_316",
+      "id": "conn_1790352774693_660",
+      "source": "node_1790352754432_141",
       "sourceHandle": "O",
-      "target": "node_1789433024431_384",
+      "target": "node_1790352773436_355",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1789433110845_203",
-      "source": "node_1789432945539_316",
+      "id": "conn_1790352821202_343",
+      "source": "node_1790352754432_141",
       "sourceHandle": "O",
-      "target": "node_1789433109238_414",
+      "target": "node_1790352817819_293",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1789433229484_188",
-      "source": "node_1789433109238_414",
+      "id": "conn_1790352847313_316",
+      "source": "node_1790352817819_293",
       "sourceHandle": "O",
-      "target": "node_1789433207027_351",
+      "target": "node_1790352844620_319",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1789433258600_613",
-      "source": "node_1789433207027_351",
+      "id": "conn_1790352952499_657",
+      "source": "node_1790352817819_293",
       "sourceHandle": "O",
-      "target": "node_1789433257247_401",
+      "target": "node_1790352950076_950",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1789433331722_571",
-      "source": "node_1789433257247_401",
+      "id": "conn_1790353164281_745",
+      "source": "node_1790352950076_950",
       "sourceHandle": "O",
-      "target": "node_1789433329783_163",
+      "target": "node_1790353157146_875",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1789433676876_33",
-      "source": "node_1789433329783_163",
+      "id": "conn_1790353188739_317",
+      "source": "node_1790352950076_950",
       "sourceHandle": "O",
-      "target": "node_1789433670288_249",
-      "targetHandle": "L"
-    },
-    {
-      "id": "conn_1789433698652_96",
-      "source": "node_1789432945539_316",
-      "sourceHandle": "O",
-      "target": "node_1789433670288_249",
-      "targetHandle": "R"
+      "target": "node_1790353187588_295",
+      "targetHandle": "I"
     }
   ],
-  "containers": [],
-  "comments": [],
-  "cached_node_ids": [
-    "node_1789433257247_401"
+  "containers": [
+    {
+      "id": "container_1790353251743_268",
+      "title": "Tool Container",
+      "x": 344,
+      "y": 54,
+      "width": 464,
+      "height": 336,
+      "color": "#0284c7",
+      "textColor": "#ffffff",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "fillOpacity": 12,
+      "margin": 24,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "node_1790352754432_141",
+        "node_1790352773436_355",
+        "node_1790352817819_293",
+        "node_1790352844620_319"
+      ]
+    },
+    {
+      "id": "container_1790353261986_585",
+      "title": "Tool Container",
+      "x": 1040,
+      "y": 16,
+      "width": 440,
+      "height": 346,
+      "color": "#ea580c",
+      "textColor": "#ffffff",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "fillOpacity": 12,
+      "margin": 24,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "node_1790352950076_950",
+        "node_1790353157146_875",
+        "node_1790353187588_295"
+      ]
+    }
   ],
+  "comments": [],
+  "cached_node_ids": [],
   "auto_cache_upstream": false
 }

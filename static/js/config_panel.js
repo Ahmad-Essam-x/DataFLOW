@@ -5,7 +5,7 @@
 
 class ConfigPanel {
   constructor(canvas) {
-    this.canvas = canvas;
+    this._canvas = canvas;
     this.currentNode = null;
     this.sampleDatasets = [];
 
@@ -13,6 +13,18 @@ class ConfigPanel {
     this.iconEl = document.getElementById('config-tool-icon');
     this.categoryEl = document.getElementById('config-tool-category');
     this.contentEl = document.getElementById('config-content');
+  }
+
+  get canvas() {
+    return (window.appTabManager && window.appTabManager.activeCanvas) || window.appCanvas || this._canvas;
+  }
+
+  set canvas(c) {
+    this._canvas = c;
+  }
+
+  setCanvas(c) {
+    this._canvas = c;
   }
 
   setSampleDatasets(datasets) {

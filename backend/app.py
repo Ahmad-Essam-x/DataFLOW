@@ -403,6 +403,8 @@ def get_node_data(node_id):
     page_size = int(request.args.get("page_size", 100))
     search = request.args.get("search", "")
     sample_mode = request.args.get("sample_mode", "page")
+    sort_by = request.args.get("sort_by")
+    sort_dir = request.args.get("sort_dir", "asc")
     run_id = request.args.get("run_id") or request.headers.get("X-Run-ID")
     session_id = request.args.get("session_id") or request.headers.get("X-Session-ID")
 
@@ -415,7 +417,9 @@ def get_node_data(node_id):
             search=search,
             run_id=run_id,
             session_id=session_id,
-            sample_mode=sample_mode
+            sample_mode=sample_mode,
+            sort_by=sort_by,
+            sort_dir=sort_dir
         )
         return jsonify(res)
     except Exception as e:
@@ -620,6 +624,8 @@ def export_node_data(node_id):
     port = request.args.get("port", "O")
     fmt = request.args.get("format", "csv").lower()
     custom_name = request.args.get("filename", "").strip()
+    sort_by = request.args.get("sort_by")
+    sort_dir = request.args.get("sort_dir", "asc")
     run_id = request.args.get("run_id") or request.headers.get("X-Run-ID")
     session_id = request.args.get("session_id") or request.headers.get("X-Session-ID")
 
@@ -633,6 +639,13 @@ def export_node_data(node_id):
     df = node_cache[port]
     if not isinstance(df, pd.DataFrame):
         return jsonify({"error": "Data is not tabular."}), 400
+
+    if sort_by and sort_by in df.columns:
+        ascending = (str(sort_dir).lower() != "desc")
+        try:
+            df = df.sort_values(by=sort_by, ascending=ascending, na_position="last")
+        except Exception:
+            pass
 
     base_name = custom_name if custom_name else f"export_{node_id}_{port}"
     base_name = re.sub(r'[^\w\-_\.]', '_', base_name).strip()

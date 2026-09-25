@@ -6,15 +6,35 @@
  */
 
 class Canvas {
-  constructor(containerId, options = {}) {
-    this.container = document.getElementById(containerId);
-    this.wrapper = document.getElementById('canvas-wrapper');
-    this.svg = document.getElementById('canvas-svg');
-    this.wiresGroup = document.getElementById('wires-group');
-    this.tempWire = document.getElementById('temp-wire');
-    this.containersLayer = document.getElementById('containers-layer');
-    this.commentsLayer = document.getElementById('comments-layer');
-    this.nodesLayer = document.getElementById('nodes-layer');
+  constructor(containerOrId, options = {}) {
+    // Accept either a string ID (legacy) or a DOM element (TabManager host div)
+    const tabId = options.tabId || null;
+
+    if (typeof containerOrId === 'string') {
+      this.container = document.getElementById(containerOrId);
+      this.wrapper = document.getElementById('canvas-wrapper');
+      this.svg = document.getElementById('canvas-svg');
+      this.wiresGroup = document.getElementById('wires-group');
+      this.tempWire = document.getElementById('temp-wire');
+      this.containersLayer = document.getElementById('containers-layer');
+      this.commentsLayer = document.getElementById('comments-layer');
+      this.nodesLayer = document.getElementById('nodes-layer');
+    } else {
+      // DOM element (tab host div from TabManager)
+      this.container = containerOrId.closest('#canvas-container') || document.getElementById('canvas-container');
+      const hostEl = containerOrId;
+      this.wrapper = hostEl.querySelector('.canvas-wrapper') || hostEl.querySelector(`#tab-canvas-wrapper-${tabId}`);
+      this.svg = hostEl.querySelector('.canvas-svg') || hostEl.querySelector(`#tab-canvas-svg-${tabId}`);
+      this.wiresGroup = this.svg ? (this.svg.querySelector('g') || this.svg.querySelector(`#tab-wires-group-${tabId}`)) : null;
+      this.tempWire = this.svg ? (this.svg.querySelector('.temp-wire') || this.svg.querySelector(`#tab-temp-wire-${tabId}`)) : null;
+      this.containersLayer = hostEl.querySelector('.containers-layer') || hostEl.querySelector(`#tab-containers-layer-${tabId}`);
+      this.commentsLayer = hostEl.querySelector('.comments-layer') || hostEl.querySelector(`#tab-comments-layer-${tabId}`);
+      this.nodesLayer = hostEl.querySelector('.nodes-layer') || hostEl.querySelector(`#tab-nodes-layer-${tabId}`);
+    }
+    if (this.svg && !this.svg.getAttribute('viewBox')) {
+      this.svg.setAttribute('viewBox', '-50000 -50000 100000 100000');
+    }
+    this.tabId = tabId;
     this.zoomText = document.getElementById('zoom-level-text');
 
     this.onSelectNode = options.onSelectNode || (() => {});
@@ -111,24 +131,158 @@ class Canvas {
     }
   }
 
-  createWireDeleteBtn() {
-    let btn = document.getElementById('wire-delete-btn');
-    if (!btn) {
-      btn = document.createElement('div');
-      btn.id = 'wire-delete-btn';
-      btn.className = 'wire-delete-btn';
-      btn.innerHTML = '&times;';
-      btn.title = 'Click to delete this connection (Delete / Backspace)';
-      btn.style.display = 'none';
-      this.wrapper.appendChild(btn);
+  /** Checks if a click event targeted empty canvas background (not interactive objects) */
+  isCanvasBackground(e) {
+    if (e.target.closest('.node-card, .tool-container, .comment-note, .wire-group, .wire-delete-btn, .port, .overview-floating-window, .minimap-box, #overview-window, .canvas-overview-navigator, .wire-probe-card, .canvas-hint, .canvas-dropzone-overlay, .spotlight-backdrop')) {
+      return false;
+    }
+    return Boolean(
+      (this.container && this.container.contains(e.target)) ||
+      (this.wrapper && this.wrapper.contains(e.target))
+    );
+  }
 
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (this.selectedConnectionId) {
-          this.removeConnection(this.selectedConnectionId);
+  /** Auto-pans viewport when dragging near canvas boundary, dynamically expanding space */
+  _checkAutoPan(clientX, clientY) {
+    if (!this.container) return;
+    const rect = this.container.getBoundingClientRect();
+    const margin = 45;
+    let vx = 0;
+    let vy = 0;
+
+    if (clientX < rect.left + margin) {
+      vx = Math.min(24, Math.max(4, (rect.left + margin - clientX) * 0.4));
+    } else if (clientX > rect.right - margin) {
+      vx = -Math.min(24, Math.max(4, (clientX - (rect.right - margin)) * 0.4));
+    }
+
+    if (clientY < rect.top + margin) {
+      vy = Math.min(24, Math.max(4, (rect.top + margin - clientY) * 0.4));
+    } else if (clientY > rect.bottom - margin) {
+      vy = -Math.min(24, Math.max(4, (clientY - (rect.bottom - margin)) * 0.4));
+    }
+
+    if (vx !== 0 || vy !== 0) {
+      this._autoPanVelocity = { vx, vy };
+      if (!this._autoPanTimer) {
+        this._autoPanTimer = setInterval(() => {
+          if (!this._autoPanVelocity) {
+            this._stopAutoPan();
+            return;
+          }
+          this.panX += this._autoPanVelocity.vx;
+          this.panY += this._autoPanVelocity.vy;
+          this.updateTransform();
+
+          if (this._lastDragClientPos) {
+            this._handleAutoPanUpdate(this._lastDragClientPos.clientX, this._lastDragClientPos.clientY);
+          }
+        }, 16);
+      }
+    } else {
+      this._stopAutoPan();
+    }
+  }
+
+  _stopAutoPan() {
+    if (this._autoPanTimer) {
+      clearInterval(this._autoPanTimer);
+      this._autoPanTimer = null;
+    }
+    this._autoPanVelocity = null;
+  }
+
+  _handleAutoPanUpdate(clientX, clientY) {
+    if (this.draggingNode) {
+      const mouse = this.getCanvasCoords(clientX, clientY);
+      const newX = this.snapCoord(mouse.x - this.dragOffset.x);
+      const newY = this.snapCoord(mouse.y - this.dragOffset.y);
+      const startX = this.dragStartNodePos ? this.dragStartNodePos.x : this.draggingNode.x;
+      const startY = this.dragStartNodePos ? this.dragStartNodePos.y : this.draggingNode.y;
+      const totalDx = newX - startX;
+      const totalDy = newY - startY;
+
+      if (this.selectedNodeIds.size > 1 && this.selectedNodeIds.has(this.draggingNode.id)) {
+        this.selectedNodeIds.forEach(id => {
+          const n = this.nodes.find(node => node.id === id);
+          if (n) {
+            const initPos = this.multiDragOffsets.get(id);
+            if (initPos) {
+              n.x = this.snapCoord(initPos.x + totalDx);
+              n.y = this.snapCoord(initPos.y + totalDy);
+              this.updateNodeElementPosition(n);
+            }
+          }
+        });
+      } else {
+        this.draggingNode.x = newX;
+        this.draggingNode.y = newY;
+        this.updateNodeElementPosition(this.draggingNode);
+      }
+      this.renderWires();
+    } else if (this.draggingContainer) {
+      const mouse = this.getCanvasCoords(clientX, clientY);
+      const newX = this.snapCoord(mouse.x - this.dragOffset.x);
+      const newY = this.snapCoord(mouse.y - this.dragOffset.y);
+      const startX = this.containerDragStart ? this.containerDragStart.x : this.draggingContainer.x;
+      const startY = this.containerDragStart ? this.containerDragStart.y : this.draggingContainer.y;
+      const totalDx = newX - startX;
+      const totalDy = newY - startY;
+
+      this.draggingContainer.x = newX;
+      this.draggingContainer.y = newY;
+      const cEl = document.getElementById(`container-elem-${this.draggingContainer.id}`);
+      if (cEl) {
+        cEl.style.left = `${newX}px`;
+        cEl.style.top = `${newY}px`;
+      }
+      this.containerDragOffsets.forEach((initPos, nid) => {
+        const n = this.nodes.find(node => node.id === nid);
+        if (n) {
+          n.x = this.snapCoord(initPos.x + totalDx);
+          n.y = this.snapCoord(initPos.y + totalDy);
+          this.updateNodeElementPosition(n);
         }
       });
+      this.renderWires();
+    } else if (this.draggingComment) {
+      const mouse = this.getCanvasCoords(clientX, clientY);
+      this.draggingComment.x = this.snapCoord(mouse.x - this.dragOffset.x);
+      this.draggingComment.y = this.snapCoord(mouse.y - this.dragOffset.y);
+      const commEl = document.getElementById(`comment-elem-${this.draggingComment.id}`);
+      if (commEl) {
+        commEl.style.left = `${this.draggingComment.x}px`;
+        commEl.style.top = `${this.draggingComment.y}px`;
+      }
     }
+  }
+
+  /** Checks if this Canvas instance belongs to the currently active tab */
+  isActive() {
+    if (window.appTabManager) {
+      if (this.tabId !== null && this.tabId !== undefined) {
+        return window.appTabManager.activeTabId === this.tabId;
+      }
+      return window.appCanvas === this;
+    }
+    return true;
+  }
+
+  createWireDeleteBtn() {
+    // Each canvas instance gets its own wire-delete button (supports multi-tab)
+    const btn = document.createElement('div');
+    btn.className = 'wire-delete-btn';
+    btn.innerHTML = '&times;';
+    btn.title = 'Click to delete this connection (Delete / Backspace)';
+    btn.style.display = 'none';
+    if (this.wrapper) this.wrapper.appendChild(btn);
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.selectedConnectionId) {
+        this.removeConnection(this.selectedConnectionId);
+      }
+    });
     this.wireDeleteBtn = btn;
   }
 
@@ -278,11 +432,13 @@ class Canvas {
   initEvents() {
     // Canvas mouse tracker for quick spawn
     this.container.addEventListener('mousemove', (e) => {
+      if (!this.isActive()) return;
       this.lastMouseCanvas = this.getCanvasCoords(e.clientX, e.clientY);
     });
 
     // Keyboard shortcuts on canvas
     window.addEventListener('keydown', (e) => {
+      if (!this.isActive()) return;
       const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable) {
         return;
@@ -342,6 +498,7 @@ class Canvas {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (!this.isActive()) return;
       if (e.code === 'Space') {
         this.isSpacePressed = false;
         if (!this.isPanning) {
@@ -352,10 +509,8 @@ class Canvas {
 
     // Double-click on canvas background opens Spotlight Quick Search
     this.container.addEventListener('dblclick', (e) => {
-      const isBackground = e.target === this.container || e.target === this.wrapper || 
-                           e.target === this.svg || e.target === this.containersLayer || 
-                           e.target === this.commentsLayer || e.target === this.nodesLayer;
-      if (isBackground) {
+      if (!this.isActive()) return;
+      if (this.isCanvasBackground(e)) {
         const mouse = this.getCanvasCoords(e.clientX, e.clientY);
         this.openSpotlight(mouse.x, mouse.y);
       }
@@ -363,6 +518,7 @@ class Canvas {
 
     // Context Menu on Right Click
     this.container.addEventListener('contextmenu', (e) => {
+      if (!this.isActive()) return;
       e.preventDefault();
       const nodeCard = e.target.closest('.node-card');
       const containerCard = e.target.closest('.tool-container');
@@ -390,6 +546,7 @@ class Canvas {
 
     // 1. Pan & Marquee with mouse drag on background
     this.container.addEventListener('mousedown', (e) => {
+      if (!this.isActive()) return;
       if (this.isSpacePressed || e.button === 1) {
         e.preventDefault();
         this.clearSelection();
@@ -399,10 +556,7 @@ class Canvas {
         return;
       }
 
-      const isBackground = e.target === this.container || e.target === this.wrapper || 
-                           e.target === this.svg || e.target === this.containersLayer || 
-                           e.target === this.commentsLayer || e.target === this.nodesLayer;
-      if (isBackground) {
+      if (this.isCanvasBackground(e)) {
         this.hideWireProbe();
         if (this.connectingState) {
           this.cancelConnecting();
@@ -437,6 +591,7 @@ class Canvas {
     });
 
     window.addEventListener('mousemove', (e) => {
+      if (!this.isActive()) return;
       // Panning
       if (this.isPanning) {
         this.panX = e.clientX - this.panStart.x;
@@ -489,9 +644,16 @@ class Canvas {
       // Dragging nodes (single or multi-selection group drag)
       if (this.draggingNode) {
         this.dragMoved = true;
+        this._lastDragClientPos = { clientX: e.clientX, clientY: e.clientY };
+        this._checkAutoPan(e.clientX, e.clientY);
+
         const mouse = this.getCanvasCoords(e.clientX, e.clientY);
-        const dx = this.snapCoord(mouse.x - this.dragOffset.x) - this.draggingNode.x;
-        const dy = this.snapCoord(mouse.y - this.dragOffset.y) - this.draggingNode.y;
+        const newX = this.snapCoord(mouse.x - this.dragOffset.x);
+        const newY = this.snapCoord(mouse.y - this.dragOffset.y);
+        const startX = this.dragStartNodePos ? this.dragStartNodePos.x : this.draggingNode.x;
+        const startY = this.dragStartNodePos ? this.dragStartNodePos.y : this.draggingNode.y;
+        const totalDx = newX - startX;
+        const totalDy = newY - startY;
 
         if (this.selectedNodeIds.size > 1 && this.selectedNodeIds.has(this.draggingNode.id)) {
           // Move all selected nodes in unison
@@ -500,15 +662,15 @@ class Canvas {
             if (n) {
               const initPos = this.multiDragOffsets.get(id);
               if (initPos) {
-                n.x = this.snapCoord(initPos.x + dx);
-                n.y = this.snapCoord(initPos.y + dy);
+                n.x = this.snapCoord(initPos.x + totalDx);
+                n.y = this.snapCoord(initPos.y + totalDy);
                 this.updateNodeElementPosition(n);
               }
             }
           });
         } else {
-          this.draggingNode.x = this.snapCoord(mouse.x - this.dragOffset.x);
-          this.draggingNode.y = this.snapCoord(mouse.y - this.dragOffset.y);
+          this.draggingNode.x = newX;
+          this.draggingNode.y = newY;
           this.updateNodeElementPosition(this.draggingNode);
         }
 
@@ -519,6 +681,8 @@ class Canvas {
       // Dragging a Container and its enclosed tools
       if (this.draggingContainer) {
         this.dragMoved = true;
+        this._lastDragClientPos = { clientX: e.clientX, clientY: e.clientY };
+        this._checkAutoPan(e.clientX, e.clientY);
         const mouse = this.getCanvasCoords(e.clientX, e.clientY);
         const newX = this.snapCoord(mouse.x - this.dragOffset.x);
         const newY = this.snapCoord(mouse.y - this.dragOffset.y);
@@ -571,6 +735,8 @@ class Canvas {
       // Dragging a Comment Note
       if (this.draggingComment) {
         this.dragMoved = true;
+        this._lastDragClientPos = { clientX: e.clientX, clientY: e.clientY };
+        this._checkAutoPan(e.clientX, e.clientY);
         const mouse = this.getCanvasCoords(e.clientX, e.clientY);
         this.draggingComment.x = this.snapCoord(mouse.x - this.dragOffset.x);
         this.draggingComment.y = this.snapCoord(mouse.y - this.dragOffset.y);
@@ -630,6 +796,7 @@ class Canvas {
     });
 
     window.addEventListener('mouseup', () => {
+      if (!this.isActive()) return;
       if (this.isPanning) {
         this.isPanning = false;
         this.container.style.cursor = this.isSpacePressed ? 'grab' : 'default';
@@ -650,12 +817,16 @@ class Canvas {
         }
       }
 
+      this._stopAutoPan();
+      this._lastDragClientPos = null;
+
       if (this.draggingNode) {
         if (!this.dragMoved && this._pendingSingleSelectOnMouseUp) {
           this.selectNode(this._pendingSingleSelectOnMouseUp, false);
         }
         this._pendingSingleSelectOnMouseUp = null;
         this.draggingNode = null;
+        this.dragStartNodePos = null;
         this.multiDragOffsets.clear();
         this.containers.forEach(c => this.updateContainerEnclosedNodes(c));
         this.renderWires();
@@ -714,6 +885,7 @@ class Canvas {
 
     // 2D Scroll / Pan & Zoom via wheel
     this.container.addEventListener('wheel', (e) => {
+      if (!this.isActive()) return;
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
         // Zoom via Ctrl/Cmd + Wheel or trackpad pinch gesture
@@ -765,6 +937,7 @@ class Canvas {
     };
 
     this.container.addEventListener('dragenter', (e) => {
+      if (!this.isActive()) return;
       if (isNativeFileDrag(e)) {
         this.fileDragCounter++;
         showDropzone();
@@ -772,6 +945,7 @@ class Canvas {
     });
 
     this.container.addEventListener('dragover', (e) => {
+      if (!this.isActive()) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
       if (isNativeFileDrag(e) && this.fileDragCounter <= 0) {
@@ -781,6 +955,7 @@ class Canvas {
     });
 
     this.container.addEventListener('dragleave', (e) => {
+      if (!this.isActive()) return;
       if (isNativeFileDrag(e)) {
         this.fileDragCounter--;
         if (this.fileDragCounter <= 0) {
@@ -791,6 +966,7 @@ class Canvas {
     });
 
     this.container.addEventListener('drop', (e) => {
+      if (!this.isActive()) return;
       e.preventDefault();
       this.fileDragCounter = 0;
       hideDropzone();
@@ -1291,8 +1467,8 @@ class Canvas {
     const maxX = Math.max(...selectedNodes.map(n => n.x + 56));
     const maxY = Math.max(...selectedNodes.map(n => n.y + 56));
 
-    const cx = Math.max(0, minX - margin);
-    const cy = Math.max(0, minY - margin - 34);
+    const cx = minX - margin;
+    const cy = minY - margin - 34;
     const cw = Math.max(180, (maxX - minX) + margin * 2);
     const ch = Math.max(80, (maxY - minY) + margin * 2 + 34);
 
@@ -1323,8 +1499,8 @@ class Canvas {
     const maxX = Math.max(...enclosedNodes.map(n => n.x + 56));
     const maxY = Math.max(...enclosedNodes.map(n => n.y + 56));
 
-    c.x = Math.max(0, minX - margin);
-    c.y = Math.max(0, minY - margin - 34);
+    c.x = minX - margin;
+    c.y = minY - margin - 34;
     c.width = Math.max(160, (maxX - minX) + margin * 2);
     c.height = Math.max(70, (maxY - minY) + margin * 2 + 34);
     c.margin = margin;
@@ -1922,7 +2098,7 @@ class Canvas {
     const mouseX = clientX - rect.left;
     const mouseY = clientY - rect.top;
 
-    const newZoom = Math.min(2.5, Math.max(0.25, this.zoom * factor));
+    const newZoom = Math.min(3.0, Math.max(0.15, Math.round(this.zoom * factor * 100) / 100));
     if (newZoom === this.zoom) return;
 
     // Pan towards mouse
@@ -1966,9 +2142,63 @@ class Canvas {
     if (this.zoomText) {
       this.zoomText.textContent = `${Math.round(this.zoom * 100)}%`;
     }
+    // Update container background grid dots to pan and zoom seamlessly with the dynamic workspace
+    if (this.container) {
+      const baseSize = 20;
+      let gridSize = baseSize * this.zoom;
+      while (gridSize < 10) gridSize *= 2;
+      while (gridSize > 60) gridSize /= 2;
+      this.container.style.backgroundSize = `${gridSize}px ${gridSize}px`;
+      this.container.style.backgroundPosition = `${this.panX}px ${this.panY}px`;
+    }
     if (typeof this.onTransformChange === 'function') {
       this.onTransformChange();
     }
+  }
+
+  /**
+   * Zoom to fit all workflow elements within the viewport with comfortable padding.
+   */
+  zoomToFit(padding = 80) {
+    if (!this.nodes.length && !this.containers.length && !this.comments.length) {
+      this.resetZoom();
+      return;
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    this.nodes.forEach(n => {
+      minX = Math.min(minX, n.x);
+      minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + 56);
+      maxY = Math.max(maxY, n.y + 56);
+    });
+    this.containers.forEach(c => {
+      minX = Math.min(minX, c.x);
+      minY = Math.min(minY, c.y);
+      maxX = Math.max(maxX, c.x + (c.width || 200));
+      maxY = Math.max(maxY, c.y + (c.height || 150));
+    });
+    this.comments.forEach(c => {
+      minX = Math.min(minX, c.x);
+      minY = Math.min(minY, c.y);
+      maxX = Math.max(maxX, c.x + (c.width || 180));
+      maxY = Math.max(maxY, c.y + (c.height || 100));
+    });
+
+    const rect = this.container.getBoundingClientRect();
+    const cWidth = rect.width || 800;
+    const cHeight = rect.height || 600;
+
+    const w = (maxX - minX) + padding * 2;
+    const h = (maxY - minY) + padding * 2;
+
+    const scale = Math.min(2.0, Math.max(0.15, Math.min(cWidth / w, cHeight / h)));
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    this.zoom = Math.round(scale * 100) / 100;
+    this.panX = cWidth / 2 - cx * this.zoom;
+    this.panY = cHeight / 2 - cy * this.zoom;
+    this.updateTransform();
   }
 
   panTo(worldX, worldY) {
@@ -2765,6 +2995,7 @@ class Canvas {
       const mouse = this.getCanvasCoords(e.clientX, e.clientY);
       this.draggingNode = node;
       this.dragMoved = false;
+      this.dragStartNodePos = { x: node.x, y: node.y };
       this.dragOffset = {
         x: mouse.x - node.x,
         y: mouse.y - node.y
@@ -2965,12 +3196,13 @@ class Canvas {
 
   updateTempWire(x1, y1, x2, y2) {
     const d = this.computeWirePath({ x: x1, y: y1 }, { x: x2, y: y2 }, this.wireStyle);
+    const arrowSelected = (this.svg && this.svg.querySelector(`#tab-arrow-selected-${this.tabId}`)) ? `url(#tab-arrow-selected-${this.tabId})` : 'url(#arrow-selected)';
     this.tempWire.setAttribute('d', d);
     this.tempWire.setAttribute('fill', 'none');
     this.tempWire.setAttribute('stroke', '#0072ce');
     this.tempWire.setAttribute('stroke-width', '2.5');
     this.tempWire.setAttribute('stroke-linecap', 'round');
-    this.tempWire.setAttribute('marker-end', 'url(#arrow-selected)');
+    this.tempWire.setAttribute('marker-end', arrowSelected);
   }
 
   getPortPosition(nodeId, portName, type) {
@@ -3011,8 +3243,12 @@ class Canvas {
   renderWires() {
     this.wiresGroup.innerHTML = '';
 
-    // Update port-connected classes on all ports
-    document.querySelectorAll('.port.port-connected').forEach(p => p.classList.remove('port-connected'));
+    // Update port-connected classes on all ports (scoped to this canvas wrapper)
+    const portScope = this.wrapper || document;
+    portScope.querySelectorAll('.port.port-connected').forEach(p => p.classList.remove('port-connected'));
+
+    const arrowNormal = (this.svg && this.svg.querySelector(`#tab-arrow-${this.tabId}`)) ? `url(#tab-arrow-${this.tabId})` : 'url(#arrow)';
+    const arrowSelected = (this.svg && this.svg.querySelector(`#tab-arrow-selected-${this.tabId}`)) ? `url(#tab-arrow-selected-${this.tabId})` : 'url(#arrow-selected)';
 
     this.connections.forEach(conn => {
       // If both source and target are inside the same collapsed container, hide the internal wire
@@ -3026,9 +3262,9 @@ class Canvas {
       }
 
       // Mark connected source & target ports
-      const srcPortEl = document.querySelector(`.port[data-node-id="${conn.source}"][data-port="${conn.sourceHandle}"][data-port-type="output"]`);
+      const srcPortEl = portScope.querySelector(`.port[data-node-id="${conn.source}"][data-port="${conn.sourceHandle}"][data-port-type="output"]`);
       if (srcPortEl) srcPortEl.classList.add('port-connected');
-      const tgtPortEl = document.querySelector(`.port[data-node-id="${conn.target}"][data-port="${conn.targetHandle}"][data-port-type="input"]`);
+      const tgtPortEl = portScope.querySelector(`.port[data-node-id="${conn.target}"][data-port="${conn.targetHandle}"][data-port-type="input"]`);
       if (tgtPortEl) tgtPortEl.classList.add('port-connected');
 
       const p1 = this.getPortPosition(conn.source, conn.sourceHandle, 'output');
@@ -3047,7 +3283,7 @@ class Canvas {
       path.id = `wire-${conn.id}`;
       path.setAttribute('d', d);
       path.className.baseVal = `wire ${conn.id === this.selectedConnectionId ? 'selected' : ''}`;
-      path.setAttribute('marker-end', conn.id === this.selectedConnectionId ? 'url(#arrow-selected)' : 'url(#arrow)');
+      path.setAttribute('marker-end', conn.id === this.selectedConnectionId ? arrowSelected : arrowNormal);
 
       const handleWireSelect = (e) => {
         e.stopPropagation();

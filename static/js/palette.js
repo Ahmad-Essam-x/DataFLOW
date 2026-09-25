@@ -5,7 +5,7 @@
 
 class ToolPalette {
   constructor(canvas) {
-    this.canvas = canvas;
+    this._canvas = canvas;
     this.tools = [];
     this.currentCategory = 'all';
     this.searchQuery = '';
@@ -15,6 +15,18 @@ class ToolPalette {
     this.categoryTabs = document.querySelectorAll('.cat-tab');
 
     this.initEvents();
+  }
+
+  get canvas() {
+    return (window.appTabManager && window.appTabManager.activeCanvas) || window.appCanvas || this._canvas;
+  }
+
+  set canvas(c) {
+    this._canvas = c;
+  }
+
+  setCanvas(c) {
+    this._canvas = c;
   }
 
   setTools(tools) {
