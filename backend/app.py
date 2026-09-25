@@ -278,6 +278,72 @@ def run_workflow_stream():
     return response
 
 
+@app.route("/api/run-node", methods=["POST"])
+def run_single_node():
+    """Executes a single target node and any uncached upstream dependencies."""
+    data = request.get_json(silent=True) or {}
+    workflow = data.get("workflow") or data
+    node_id = data.get("node_id")
+
+    if not workflow or "nodes" not in workflow or not node_id:
+        return jsonify({"success": False, "error": "Invalid payload: workflow and node_id required."}), 400
+
+    session_id = request.headers.get("X-Session-ID") or data.get("session_id")
+    run_id = request.headers.get("X-Run-ID") or data.get("run_id")
+    force_rerun = data.get("force_rerun", True)
+
+    result = executor.run_node(
+        workflow=workflow,
+        node_id=node_id,
+        session_id=session_id,
+        run_id=run_id,
+        force_rerun=force_rerun
+    )
+    return jsonify(result.to_dict())
+
+
+@app.route("/api/node-cache/lock", methods=["POST"])
+def lock_node_cache():
+    """Locks or unlocks intermediate outputs for a node."""
+    data = request.get_json(silent=True) or {}
+    node_id = data.get("node_id")
+    locked = data.get("locked", True)
+
+    if not node_id:
+        return jsonify({"success": False, "error": "node_id is required."}), 400
+
+    if locked:
+        # Get output from local or run data cache
+        outs = executor.data_cache.get(node_id) or executor._local_data_cache.get(node_id)
+        if outs:
+            executor.frozen_node_cache[node_id] = outs
+            executor.persist_locked_node(node_id, outs)
+            count = sum(len(df) for df in outs.values() if isinstance(df, pd.DataFrame))
+            return jsonify({
+                "success": True,
+                "locked": True,
+                "node_id": node_id,
+                "record_count": count,
+                "message": f"Tool '{node_id}' output locked ({count:,} records)."
+            })
+        else:
+            return jsonify({
+                "success": True,
+                "locked": True,
+                "node_id": node_id,
+                "record_count": 0,
+                "message": f"Tool '{node_id}' marked as locked. It will freeze upon next execution."
+            })
+    else:
+        executor.clear_frozen_cache(node_id)
+        return jsonify({
+            "success": True,
+            "locked": False,
+            "node_id": node_id,
+            "message": f"Tool '{node_id}' output unlocked."
+        })
+
+
 @app.route("/api/cancel/<run_id>", methods=["POST"])
 @app.route("/api/cancel", methods=["POST"])
 def cancel_workflow_execution(run_id=None):

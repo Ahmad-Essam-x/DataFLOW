@@ -8090,6 +8090,30 @@ class ConfigPanel {
 
     const cols = Array.isArray(upstreamCols) ? upstreamCols : [];
 
+    // Lock & status derivation
+    const isLocked = Boolean(node.is_cached || node.locked || (this.canvas && this.canvas.cachedNodeIds && this.canvas.cachedNodeIds.has(node.id)));
+    let initialStatusText = 'Ready to run. Click "Run LLM Tool Only" to preview.';
+    let initialMetricsText = '';
+    let hasMetrics = false;
+
+    if (isLocked) {
+      initialStatusText = '🔒 Output locked. Subsequent workflow runs will use cached results.';
+    } else if (window.appLastResult && window.appLastResult.node_results && window.appLastResult.node_results[node.id]) {
+      const prevRes = window.appLastResult.node_results[node.id];
+      const recCount = prevRes.record_counts ? (prevRes.record_counts['O'] || Object.values(prevRes.record_counts)[0] || 0) : 0;
+      initialStatusText = `✓ Output available (${recCount.toLocaleString()} records).`;
+      if (prevRes.messages) {
+        const tokenMsg = prevRes.messages.find(m => m.includes('Tokens:'));
+        if (tokenMsg) {
+          const m = tokenMsg.match(/Tokens:\s*([^\(]+)/);
+          if (m) {
+            initialMetricsText = m[1].trim();
+            hasMetrics = true;
+          }
+        }
+      }
+    }
+
     // Helper for rendering column chips
     const colChipsHtml = cols.map(c => {
       const colName = typeof c === 'string' ? c : (c.name || c.field || '');
@@ -8107,6 +8131,26 @@ class ConfigPanel {
 
     container.innerHTML = `
       <div class="llm-config-wrapper" style="display: flex; flex-direction: column; gap: 14px; font-size: 12px;">
+
+        <!-- 0. Standalone Run & Output Lock Action Bar -->
+        <div class="cfg-section llm-action-bar" style="border: 1px solid rgba(139,92,246,0.35); border-radius: 6px; padding: 10px 12px; background: rgba(139,92,246,0.08); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <button type="button" id="btn-llm-run-standalone" class="btn btn-primary btn-sm btn-run-standalone" style="background: #8b5cf6; border-color: #7c3aed; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 4px 12px; height: 28px;" title="Execute only this LLM tool and preview outputs without running the rest of the workflow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Run LLM Tool Only</span>
+            </button>
+            <label class="form-check" style="margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; user-select: none;" title="Freeze/lock the output so workflow runs don't rerun the LLM or consume tokens">
+              <input type="checkbox" id="cfg-llm-lock-output" ${isLocked ? 'checked' : ''}>
+              <span id="cfg-llm-lock-label" style="font-weight: 600; font-size: 11px; color: ${isLocked ? '#8b5cf6' : 'var(--text-color)'}; display: inline-flex; align-items: center; gap: 3px;">
+                <span>🔒</span> Lock Output (Freeze)
+              </span>
+            </label>
+          </div>
+          <div id="llm-run-status-line" style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between;">
+            <span id="llm-standalone-status-text">${initialStatusText}</span>
+            <span id="llm-standalone-tokens-pill" style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,0.2); display: ${hasMetrics ? 'inline-block' : 'none'};">${initialMetricsText}</span>
+          </div>
+        </div>
 
         <!-- 1. LLM Connection Header & Card -->
         <div class="cfg-section" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; background: var(--bg-surface-subtle, rgba(255,255,255,0.02));">
@@ -8354,6 +8398,149 @@ class ConfigPanel {
     const saveChanges = () => {
       this.canvas.onWorkflowChange();
     };
+
+    // 0. Standalone Run & Output Lock Wireup
+    const runStandaloneBtn = container.querySelector('#btn-llm-run-standalone');
+    const statusTextEl = container.querySelector('#llm-standalone-status-text');
+    const tokensPillEl = container.querySelector('#llm-standalone-tokens-pill');
+    const lockCheckbox = container.querySelector('#cfg-llm-lock-output');
+    const lockLabel = container.querySelector('#cfg-llm-lock-label');
+
+    if (runStandaloneBtn) {
+      runStandaloneBtn.addEventListener('click', async () => {
+        runStandaloneBtn.disabled = true;
+        runStandaloneBtn.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.8s linear infinite; margin-right: 4px;">
+            <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+            <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+          </svg>
+          <span>Running LLM...</span>
+        `;
+        if (statusTextEl) statusTextEl.textContent = 'Executing upstream lineage & sending batch to LLM...';
+        if (tokensPillEl) tokensPillEl.style.display = 'none';
+
+        saveChanges();
+
+        try {
+          const wfData = this.canvas.getWorkflowData();
+          const resp = await fetch('/api/run-node', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              workflow: wfData,
+              node_id: node.id,
+              force_rerun: true
+            })
+          });
+
+          const res = await resp.json();
+          if (res.success) {
+            const nodeRes = (res.node_results && res.node_results[node.id]) || {};
+            const recCount = nodeRes.record_counts ? (nodeRes.record_counts['O'] || Object.values(nodeRes.record_counts)[0] || 0) : 0;
+            const duration = res.total_duration_ms ? `${(res.total_duration_ms / 1000).toFixed(1)}s` : '';
+            
+            if (statusTextEl) statusTextEl.textContent = `✓ Generated ${recCount.toLocaleString()} records in ${duration}.`;
+            
+            if (nodeRes.messages && tokensPillEl) {
+              const tokenMsg = nodeRes.messages.find(m => m.includes('Tokens:'));
+              if (tokenMsg) {
+                const tokenMatch = tokenMsg.match(/Tokens:\s*([^\(]+)/);
+                if (tokenMatch) {
+                  tokensPillEl.textContent = tokenMatch[1].trim();
+                  tokensPillEl.style.display = 'inline-block';
+                }
+              }
+            }
+
+            // Sync lock state if node is marked locked
+            if (node.is_cached || node.locked) {
+              await fetch('/api/node-cache/lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ node_id: node.id, locked: true })
+              });
+            }
+
+            // Immediately display results in Data Review Pane
+            if (window.appResultsPanel) {
+              window.appResultsPanel.showNodeResults(node);
+              if (res.logs) {
+                res.logs.forEach(l => window.appResultsPanel.appendLog(l.level || 'INFO', l.message, l.time));
+              }
+            }
+
+            // Update canvas node execution visuals
+            if (this.canvas) {
+              this.canvas.updateNodeExecutionVisuals(res.node_results || {});
+            }
+
+            if (window.showToast) {
+              window.showToast('success', 'LLM Process Finished', `Processed ${recCount.toLocaleString()} records in ${duration}.`);
+            }
+          } else {
+            if (statusTextEl) statusTextEl.textContent = `Error: ${res.error || 'Execution failed'}`;
+            if (window.showToast) {
+              window.showToast('error', 'Execution Error', res.error || 'Failed to execute LLM node.');
+            }
+          }
+        } catch (err) {
+          if (statusTextEl) statusTextEl.textContent = `Error: ${err.message}`;
+          if (window.showToast) window.showToast('error', 'Execution Error', err.message);
+        } finally {
+          runStandaloneBtn.disabled = false;
+          runStandaloneBtn.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span>Run LLM Tool Only</span>
+          `;
+        }
+      });
+    }
+
+    if (lockCheckbox) {
+      lockCheckbox.addEventListener('change', async (e) => {
+        const locked = e.target.checked;
+        node.is_cached = locked;
+        node.locked = locked;
+        if (this.canvas && this.canvas.cachedNodeIds) {
+          if (locked) this.canvas.cachedNodeIds.add(node.id);
+          else this.canvas.cachedNodeIds.delete(node.id);
+        }
+
+        if (lockLabel) lockLabel.style.color = locked ? '#8b5cf6' : 'var(--text-color)';
+
+        try {
+          const resp = await fetch('/api/node-cache/lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ node_id: node.id, locked: locked })
+          });
+          const res = await resp.json();
+          if (locked) {
+            if (statusTextEl) statusTextEl.textContent = `🔒 Output locked. Subsequent workflow runs will use cached results.`;
+            if (window.showToast) {
+              window.showToast('info', 'Output Locked', `Tool '${node.name || 'LLM Process'}' locked. Workflow runs will use cached data without calling the LLM.`);
+            }
+          } else {
+            if (statusTextEl) statusTextEl.textContent = `Output unlocked. Next workflow run will re-execute the LLM.`;
+            if (window.showToast) {
+              window.showToast('info', 'Output Unlocked', `Tool '${node.name || 'LLM Process'}' unlocked.`);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to toggle lock on server:', err);
+        }
+
+        // Re-render node element to update lock badge
+        if (this.canvas) {
+          const existingEl = document.getElementById(`node-elem-${node.id}`);
+          if (existingEl) existingEl.remove();
+          this.canvas.renderNodeElement(node);
+          this.canvas.renderWires();
+          this.canvas.updateSelectionVisuals();
+          this.canvas.onWorkflowChange();
+        }
+      });
+    }
 
     // Provider change
     const providerSelect = container.querySelector('#cfg-llm-provider');

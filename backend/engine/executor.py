@@ -4,6 +4,8 @@ Executes the workflow graph in topological order, caches intermediate DataFrames
 collects execution telemetry, and provides profiling and pagination utilities.
 """
 import os
+import re
+import uuid
 import time
 import threading
 import math
@@ -57,6 +59,78 @@ class WorkflowExecutor:
         self.last_result: Optional[ExecutionResult] = None
         self._active_cancellations: Dict[str, threading.Event] = {}
         self.frozen_node_cache = SpillableRunDataCache(run_id="frozen_cache", cache_root_dir=self.cache_manager.cache_root_dir)
+        self.persistent_cache_dir = os.path.join(self.context.get("data_dir", os.path.join(os.getcwd(), "data")), ".cache")
+        try:
+            os.makedirs(self.persistent_cache_dir, exist_ok=True)
+        except Exception:
+            pass
+
+    def persist_locked_node(self, node_id: str, outputs: Dict[str, pd.DataFrame]):
+        """Serializes locked outputs to persistent disk storage (data/.cache/) using Feather or Parquet."""
+        if not outputs:
+            return
+        try:
+            safe_nid = re.sub(r"[^\w\-_\.]", "_", node_id)
+            for port, val in outputs.items():
+                if isinstance(val, pd.DataFrame):
+                    safe_port = re.sub(r"[^\w\-_\.]", "_", port)
+                    file_path = os.path.join(self.persistent_cache_dir, f"{safe_nid}_{safe_port}.feather")
+                    try:
+                        import pyarrow.feather as feather
+                        feather.write_feather(val, file_path, compression="lz4")
+                    except Exception:
+                        try:
+                            val.to_parquet(file_path.replace(".feather", ".parquet"))
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+
+    def load_persisted_locked_node(self, node_id: str) -> Optional[Dict[str, pd.DataFrame]]:
+        """Loads locked outputs from persistent disk storage into memory if available."""
+        try:
+            safe_nid = re.sub(r"[^\w\-_\.]", "_", node_id)
+            prefix = f"{safe_nid}_"
+            if not os.path.exists(self.persistent_cache_dir):
+                return None
+
+            loaded_ports: Dict[str, pd.DataFrame] = {}
+            for fname in os.listdir(self.persistent_cache_dir):
+                if fname.startswith(prefix) and (fname.endswith(".feather") or fname.endswith(".parquet")):
+                    port_part = fname[len(prefix):].rsplit(".", 1)[0]
+                    fpath = os.path.join(self.persistent_cache_dir, fname)
+                    try:
+                        if fname.endswith(".feather"):
+                            import pyarrow.feather as feather
+                            loaded_ports[port_part] = feather.read_feather(fpath)
+                        else:
+                            loaded_ports[port_part] = pd.read_parquet(fpath)
+                    except Exception:
+                        pass
+            if loaded_ports:
+                self.frozen_node_cache[node_id] = loaded_ports
+                return loaded_ports
+        except Exception:
+            pass
+        return None
+
+    def remove_persisted_locked_node(self, node_id: str) -> bool:
+        """Removes persistent locked cache files for node_id."""
+        removed_any = False
+        try:
+            safe_nid = re.sub(r"[^\w\-_\.]", "_", node_id)
+            prefix = f"{safe_nid}_"
+            if os.path.exists(self.persistent_cache_dir):
+                for fname in os.listdir(self.persistent_cache_dir):
+                    if fname.startswith(prefix):
+                        try:
+                            os.remove(os.path.join(self.persistent_cache_dir, fname))
+                            removed_any = True
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        return removed_any
 
     @property
     def data_cache(self) -> Dict[str, Dict[str, pd.DataFrame]]:
@@ -87,15 +161,22 @@ class WorkflowExecutor:
     def clear_frozen_cache(self, node_id: Optional[str] = None) -> bool:
         """Clears cached tables for a frozen node or all frozen nodes."""
         if node_id:
+            removed_persisted = self.remove_persisted_locked_node(node_id)
             if node_id in self.frozen_node_cache:
                 del self.frozen_node_cache[node_id]
                 return True
-            return False
+            return removed_persisted
+        if os.path.exists(self.persistent_cache_dir):
+            for f in os.listdir(self.persistent_cache_dir):
+                try:
+                    os.remove(os.path.join(self.persistent_cache_dir, f))
+                except Exception:
+                    pass
         self.frozen_node_cache.clear()
         return True
 
     def get_frozen_node_ids(self) -> List[str]:
-        """Returns list of currently cached node IDs."""
+        """Returns list of currently cached node IDs in frozen memory cache."""
         return list(self.frozen_node_cache.keys())
 
     def run(
@@ -219,10 +300,10 @@ class WorkflowExecutor:
         # Clear prior cache
         self.data_cache.clear()
 
-        # Identify frozen/cached nodes
+        # Identify frozen/cached/locked nodes
         cached_node_ids = set(workflow.get("cached_node_ids") or [])
         for n in active_nodes:
-            if n.get("is_cached") or n.get("cached"):
+            if n.get("is_cached") or n.get("cached") or n.get("locked"):
                 cached_node_ids.add(n["id"])
 
         # Auto-cache upstream nodes if enabled in workflow settings
@@ -231,6 +312,11 @@ class WorkflowExecutor:
                 src = c.get("source") or c.get("from_node")
                 if src:
                     cached_node_ids.add(src)
+
+        # Load persisted cache for any marked nodes
+        for nid in cached_node_ids:
+            if nid not in self.frozen_node_cache:
+                self.load_persisted_locked_node(nid)
 
         ready_cached_ids = {nid for nid in cached_node_ids if nid in self.frozen_node_cache}
 
@@ -343,6 +429,262 @@ class WorkflowExecutor:
             except Exception:
                 pass
 
+        self.cache_manager.store_run_data(result.run_id, current_run_cache, result)
+        self.last_result = result
+        return result
+
+    def run_node(
+        self,
+        workflow: Dict[str, Any],
+        node_id: str,
+        session_id: Optional[str] = None,
+        run_id: Optional[str] = None,
+        force_rerun: bool = True,
+        observer_cb: Optional[Any] = None
+    ) -> ExecutionResult:
+        """
+        Executes a single target node and any necessary uncached upstream dependencies.
+        Downstream nodes are skipped.
+        If the target node is marked locked/cached, its frozen cache and persistent storage
+        are updated with the fresh output.
+        """
+        nodes = workflow.get("nodes", [])
+        connections = workflow.get("connections", [])
+        node_map = {n["id"]: n for n in nodes}
+
+        actual_session_id = session_id or workflow.get("session_id")
+        actual_run_id = run_id or workflow.get("run_id") or f"run_node_{uuid.uuid4().hex[:8]}"
+        run_entry = self.cache_manager.create_run(
+            session_id=actual_session_id,
+            workflow_name=workflow.get("name", ""),
+            run_id=actual_run_id
+        )
+        current_run_cache = run_entry.data_cache
+        result = ExecutionResult(run_id=run_entry.run_id, session_id=run_entry.session_id)
+        start_time = time.time()
+
+        if node_id not in node_map:
+            result.success = False
+            result.error = f"Node '{node_id}' does not exist in workflow."
+            result.logs.append({"time": time.strftime("%H:%M:%S"), "level": "ERROR", "message": result.error})
+            self.last_result = result
+            return result
+
+        # Build DAG for lineage
+        try:
+            dag = DAG(nodes, connections)
+            subgraph_order = dag.get_subgraph_order(node_id)
+        except Exception as e:
+            result.success = False
+            result.error = f"Lineage validation error: {str(e)}"
+            result.logs.append({"time": time.strftime("%H:%M:%S"), "level": "ERROR", "message": result.error})
+            self.last_result = result
+            return result
+
+        target_name = node_map[node_id].get("name") or node_map[node_id].get("type") or node_id
+        result.logs.append({
+            "time": time.strftime("%H:%M:%S"),
+            "level": "INFO",
+            "message": f"Executing tool '{target_name}' standalone ({len(subgraph_order)} tools in lineage)..."
+        })
+
+        for nid in subgraph_order:
+            node_data = node_map[nid]
+            node_type = node_data.get("type")
+            node_name = node_data.get("name") or node_type
+            node_config = node_data.get("config", {})
+
+            # For upstream ancestors (nid != node_id):
+            if nid != node_id:
+                # 1. Check if already cached in current run / local cache / frozen cache / persistent disk
+                if nid in current_run_cache:
+                    continue
+                if nid in self._local_data_cache:
+                    current_run_cache[nid] = self._local_data_cache[nid]
+                    continue
+                if nid in self.frozen_node_cache:
+                    current_run_cache[nid] = self.frozen_node_cache[nid]
+                    self._local_data_cache[nid] = self.frozen_node_cache[nid]
+                    continue
+                persisted = self.load_persisted_locked_node(nid)
+                if persisted:
+                    current_run_cache[nid] = persisted
+                    self._local_data_cache[nid] = persisted
+                    continue
+
+            # Need to execute node `nid` (either ancestor that isn't cached, or target `node_id`):
+            if node_type not in NODE_REGISTRY:
+                result.success = False
+                result.error = f"Unknown node type: '{node_type}'"
+                result.node_results[nid] = {
+                    "id": nid, "type": node_type, "name": node_name,
+                    "status": "error", "error": result.error, "duration_ms": 0.0,
+                    "record_counts": {}, "columns": {}
+                }
+                result.logs.append({"time": time.strftime("%H:%M:%S"), "level": "ERROR", "message": f"Tool '{node_name}' ({nid}): {result.error}"})
+                break
+
+            # Gather incoming inputs
+            incoming_edges = dag.get_input_edges(nid)
+            inputs: Dict[str, Any] = {}
+            missing_upstream = False
+            for edge in incoming_edges:
+                src_id = edge.get("source") or edge.get("from_node")
+                src_port = edge.get("sourceHandle") or edge.get("from_port") or "O"
+                tgt_port = edge.get("targetHandle") or edge.get("to_port") or "I"
+
+                src_cache = current_run_cache.get(src_id) if current_run_cache else self.data_cache.get(src_id)
+                if src_cache is None or src_port not in src_cache:
+                    missing_upstream = True
+                    break
+
+                source_df = src_cache[src_port]
+                if node_type in ("union", "join_multiple", "multi_join"):
+                    if tgt_port not in inputs:
+                        inputs[tgt_port] = []
+                    inputs[tgt_port].append(source_df)
+                else:
+                    inputs[tgt_port] = source_df
+
+            if missing_upstream and incoming_edges:
+                result.success = False
+                result.error = f"Upstream dependency for '{node_name}' missing output."
+                result.node_results[nid] = {
+                    "id": nid, "type": node_type, "name": node_name,
+                    "status": "skipped", "error": result.error, "duration_ms": 0.0,
+                    "record_counts": {}, "columns": {}
+                }
+                result.logs.append({"time": time.strftime("%H:%M:%S"), "level": "WARNING", "message": result.error})
+                break
+
+            # Execute node
+            node_cls = NODE_REGISTRY[node_type]
+            node_instance = node_cls(nid, node_config)
+            node_start = time.time()
+            try:
+                outputs = node_instance.execute(inputs, self.context)
+                duration = (time.time() - node_start) * 1000.0
+
+                sanitized_outputs = {}
+                record_counts = {}
+                columns = {}
+                column_meta = {}
+
+                for port, df in outputs.items():
+                    if isinstance(df, pd.DataFrame):
+                        clean_df = sanitize_dataframe(df)
+                        sanitized_outputs[port] = clean_df
+                        record_counts[port] = len(clean_df)
+                        columns[port] = list(clean_df.columns)
+                        col_sources = getattr(clean_df, "attrs", {}).get("column_sources", {})
+                        meta_list = []
+                        for col in clean_df.columns:
+                            s = clean_df[col]
+                            alteryx_t = infer_alteryx_type(s)
+                            ctype = map_alteryx_to_category(alteryx_t)
+                            item = {"name": str(col), "type": ctype, "alteryx_type": alteryx_t, "dtype": alteryx_t}
+                            if col in col_sources:
+                                item["source"] = col_sources[col]
+                            meta_list.append(item)
+                        column_meta[port] = meta_list
+                    else:
+                        sanitized_outputs[port] = df
+                        record_counts[port] = 0
+                        columns[port] = []
+                        column_meta[port] = []
+
+                current_run_cache[nid] = sanitized_outputs
+                self._local_data_cache[nid] = sanitized_outputs
+
+                # If this is the target node, or if it is marked cached/locked, update frozen cache & persist
+                is_node_locked = (
+                    node_data.get("is_cached")
+                    or node_data.get("locked")
+                    or node_data.get("cached")
+                    or nid in set(workflow.get("cached_node_ids") or [])
+                )
+                if is_node_locked:
+                    self.frozen_node_cache[nid] = sanitized_outputs
+                    self.persist_locked_node(nid, sanitized_outputs)
+                    result.logs.append({
+                        "time": time.strftime("%H:%M:%S"),
+                        "level": "INFO",
+                        "message": f"Tool '{node_name}' ({nid}) output saved to locked cache."
+                    })
+
+                node_res = {
+                    "id": nid,
+                    "type": node_type,
+                    "name": node_name,
+                    "status": "success",
+                    "duration_ms": round(duration, 2),
+                    "record_counts": record_counts,
+                    "columns": columns,
+                    "column_meta": column_meta,
+                    "error": None
+                }
+
+                if hasattr(node_instance, "messages") and node_instance.messages:
+                    node_res["messages"] = node_instance.messages
+                    for msg in node_instance.messages:
+                        result.logs.append({
+                            "time": time.strftime("%H:%M:%S"),
+                            "level": "INFO",
+                            "message": f"Tool '{node_name}': {msg}"
+                        })
+
+                result.node_results[nid] = node_res
+
+                if observer_cb:
+                    try:
+                        observer_cb({
+                            "event": "node_completed",
+                            "run_id": result.run_id,
+                            "node_id": nid,
+                            "node_name": node_name,
+                            "name": node_name,
+                            "node_type": node_type,
+                            "type": node_type,
+                            "status": "success",
+                            "duration_ms": round(duration, 2),
+                            "record_counts": record_counts,
+                            "columns": columns,
+                            "column_meta": column_meta
+                        })
+                    except Exception:
+                        pass
+
+            except Exception as e:
+                duration = (time.time() - node_start) * 1000.0
+                result.success = False
+                result.error = str(e)
+                diag = diagnose_error(e, node={"id": nid, "name": node_name, "type": node_type, "config": node_config})
+                result.diagnostic = diag.to_dict()
+                result.node_results[nid] = {
+                    "id": nid,
+                    "type": node_type,
+                    "name": node_name,
+                    "status": "error",
+                    "duration_ms": round(duration, 2),
+                    "record_counts": {},
+                    "columns": {},
+                    "error": str(e),
+                    "diagnostic": diag.to_dict()
+                }
+                result.logs.append({
+                    "time": time.strftime("%H:%M:%S"),
+                    "level": "ERROR",
+                    "message": f"Tool '{node_name}' ({nid}) failed: {str(e)}"
+                })
+                break
+
+        result.total_duration_ms = (time.time() - start_time) * 1000.0
+        if result.success:
+            result.logs.append({
+                "time": time.strftime("%H:%M:%S"),
+                "level": "INFO",
+                "message": f"Tool standalone execution finished successfully in {result.total_duration_ms:.1f}ms."
+            })
         self.cache_manager.store_run_data(result.run_id, current_run_cache, result)
         self.last_result = result
         return result
@@ -649,6 +991,7 @@ class WorkflowExecutor:
                     self._local_data_cache[node_id] = sanitized_outputs
                     if node_id in cached_node_ids:
                         self.frozen_node_cache[node_id] = sanitized_outputs
+                        self.persist_locked_node(node_id, sanitized_outputs)
                         result.logs.append({
                             "time": time.strftime("%H:%M:%S"),
                             "level": "INFO",
@@ -1101,6 +1444,7 @@ class WorkflowExecutor:
                 self._local_data_cache[node_id] = sanitized_outputs
                 if node_id in cached_node_ids:
                     self.frozen_node_cache[node_id] = sanitized_outputs
+                    self.persist_locked_node(node_id, sanitized_outputs)
                     result.logs.append({
                         "time": time.strftime("%H:%M:%S"),
                         "level": "INFO",
@@ -1222,6 +1566,14 @@ class WorkflowExecutor:
         run_entry = self.cache_manager.get_run(run_id=run_id, session_id=session_id)
         effective_cache = run_entry.data_cache if run_entry else self.data_cache
         node_cache = effective_cache.get(node_id)
+        if not node_cache or port not in node_cache:
+            if node_id in self.frozen_node_cache:
+                node_cache = self.frozen_node_cache.get(node_id)
+            else:
+                persisted = self.load_persisted_locked_node(node_id)
+                if persisted:
+                    node_cache = persisted
+
         if not node_cache or port not in node_cache:
             return {
                 "available": False,

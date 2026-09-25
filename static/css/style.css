@@ -3140,6 +3140,14 @@ body.light-theme .data-table td.cell-selected {
   box-shadow: 0 0 0 2px #0284c7, 0 4px 14px rgba(2, 132, 199, 0.3) !important;
 }
 
+.node-freeze-badge.is-locked {
+  background: #8b5cf6;
+}
+
+.node-card.is-locked {
+  box-shadow: 0 0 0 2px #8b5cf6, 0 4px 14px rgba(139, 92, 246, 0.35) !important;
+}
+
 /* Node Configuration Warning Badge */
 .node-warning-badge {
   position: absolute;
@@ -6947,3 +6955,44 @@ td.cell-truncated::after {
 .browse-inspector-badge svg {
   color: #a78bfa;
 }
+
+/* ── LLM Process Tool Enhancements (Standalone Execution & Output Locking) ── */
+.llm-action-bar {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.btn-run-standalone {
+  background: #8b5cf6;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.35);
+  transition: all 0.15s ease;
+}
+
+.btn-run-standalone:hover:not(:disabled) {
+  background: #7c3aed;
+  box-shadow: 0 3px 10px rgba(139, 92, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-run-standalone:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-run-standalone:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+

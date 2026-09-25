@@ -87,3 +87,25 @@ class DAG:
 
     def get_output_edges(self, node_id: str) -> List[Dict[str, Any]]:
         return self.edges_by_source.get(node_id, [])
+
+    def get_ancestors(self, node_id: str) -> Set[str]:
+        """Returns the set of all upstream ancestor node IDs that feed into node_id."""
+        ancestors: Set[str] = set()
+        stack = [node_id]
+        while stack:
+            curr = stack.pop()
+            for p in self.predecessors.get(curr, set()):
+                if p not in ancestors:
+                    ancestors.add(p)
+                    stack.append(p)
+        return ancestors
+
+    def get_subgraph_order(self, target_node_id: str) -> List[str]:
+        """Returns topological execution order for target_node_id and its upstream ancestors only."""
+        if target_node_id not in self.nodes:
+            raise WorkflowValidationError(f"Target node '{target_node_id}' does not exist in workflow.")
+        ancestors = self.get_ancestors(target_node_id)
+        subgraph_nodes = ancestors | {target_node_id}
+        full_order = self.topological_sort()
+        return [nid for nid in full_order if nid in subgraph_nodes]
+

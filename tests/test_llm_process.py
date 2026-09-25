@@ -33,6 +33,8 @@ from backend.engine.ai.provider_openai_compat import OpenAICompatProvider
 from backend.engine.ai.provider_gemini import GeminiProvider
 from backend.engine.nodes.ai import LLMProcessNode
 from backend.engine.nodes.base import NodeExecutionError
+from backend.engine.executor import WorkflowExecutor
+from backend.engine.dag import DAG
 from backend.app import app
 
 
@@ -436,5 +438,191 @@ class TestFlaskAIEndpoints(unittest.TestCase):
         self.assertEqual(data["previews"][1]["user_prompt"], "Classify this text: Damaged package.")
 
 
+class TestLLMStandaloneAndLockedExecution(unittest.TestCase):
+    """Tests for Standalone Execution & Output Locking / Freezing."""
+
+    def setUp(self):
+        self.client = app.test_client()
+        self.temp_dir = tempfile.mkdtemp()
+        self.executor = WorkflowExecutor(context={"data_dir": self.temp_dir, "output_dir": os.path.join(self.temp_dir, "outputs")})
+
+        # Sample workflow: in1 (text_input) -> llm1 (llm_process) -> sel1 (select)
+        self.workflow = {
+            "name": "LLM Standalone & Lock Test Workflow",
+            "nodes": [
+                {
+                    "id": "in1",
+                    "type": "text_input",
+                    "name": "Text Input",
+                    "config": {
+                        "columns": ["Review"],
+                        "data": [["Great product"], ["Terrible service"]]
+                    }
+                },
+                {
+                    "id": "llm1",
+                    "type": "llm_process",
+                    "name": "LLM Sentiment",
+                    "config": {
+                        "provider_type": "ollama",
+                        "model": "llama3.2",
+                        "user_prompt_template": "Analyze: {{[Review]}}",
+                        "output_mode": "single",
+                        "output_column": "Sentiment"
+                    }
+                },
+                {
+                    "id": "sel1",
+                    "type": "select",
+                    "name": "Select Fields",
+                    "config": {
+                        "fields": [
+                            {"name": "Review", "selected": True},
+                            {"name": "Sentiment", "selected": True}
+                        ]
+                    }
+                }
+            ],
+            "connections": [
+                {"from_node": "in1", "from_port": "O", "to_node": "llm1", "to_port": "I"},
+                {"from_node": "llm1", "from_port": "O", "to_node": "sel1", "to_port": "I"}
+            ]
+        }
+
+    def tearDown(self):
+        import shutil
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_dag_ancestry_and_subgraph_order(self):
+        """Test minimal ancestry and execution subgraph extraction."""
+        dag = DAG(self.workflow["nodes"], self.workflow["connections"])
+
+        ancestors = dag.get_ancestors("llm1")
+        self.assertEqual(ancestors, {"in1"})
+
+        subgraph = dag.get_subgraph_order("llm1")
+        self.assertEqual(subgraph, ["in1", "llm1"])
+        self.assertNotIn("sel1", subgraph)
+
+    @patch("backend.engine.nodes.ai.get_provider")
+    def test_run_node_standalone_execution(self, mock_get_provider):
+        """Test executing target node standalone skips downstream nodes."""
+        mock_provider = MockTestProvider(responses=["Positive", "Negative"])
+        mock_get_provider.return_value = mock_provider
+
+        res = self.executor.run_node(self.workflow, "llm1", force_rerun=True)
+        self.assertTrue(res.success)
+        self.assertIn("in1", res.node_results)
+        self.assertIn("llm1", res.node_results)
+        self.assertNotIn("sel1", res.node_results)  # Downstream skipped!
+
+        # Target node output should be available in executor cache
+        raw_outs = self.executor.data_cache.get("llm1") or self.executor._local_data_cache.get("llm1")
+        self.assertIsNotNone(raw_outs)
+        out_df = raw_outs["O"]
+        self.assertEqual(len(out_df), 2)
+        self.assertIn("Sentiment", out_df.columns)
+        self.assertEqual(out_df["Sentiment"].tolist(), ["Positive", "Negative"])
+
+        # Preview data dictionary should also be available
+        preview_data = self.executor.get_node_data("llm1", "O")
+        self.assertTrue(preview_data["available"])
+        self.assertEqual(len(preview_data["records"]), 2)
+        self.assertEqual(preview_data["records"][0]["Sentiment"], "Positive")
+
+    def test_persistent_locked_node_feather(self):
+        """Test persisting and loading locked node outputs using Feather/Parquet."""
+        df = pd.DataFrame({"ID": [1, 2], "Label": ["A", "B"]})
+        outputs = {"O": df}
+
+        self.executor.persist_locked_node("locked_test_node", outputs)
+        loaded = self.executor.load_persisted_locked_node("locked_test_node")
+        self.assertIsNotNone(loaded)
+        self.assertIn("O", loaded)
+        pd.testing.assert_frame_equal(loaded["O"], df)
+
+        self.executor.remove_persisted_locked_node("locked_test_node")
+        reloaded = self.executor.load_persisted_locked_node("locked_test_node")
+        self.assertIsNone(reloaded)
+
+    @patch("backend.engine.nodes.ai.get_provider")
+    def test_locked_node_bypasses_provider_on_full_workflow_run(self, mock_get_provider):
+        """Test full workflow run reuses locked output with 0 LLM calls."""
+        mock_provider = MockTestProvider(responses=["Positive", "Negative"])
+        mock_get_provider.return_value = mock_provider
+
+        # 1. First standalone run to generate and lock output
+        self.executor.run_node(self.workflow, "llm1", force_rerun=True)
+        self.assertEqual(mock_provider.call_count, 2)
+
+        # Mark llm1 as locked
+        for n in self.workflow["nodes"]:
+            if n["id"] == "llm1":
+                n["locked"] = True
+                n["is_cached"] = True
+
+        # Pre-populate frozen cache / persistence with actual DataFrame
+        raw_outs = self.executor.data_cache.get("llm1") or self.executor._local_data_cache.get("llm1")
+        df_cached = raw_outs["O"]
+        self.executor.persist_locked_node("llm1", {"O": df_cached})
+        self.executor.frozen_node_cache["llm1"] = {"O": df_cached}
+
+        # Reset call counter
+        mock_provider.call_count = 0
+
+        # 2. Run full workflow
+        full_res = self.executor.run(self.workflow)
+        self.assertTrue(full_res.success)
+        # Provider should NOT have been called at all!
+        self.assertEqual(mock_provider.call_count, 0)
+
+        # Downstream sel1 should still execute successfully using cached llm1 output
+        self.assertIn("sel1", full_res.node_results)
+        sel_outs = self.executor.data_cache.get("sel1") or self.executor._local_data_cache.get("sel1")
+        self.assertIsNotNone(sel_outs)
+        sel_df = sel_outs["O"]
+        self.assertEqual(len(sel_df), 2)
+        self.assertEqual(sel_df["Sentiment"].tolist(), ["Positive", "Negative"])
+
+    @patch("backend.engine.nodes.ai.get_provider")
+    def test_api_run_node_endpoint(self, mock_get_provider):
+        """Test POST /api/run-node REST endpoint."""
+        mock_provider = MockTestProvider(responses=["Resp 1", "Resp 2"])
+        mock_get_provider.return_value = mock_provider
+
+        resp = self.client.post("/api/run-node", json={
+            "workflow": self.workflow,
+            "node_id": "llm1",
+            "force_rerun": True
+        })
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertTrue(data["success"])
+        self.assertIn("llm1", data["node_results"])
+        self.assertNotIn("sel1", data["node_results"])
+
+    def test_api_node_cache_lock_endpoint(self):
+        """Test POST /api/node-cache/lock REST endpoint."""
+        resp_lock = self.client.post("/api/node-cache/lock", json={
+            "node_id": "test_node_lock",
+            "locked": True
+        })
+        self.assertEqual(resp_lock.status_code, 200)
+        data_lock = resp_lock.get_json()
+        self.assertTrue(data_lock["success"])
+        self.assertTrue(data_lock["locked"])
+
+        resp_unlock = self.client.post("/api/node-cache/lock", json={
+            "node_id": "test_node_lock",
+            "locked": False
+        })
+        self.assertEqual(resp_unlock.status_code, 200)
+        data_unlock = resp_unlock.get_json()
+        self.assertTrue(data_unlock["success"])
+        self.assertFalse(data_unlock["locked"])
+
+
 if __name__ == "__main__":
     unittest.main()
+

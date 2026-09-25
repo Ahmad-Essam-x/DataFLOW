@@ -827,7 +827,8 @@ class Canvas {
     const hasMultiple = this.selectedNodeIds.size > 1;
     const hasSelectedNodes = this.selectedNodeIds.size > 0;
     const singleNodeId = this.selectedNodeIds.size === 1 ? Array.from(this.selectedNodeIds)[0] : null;
-    const isCached = singleNodeId && this.cachedNodeIds.has(singleNodeId);
+    const singleNode = singleNodeId ? this.nodes.find(n => n.id === singleNodeId) : null;
+    const isCached = singleNodeId && (this.cachedNodeIds.has(singleNodeId) || Boolean(singleNode && (singleNode.is_cached || singleNode.locked)));
 
     this.contextMenu.innerHTML = `
       ${hasSelectedNodes ? `
@@ -864,8 +865,11 @@ class Canvas {
       </div>
       <div class="context-menu-divider"></div>
       ${singleNodeId ? `
+        <div class="context-menu-item" id="ctx-run-single" style="color: #8b5cf6;">
+          <span>▶ Run This Tool Only</span>
+        </div>
         <div class="context-menu-item" id="ctx-cache-toggle" style="color: #0284c7;">
-          <span>${isCached ? '🔓 Clear Cache' : '❄️ Cache and Run Workflow'}</span>
+          <span>${isCached ? '🔓 Unlock Output (Clear Cache)' : '🔒 Lock Output'}</span>
         </div>
       ` : ''}
       <div class="context-menu-item" id="ctx-view-data">
@@ -877,6 +881,12 @@ class Canvas {
     this.contextMenu.style.top = `${Math.min(window.innerHeight - 320, y)}px`;
     this.contextMenu.style.display = 'flex';
 
+    this.contextMenu.querySelector('#ctx-run-single')?.addEventListener('click', () => {
+      if (singleNodeId) {
+        const node = this.nodes.find(n => n.id === singleNodeId);
+        if (node) this.runSingleNode(node);
+      }
+    });
     this.contextMenu.querySelector('#ctx-add-to-container')?.addEventListener('click', () => {
       if (this.selectedNodeIds.size > 0) {
         this.addContainerFromSelection(Array.from(this.selectedNodeIds));
@@ -888,12 +898,12 @@ class Canvas {
     this.contextMenu.querySelector('#ctx-cut')?.addEventListener('click', () => this.cutSelected());
     this.contextMenu.querySelector('#ctx-duplicate')?.addEventListener('click', () => this.duplicateSelected());
     this.contextMenu.querySelector('#ctx-delete')?.addEventListener('click', () => this.deleteSelected());
-    this.contextMenu.querySelector('#ctx-cache-toggle')?.addEventListener('click', () => {
+    this.contextMenu.querySelector('#ctx-cache-toggle')?.addEventListener('click', async () => {
       if (singleNodeId) {
         if (isCached) {
-          this.clearNodeCache(singleNodeId);
+          await this.clearNodeCache(singleNodeId);
         } else {
-          this.cacheAndRunNode(singleNodeId);
+          await this.lockNodeOutput(singleNodeId);
         }
       }
     });
@@ -2038,13 +2048,14 @@ class Canvas {
       y: typeof n.y === 'number' ? Math.round(n.y) : 100,
       config: n.config ? JSON.parse(JSON.stringify(n.config)) : {},
       container_id: n.container_id || null,
-      is_cached: Boolean(n.is_cached)
+      is_cached: Boolean(n.is_cached || n.locked),
+      locked: Boolean(n.locked !== undefined ? n.locked : n.is_cached)
     }));
 
     // Restore cached node IDs from workflow
     this.cachedNodeIds = new Set();
     this.nodes.forEach(n => {
-      if (n.is_cached) this.cachedNodeIds.add(n.id);
+      if (n.is_cached || n.locked) this.cachedNodeIds.add(n.id);
     });
     (workflow.cached_node_ids || []).forEach(id => this.cachedNodeIds.add(String(id)));
 
@@ -2114,7 +2125,10 @@ class Canvas {
   getWorkflowData() {
     // Mark nodes as cached for serialization
     this.nodes.forEach(n => {
-      n.is_cached = this.cachedNodeIds.has(n.id);
+      n.is_cached = this.cachedNodeIds.has(n.id) || Boolean(n.locked);
+      if (n.locked) {
+        n.is_cached = true;
+      }
     });
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || 'Workflow';
@@ -2650,12 +2664,16 @@ class Canvas {
     `;
     nodeEl.appendChild(inner);
 
-    // Freeze / Cache indicator badge (snowflake)
-    if (this.cachedNodeIds.has(node.id)) {
+    // Freeze / Cache / Lock indicator badge
+    const isNodeCached = this.cachedNodeIds.has(node.id) || Boolean(node.is_cached) || Boolean(node.locked);
+    if (isNodeCached) {
+      const isLock = Boolean(node.locked) || node.type === 'llm_process';
       const freezeBadge = document.createElement('div');
-      freezeBadge.className = 'node-freeze-badge';
-      freezeBadge.innerHTML = '❄️';
-      freezeBadge.title = 'This node is cached. Right-click to clear cache.';
+      freezeBadge.className = 'node-freeze-badge' + (isLock ? ' is-locked' : '');
+      freezeBadge.innerHTML = isLock ? '🔒' : '❄️';
+      freezeBadge.title = isLock
+        ? 'Output is locked. Workflow runs will reuse this cached data without re-executing. Click to unlock.'
+        : 'This node is cached. Click to clear cache.';
       freezeBadge.addEventListener('click', (e) => {
         e.stopPropagation();
         this.clearNodeCache(node.id);
@@ -3643,23 +3661,154 @@ class Canvas {
     }
   }
 
+  async runSingleNode(node) {
+    if (!node) return;
+    if (window.showToast) window.showToast('info', 'Running Tool', `Executing '${node.name}' and upstream dependencies...`);
+
+    // Visual loading state on the node status badge
+    const badge = document.getElementById(`badge-${node.id}`);
+    if (badge) {
+      badge.className = 'node-status-badge running';
+      badge.style.display = 'block';
+    }
+
+    try {
+      const wfData = this.getWorkflowData();
+      const resp = await fetch('/api/run-node', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflow: wfData,
+          node_id: node.id,
+          force_rerun: true
+        })
+      });
+      const res = await resp.json();
+
+      if (res.success) {
+        const nodeRes = (res.node_results && res.node_results[node.id]) || {};
+        const recCount = nodeRes.record_counts ? (nodeRes.record_counts['O'] || Object.values(nodeRes.record_counts)[0] || 0) : 0;
+        const duration = res.total_duration_ms ? `${(res.total_duration_ms / 1000).toFixed(1)}s` : '';
+
+        // If node is locked, ensure server persists lock
+        if (node.is_cached || node.locked) {
+          await fetch('/api/node-cache/lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ node_id: node.id, locked: true })
+          });
+        }
+
+        // Cache last result globally for data review / config panel
+        window.appLastResult = window.appLastResult || {};
+        window.appLastResult.node_results = window.appLastResult.node_results || {};
+        Object.assign(window.appLastResult.node_results, res.node_results || {});
+
+        // Display results in Data Review Pane
+        if (window.appResultsPanel) {
+          window.appResultsPanel.showNodeResults(node);
+          if (res.logs) {
+            res.logs.forEach(l => window.appResultsPanel.appendLog(l.level || 'INFO', l.message, l.time));
+          }
+        }
+
+        // Update canvas node execution visuals
+        this.updateNodeExecutionVisuals(res.node_results || {});
+
+        if (window.showToast) {
+          window.showToast('success', 'Execution Finished', `Finished running '${node.name}' (${recCount.toLocaleString()} records in ${duration}).`);
+        }
+      } else {
+        if (badge) {
+          badge.className = 'node-status-badge error';
+          badge.style.display = 'block';
+        }
+        if (window.showToast) {
+          window.showToast('error', 'Execution Error', res.error || `Failed to run '${node.name}'.`);
+        }
+      }
+    } catch (err) {
+      if (badge) {
+        badge.className = 'node-status-badge error';
+        badge.style.display = 'block';
+      }
+      if (window.showToast) window.showToast('error', 'Execution Error', err.message);
+    }
+  }
+
+  async lockNodeOutput(nodeId) {
+    this.cachedNodeIds.add(nodeId);
+    const node = this.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    node.is_cached = true;
+    node.locked = true;
+
+    try {
+      await fetch('/api/node-cache/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node_id: nodeId, locked: true })
+      });
+    } catch (e) {
+      console.warn('Failed to lock node cache on server:', e);
+    }
+
+    // Sync config panel if showing this node
+    const lockCheckbox = document.getElementById('cfg-llm-lock-output');
+    if (lockCheckbox && window.appConfigPanel && window.appConfigPanel.currentNodeId === nodeId) {
+      lockCheckbox.checked = true;
+      const lockLabel = document.getElementById('cfg-llm-lock-label');
+      if (lockLabel) lockLabel.style.color = '#8b5cf6';
+      const statusText = document.getElementById('llm-standalone-status-text');
+      if (statusText) statusText.textContent = '🔒 Output locked. Subsequent workflow runs will use cached results.';
+    }
+
+    // Re-render the node to show the lock badge
+    const existingEl = document.getElementById(`node-elem-${nodeId}`);
+    if (existingEl) existingEl.remove();
+    this.renderNodeElement(node);
+    this.renderWires();
+    this.updateSelectionVisuals();
+
+    this.onWorkflowChange();
+    if (window.showToast) window.showToast('info', 'Output Locked', `Output for tool '${node.name}' is locked. Workflow runs will reuse cached data.`);
+  }
+
   async clearNodeCache(nodeId) {
     this.cachedNodeIds.delete(nodeId);
     const node = this.nodes.find(n => n.id === nodeId);
-    if (node) node.is_cached = false;
+    if (node) {
+      node.is_cached = false;
+      node.locked = false;
+    }
 
-    // Notify backend to clear cached data
+    // Notify backend to clear cached data & unlock
     try {
       await fetch('/api/node-cache/clear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ node_id: nodeId })
       });
+      await fetch('/api/node-cache/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node_id: nodeId, locked: false })
+      });
     } catch (e) {
       console.warn('Failed to clear server cache:', e);
     }
 
-    // Re-render the node to remove the freeze badge
+    // Sync config panel if showing this node
+    const lockCheckbox = document.getElementById('cfg-llm-lock-output');
+    if (lockCheckbox && window.appConfigPanel && window.appConfigPanel.currentNodeId === nodeId) {
+      lockCheckbox.checked = false;
+      const lockLabel = document.getElementById('cfg-llm-lock-label');
+      if (lockLabel) lockLabel.style.color = 'var(--text-color)';
+      const statusText = document.getElementById('llm-standalone-status-text');
+      if (statusText) statusText.textContent = 'Output unlocked. Next workflow run will re-execute the LLM.';
+    }
+
+    // Re-render the node to remove the freeze/lock badge
     const existingEl = document.getElementById(`node-elem-${nodeId}`);
     if (existingEl) existingEl.remove();
     if (node) this.renderNodeElement(node);
@@ -3667,6 +3816,6 @@ class Canvas {
     this.updateSelectionVisuals();
 
     this.onWorkflowChange();
-    if (window.showToast) window.showToast('info', 'Cache Cleared', `Cache cleared for tool '${node ? node.name : nodeId}'.`);
+    if (window.showToast) window.showToast('info', 'Cache Cleared', `Cache/lock cleared for tool '${node ? node.name : nodeId}'.`);
   }
 }

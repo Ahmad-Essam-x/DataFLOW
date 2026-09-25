@@ -31,6 +31,8 @@ inventory_audit_ledger.csv
 regional_sales_summary.csv
 tests/test_write.txt
 data/outputs/
+data/.cache/
+*.feather
 
 # Workflow session autosaves and backups
 workflows/.autosave/
