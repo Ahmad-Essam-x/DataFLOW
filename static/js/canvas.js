@@ -539,6 +539,11 @@ class Canvas {
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
         e.preventDefault();
         this.selectAll();
+      } else if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (this.selectedNodeIds.size > 1) {
+          e.preventDefault();
+          this.alignSelectedNodes();
+        }
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
         e.preventDefault();
         if (this.selectedNodeIds.size > 0) {
@@ -1141,6 +1146,10 @@ class Canvas {
         <div class="context-menu-divider"></div>
       ` : ''}
       ${hasMultiple ? `
+        <div class="context-menu-item" id="ctx-align-selected-tools" style="font-weight: 600;">
+          <span>⚡ Align Tools</span>
+          <kbd style="font-size:10px; margin-left:auto; color:var(--text-muted);">Shift+A</kbd>
+        </div>
         <div class="context-menu-item" id="ctx-align-h">
           <span>↔️ Align Horizontally</span>
         </div>
@@ -1202,6 +1211,7 @@ class Canvas {
         this.addContainerFromSelection(Array.from(this.selectedNodeIds));
       }
     });
+    this.contextMenu.querySelector('#ctx-align-selected-tools')?.addEventListener('click', () => this.alignSelectedNodes());
     this.contextMenu.querySelector('#ctx-align-h')?.addEventListener('click', () => this.alignHorizontally());
     this.contextMenu.querySelector('#ctx-align-v')?.addEventListener('click', () => this.alignVertically());
     this.contextMenu.querySelector('#ctx-distribute-h')?.addEventListener('click', () => this.distributeHorizontally());
@@ -1308,8 +1318,14 @@ class Canvas {
         </div>
       ` : ''}
       <div class="context-menu-divider"></div>
+      ${this.selectedNodeIds.size > 1 ? `
+        <div class="context-menu-item" id="ctx-canvas-align-selected" style="font-weight: 600;">
+          <span>⚡ Align Selected Tools (${this.selectedNodeIds.size})</span>
+          <kbd style="font-size:10px; margin-left:auto; color:var(--text-muted);">Shift+A</kbd>
+        </div>
+      ` : ''}
       <div class="context-menu-item" id="ctx-align-flow">
-        <span>⚡ Auto-Layout Flow</span>
+        <span>⚡ Auto-Layout Entire Flow</span>
       </div>
       <div class="context-menu-item" id="ctx-select-all">
         <span>Select All</span>
@@ -1329,6 +1345,7 @@ class Canvas {
     this.contextMenu.querySelector('#ctx-add-container')?.addEventListener('click', () => this.addContainer(canvasX, canvasY));
     this.contextMenu.querySelector('#ctx-add-comment')?.addEventListener('click', () => this.addComment(canvasX, canvasY));
     this.contextMenu.querySelector('#ctx-paste')?.addEventListener('click', () => this.pasteClipboard());
+    this.contextMenu.querySelector('#ctx-canvas-align-selected')?.addEventListener('click', () => this.alignSelectedNodes());
     this.contextMenu.querySelector('#ctx-align-flow')?.addEventListener('click', () => this.autoLayout());
     this.contextMenu.querySelector('#ctx-select-all')?.addEventListener('click', () => this.selectAll());
     this.contextMenu.querySelector('#ctx-clear-canvas')?.addEventListener('click', () => this.clearCanvas());
@@ -1337,6 +1354,217 @@ class Canvas {
   // --------------------------------------------------------------------
   // Alignment & Distribution Engine (Alteryx Designer Parity)
   // --------------------------------------------------------------------
+  alignSelectedNodes() {
+    if (this.selectedNodeIds.size < 2) {
+      if (window.showToast) window.showToast('warning', 'Align Tools', 'Select at least 2 tools to align.');
+      return;
+    }
+
+    const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id));
+    if (selected.length < 2) return;
+
+    const selectedIds = new Set(selected.map(n => n.id));
+    const nodeMap = new Map(selected.map(n => [n.id, n]));
+
+    // 1. Capture original bounding box and centroid (local neighborhood anchor)
+    const origMinX = Math.min(...selected.map(n => n.x));
+    const origMaxX = Math.max(...selected.map(n => n.x));
+    const origMinY = Math.min(...selected.map(n => n.y));
+    const origMaxY = Math.max(...selected.map(n => n.y));
+    const origCenterX = (origMinX + origMaxX) / 2;
+    const origCenterY = (origMinY + origMaxY) / 2;
+
+    // Use snap-aware spacing
+    const snap = this.gridSnapSize || 16;
+    const SPACING_X = snap > 0 ? Math.max(128, Math.round(140 / snap) * snap) : 140; // ~144px on 16px grid
+    const SPACING_Y = snap > 0 ? Math.max(80, Math.round(90 / snap) * snap) : 90;    // ~96px on 16px grid
+
+    // 2. Build induced subgraph of connections strictly within selected tools
+    const inDegree = {};
+    const adj = {};
+    const revAdj = {};
+    selected.forEach(n => {
+      inDegree[n.id] = 0;
+      adj[n.id] = [];
+      revAdj[n.id] = [];
+    });
+
+    let internalEdgeCount = 0;
+    this.connections.forEach(c => {
+      if (selectedIds.has(c.source) && selectedIds.has(c.target)) {
+        if (!adj[c.source].includes(c.target)) {
+          adj[c.source].push(c.target);
+          revAdj[c.target].push({ id: c.source, port: c.targetHandle });
+          inDegree[c.target]++;
+          internalEdgeCount++;
+        }
+      }
+    });
+
+    const levels = {};
+
+    if (internalEdgeCount > 0) {
+      // 3A. Topological DAG layering with cycle-breaking
+      const inDegreeCopy = { ...inDegree };
+      const queue = selected.filter(n => inDegreeCopy[n.id] === 0).map(n => n.id);
+
+      // If all nodes have inDegree > 0 (cycle within selection), break cycle by starting at leftmost
+      if (queue.length === 0) {
+        const leftmost = [...selected].sort((a, b) => a.x - b.x)[0];
+        queue.push(leftmost.id);
+      }
+
+      queue.forEach(id => { levels[id] = 0; });
+      const visited = new Set();
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        visited.add(curr);
+        const currLevel = levels[curr] || 0;
+
+        (adj[curr] || []).forEach(nxt => {
+          levels[nxt] = Math.max(levels[nxt] || 0, currLevel + 1);
+          inDegreeCopy[nxt]--;
+          if (inDegreeCopy[nxt] <= 0 && !visited.has(nxt)) {
+            queue.push(nxt);
+          }
+        });
+
+        // If cycle left stranded nodes
+        if (queue.length === 0 && visited.size < selected.length) {
+          const unvisited = selected.filter(n => !visited.has(n.id)).sort((a, b) => a.x - b.x);
+          if (unvisited.length > 0) {
+            const nextRoot = unvisited[0];
+            levels[nextRoot.id] = Math.max(...Object.values(levels), 0) + 1;
+            queue.push(nextRoot.id);
+          }
+        }
+      }
+
+      // Ensure any isolated nodes within selection get levels based on their original relative X
+      selected.forEach(n => {
+        if (levels[n.id] === undefined) {
+          const relX = Math.max(0, Math.round((n.x - origMinX) / SPACING_X));
+          levels[n.id] = relX;
+        }
+      });
+    } else {
+      // 3B. No internal connections between selected tools (parallel tools or disconnected)
+      const spanX = origMaxX - origMinX;
+      const spanY = origMaxY - origMinY;
+
+      if (spanX >= spanY * 1.25) {
+        // Horizontally distributed: order by original X
+        const sorted = [...selected].sort((a, b) => a.x - b.x);
+        sorted.forEach((n, idx) => {
+          levels[n.id] = idx;
+        });
+      } else {
+        // Vertically distributed: keep in same level (column), ordered by original Y
+        selected.forEach(n => {
+          levels[n.id] = 0;
+        });
+      }
+    }
+
+    // 4. Group by level
+    const byLevel = {};
+    selected.forEach(n => {
+      const lvl = levels[n.id] || 0;
+      if (!byLevel[lvl]) byLevel[lvl] = [];
+      byLevel[lvl].push(n);
+    });
+
+    // 5. Vertical Ordering (Barycenter / Port-Aware Crossing Minimization)
+    const sortedLevels = Object.keys(byLevel).map(Number).sort((a, b) => a - b);
+    sortedLevels.forEach(lvl => {
+      const colNodes = byLevel[lvl];
+      colNodes.forEach(node => {
+        // Compute desired Y based on parents, external incoming wires, and ports
+        const parents = revAdj[node.id] || [];
+        if (parents.length > 0) {
+          let sumY = 0;
+          parents.forEach(p => {
+            const pNode = nodeMap.get(p.id);
+            let pY = pNode ? (pNode._calcY !== undefined ? pNode._calcY : pNode.y) : origCenterY;
+            // Bias for target port (L/T input is higher, R/S input is lower on multi-port tools)
+            if (p.port === 'L' || p.port === 'T') pY -= 20;
+            else if (p.port === 'R' || p.port === 'S') pY += 20;
+            sumY += pY;
+          });
+          node._desiredY = sumY / parents.length;
+        } else {
+          // Check external upstream connections from outside selection
+          const extConns = this.connections.filter(c => c.target === node.id && !selectedIds.has(c.source));
+          if (extConns.length > 0) {
+            const extSources = extConns.map(c => this.nodes.find(no => no.id === c.source)).filter(Boolean);
+            if (extSources.length > 0) {
+              node._desiredY = extSources.reduce((acc, s) => acc + s.y, 0) / extSources.length;
+            } else {
+              node._desiredY = node.y;
+            }
+          } else {
+            node._desiredY = node.y;
+          }
+        }
+      });
+
+      // Sort nodes within this level by desired Y
+      colNodes.sort((a, b) => (a._desiredY - b._desiredY) || (a.y - b.y));
+
+      // Calculate temporary assigned Y for this column
+      const count = colNodes.length;
+      if (count === 1) {
+        colNodes[0]._calcY = colNodes[0]._desiredY !== undefined ? colNodes[0]._desiredY : origCenterY;
+      } else {
+        const colCenterY = colNodes.reduce((acc, n) => acc + (n._desiredY !== undefined ? n._desiredY : origCenterY), 0) / count;
+        const startY = colCenterY - ((count - 1) * SPACING_Y) / 2;
+        colNodes.forEach((node, idx) => {
+          node._calcY = startY + idx * SPACING_Y;
+        });
+      }
+    });
+
+    // 6. Assign Target Coordinates
+    selected.forEach(node => {
+      const lvl = levels[node.id] || 0;
+      node._targetX = origMinX + lvl * SPACING_X;
+      node._targetY = node._calcY !== undefined ? node._calcY : origCenterY;
+    });
+
+    // 7. Local Anchor Realignment (Preserves exact local position without transporting)
+    const newMinX = Math.min(...selected.map(n => n._targetX));
+    const newMinY = Math.min(...selected.map(n => n._targetY));
+    const newMaxY = Math.max(...selected.map(n => n._targetY));
+    const newCenterY = (newMinY + newMaxY) / 2;
+
+    const shiftX = origMinX - newMinX;
+    const shiftY = origCenterY - newCenterY;
+
+    selected.forEach(node => {
+      const finalX = Math.max(16, this.snapCoord(node._targetX + shiftX));
+      const finalY = Math.max(16, this.snapCoord(node._targetY + shiftY));
+
+      node.x = finalX;
+      node.y = finalY;
+
+      delete node._desiredY;
+      delete node._calcY;
+      delete node._targetX;
+      delete node._targetY;
+
+      this.updateNodeElementPosition(node);
+    });
+
+    // 8. Update canvas visuals, enclosed containers, wires, history & toast
+    this.containers.forEach(c => this.updateContainerEnclosedNodes(c));
+    this.renderWires();
+    this.updateSelectionVisuals();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Align Tools');
+    if (window.showToast) window.showToast('info', 'Tools Aligned', `Arranged ${selected.length} tools locally in clean flow.`);
+  }
+
   alignHorizontally() {
     if (this.selectedNodeIds.size < 2) {
       if (window.showToast) window.showToast('warning', 'Align', 'Select at least 2 tools to align.');

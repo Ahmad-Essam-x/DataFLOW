@@ -1620,3 +1620,118 @@ def test_e2e_design_time_schema_propagation_and_select_intelligence(live_server,
     page.close()
 
 
+def test_e2e_align_selected_tools_locally(live_server, browser_context):
+    """
+    Verifies that selecting tools and choosing 'Align Tools' (via context menu or Shift+A):
+    1. Shows '⚡ Align Tools' in right-click context menu.
+    2. Aligns the selected tools in topological execution layers locally in place.
+    3. Does NOT transport tools elsewhere on the canvas (e.g. to (100, 120)).
+    4. Supports Undo/Redo history.
+    """
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_selector(".tool-card", timeout=15000)
+
+    # 1. Place 3 connected tools far away at x~1200, y~600
+    init_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+
+        const n1 = c.addNode('text_input', 1200, 580);
+        const n2 = c.addNode('select', 1320, 690);
+        const n3 = c.addNode('filter', 1470, 540);
+
+        c.addConnection(n1.id, 'O', n2.id, 'I');
+        c.addConnection(n2.id, 'O', n3.id, 'I');
+
+        // Select all 3 nodes
+        c.clearSelection();
+        c.selectNode(n1.id);
+        c.selectedNodeIds.add(n2.id);
+        c.selectedNodeIds.add(n3.id);
+        c.updateSelectionVisuals();
+
+        return {
+            n1Id: n1.id,
+            n2Id: n2.id,
+            n3Id: n3.id,
+            origY1: n1.y,
+            origY2: n2.y,
+            origY3: n3.y
+        };
+    }""")
+
+    # 2. Open context menu for selected nodes
+    page.evaluate("""() => {
+        window.appCanvas.showNodeContextMenu(300, 300);
+    }""")
+
+    # 3. Verify context menu contains 'Align Tools'
+    align_item = page.query_selector("#ctx-align-selected-tools")
+    assert align_item is not None, "Context menu item #ctx-align-selected-tools should be present"
+    text = align_item.inner_text()
+    assert "Align Tools" in text
+    assert "Shift+A" in text
+
+    # 4. Click 'Align Tools'
+    align_item.click()
+    page.wait_for_timeout(300)
+
+    # 5. Check new coordinates of nodes
+    coords = page.evaluate("""(res) => {
+        const c = window.appCanvas;
+        const n1 = c.nodes.find(n => n.id === res.n1Id);
+        const n2 = c.nodes.find(n => n.id === res.n2Id);
+        const n3 = c.nodes.find(n => n.id === res.n3Id);
+        return {
+            x1: n1.x, y1: n1.y,
+            x2: n2.x, y2: n2.y,
+            x3: n3.x, y3: n3.y,
+            canUndo: window.appHistory ? window.appHistory.canUndo() : false
+        };
+    }""", init_res)
+
+    # Tools must NOT be teleported to (100, 120)
+    assert coords["x1"] >= 1150 and coords["x1"] <= 1250, f"n1.x should stay in local neighborhood near 1200, got {coords['x1']}"
+    assert coords["x2"] > coords["x1"], f"n2 should be to the right of n1, got {coords['x2']} vs {coords['x1']}"
+    assert coords["x3"] > coords["x2"], f"n3 should be to the right of n2, got {coords['x3']} vs {coords['x2']}"
+
+    # All 3 nodes in this linear flow should be horizontally aligned to the exact same Y!
+    assert coords["y1"] == coords["y2"] == coords["y3"], f"Linear flow should align to same Y, got y1={coords['y1']}, y2={coords['y2']}, y3={coords['y3']}"
+    # And Y should be in local neighborhood near ~600
+    assert coords["y1"] >= 550 and coords["y1"] <= 680, f"Y coordinate should remain in local neighborhood, got {coords['y1']}"
+
+    # 6. Test Undo
+    assert coords["canUndo"] is True
+    page.evaluate("() => { window.appHistory.undo(); }")
+    page.wait_for_timeout(200)
+
+    reverted = page.evaluate("""(res) => {
+        const c = window.appCanvas;
+        const n2 = c.nodes.find(n => n.id === res.n2Id);
+        return { y2: n2.y };
+    }""", init_res)
+    assert reverted["y2"] == init_res["origY2"], f"Undo should revert node position to {init_res['origY2']}, got {reverted['y2']}"
+
+    # 7. Test Redo and keyboard shortcut Shift+A
+    page.evaluate("""(res) => {
+        const c = window.appCanvas;
+        c.clearSelection();
+        c.selectNode(res.n1Id);
+        c.selectedNodeIds.add(res.n2Id);
+        c.selectedNodeIds.add(res.n3Id);
+        c.alignSelectedNodes();
+    }""", init_res)
+
+    aligned_again = page.evaluate("""(res) => {
+        const c = window.appCanvas;
+        const n1 = c.nodes.find(n => n.id === res.n1Id);
+        const n2 = c.nodes.find(n => n.id === res.n2Id);
+        return { y1: n1.y, y2: n2.y };
+    }""", init_res)
+    assert aligned_again["y1"] == aligned_again["y2"]
+
+    page.close()
+
+
+

@@ -2113,10 +2113,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           getActiveCanvas()?.zoomToFit();
           break;
 
-        case 'view:autolayout':
-          getActiveCanvas()?.autoLayout();
-          if (window.showToast) window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean layers.');
+        case 'view:autolayout': {
+          const curC = getActiveCanvas();
+          if (curC && curC.selectedNodeIds && curC.selectedNodeIds.size > 1) {
+            curC.alignSelectedNodes();
+          } else {
+            curC?.autoLayout();
+            if (window.showToast) window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean layers.');
+          }
           break;
+        }
+
+        case 'canvas:align-selected':
+        case 'view:align-selected': {
+          const curC = getActiveCanvas();
+          if (curC) {
+            curC.alignSelectedNodes();
+          }
+          break;
+        }
 
         case 'view:toggle-overview':
         case 'view:toggle_overview':
@@ -2435,8 +2450,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const autoLayoutBtn = document.getElementById('btn-autolayout');
   if (autoLayoutBtn) {
     autoLayoutBtn.addEventListener('click', () => {
-      getActiveCanvas()?.autoLayout();
-      window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean left-to-right execution layers.');
+      const curC = getActiveCanvas();
+      if (!curC) return;
+      if (curC.selectedNodeIds && curC.selectedNodeIds.size > 1) {
+        curC.alignSelectedNodes();
+      } else {
+        curC.autoLayout();
+        window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean left-to-right execution layers.');
+      }
     });
   }
 
