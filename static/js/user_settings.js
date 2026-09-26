@@ -36,9 +36,15 @@ class UserSettings {
       panel_dimensions:    {},
       results_page_size:   100,
       execution_timeout:   60,
-      use_amp_engine:      true,
-      max_engine_threads:  'auto',
+      use_amp_engine:             true,
+      max_engine_threads:         'auto',
       ui_zoom:             1.0,
+      palette_visible:     true,
+      config_visible:             true,
+      results_visible:            true,
+      show_histograms:            false,
+      node_tooltips_enabled:      true,
+      wireless_tooltips_enabled:  true,
     };
 
     // Seed from localStorage on construction (synchronous, zero-flicker).
@@ -71,6 +77,12 @@ class UserSettings {
       'dataflow_panel_dimensions':    'panel_dimensions',
       'dataflow_execution_timeout':   'execution_timeout',
       'dataflow_ui_zoom':             'ui_zoom',
+      'dataflow_palette_visible':     'palette_visible',
+      'dataflow_config_visible':      'config_visible',
+      'dataflow_results_visible':     'results_visible',
+      'dataflow_show_histograms':     'show_histograms',
+      'dataflow_node_tooltips':       'node_tooltips_enabled',
+      'dataflow_wireless_tooltips':   'wireless_tooltips_enabled',
     };
 
     for (const [oldKey, newKey] of Object.entries(legacy)) {
@@ -165,6 +177,7 @@ class UserSettings {
     this._applyMinimapSettings();
     this._applyResultsSettings();
     this._applyPanelDimensions();
+    this._applyViewPanelsVisibility();
     if (window.appMenuBar && typeof window.appMenuBar.syncMenuStates === 'function') {
       window.appMenuBar.syncMenuStates();
     }
@@ -238,6 +251,21 @@ class UserSettings {
     if (!isNaN(snap)) canvas.gridSnapSize = snap;
 
     canvas.autoCacheUpstream = Boolean(this.get('auto_cache_upstream', false));
+
+    const nte = Boolean(this.get('node_tooltips_enabled', true));
+    canvas.nodeTooltipsEnabled = nte;
+    if (canvas.wrapper) {
+      canvas.wrapper.classList.toggle('node-tooltips-disabled', !nte);
+    }
+
+    const wte = Boolean(this.get('wireless_tooltips_enabled', true));
+    canvas.wirelessTooltipsEnabled = wte;
+    if (canvas.wrapper) {
+      canvas.wrapper.classList.toggle('wireless-tooltips-disabled', !wte);
+    }
+    if (!wte && canvas.wrapper) {
+      canvas.wrapper.querySelectorAll('.wireless-badge.is-visible').forEach(b => b.classList.remove('is-visible'));
+    }
   }
 
   _applyMinimapSettings() {
@@ -266,6 +294,40 @@ class UserSettings {
     if (paletteRibbon && dims.paletteHeight) paletteRibbon.style.height = `${dims.paletteHeight}px`;
     if (configPanel   && dims.configWidth)   configPanel.style.width    = `${dims.configWidth}px`;
     if (resultsPanel  && dims.resultsHeight) resultsPanel.style.height  = `${dims.resultsHeight}px`;
+  }
+
+  _applyViewPanelsVisibility() {
+    // 1. Tool Palette
+    const paletteVisible = Boolean(this.get('palette_visible', true));
+    const paletteEl = document.getElementById('tool-palette-ribbon') || document.getElementById('palette-bar');
+    if (paletteEl) {
+      paletteEl.style.display = paletteVisible ? 'flex' : 'none';
+    }
+
+    // 2. Config Panel
+    const configVisible = Boolean(this.get('config_visible', true));
+    const configEl = document.getElementById('config-panel') || document.getElementById('config-sidebar');
+    if (configEl) {
+      configEl.style.display = configVisible ? 'flex' : 'none';
+    }
+
+    // 3. Results Panel
+    const resultsVisible = Boolean(this.get('results_visible', true));
+    const resultsEl = document.getElementById('results-panel');
+    if (resultsEl) {
+      resultsEl.classList.toggle('collapsed', !resultsVisible);
+    }
+
+    // 4. In-Grid Histograms
+    const showHist = Boolean(this.get('show_histograms', false));
+    if (window.appResultsPanel) {
+      window.appResultsPanel.showHistograms = showHist;
+      const toggleHistBtn = document.getElementById('btn-toggle-histograms');
+      if (toggleHistBtn) toggleHistBtn.classList.toggle('active', showHist);
+      if (window.appResultsPanel.gridWrapper) {
+        window.appResultsPanel.gridWrapper.classList.toggle('hide-histograms', !showHist);
+      }
+    }
   }
 }
 

@@ -117,19 +117,25 @@ class ResultsPanel {
       toggleHistBtn.classList.toggle('active', this.showHistograms);
       toggleHistBtn.addEventListener('click', () => {
         this.showHistograms = !this.showHistograms;
-        localStorage.setItem('dataflow_show_histograms', this.showHistograms);
+        if (window.userSettings) window.userSettings.set('show_histograms', this.showHistograms);
+        localStorage.setItem('dataflow_show_histograms', this.showHistograms ? 'true' : 'false');
         toggleHistBtn.classList.toggle('active', this.showHistograms);
         if (this.gridWrapper) {
           this.gridWrapper.classList.toggle('hide-histograms', !this.showHistograms);
         }
         const checkHist = document.getElementById('check-view-histograms');
         if (checkHist) checkHist.textContent = this.showHistograms ? '✓' : '';
+        if (window.appMenuBar) window.appMenuBar.syncMenuStates();
       });
     }
 
     // Toggle collapse
     document.getElementById('btn-toggle-results').addEventListener('click', () => {
       this.panel.classList.toggle('collapsed');
+      const isVisible = !this.panel.classList.contains('collapsed');
+      if (window.userSettings) window.userSettings.set('results_visible', isVisible);
+      localStorage.setItem('dataflow_results_visible', isVisible ? 'true' : 'false');
+      if (window.appMenuBar) window.appMenuBar.syncMenuStates();
     });
 
     // Export dropdown
@@ -1051,6 +1057,13 @@ class ResultsPanel {
     });
   }
 
+  getActiveCanvas() {
+    if (typeof window.getActiveCanvas === 'function') {
+      return window.getActiveCanvas();
+    }
+    return (window.appTabManager && window.appTabManager.activeCanvas) || window.appCanvas;
+  }
+
   openContextMenu(x, y, r, c, targetTd) {
     this.closeContextMenu();
 
@@ -1065,7 +1078,9 @@ class ResultsPanel {
     menu.className = 'grid-context-menu';
 
     const isTruncated = targetTd && targetTd.classList.contains('cell-truncated');
-    const fullText = isTruncated ? targetTd.dataset.full : (targetTd ? targetTd.textContent : '');
+    const isNull = targetTd && targetTd.classList.contains('cell-null');
+    const fullText = isTruncated ? targetTd.dataset.full : (targetTd ? (isNull ? '' : targetTd.textContent) : '');
+    const displayVal = (fullText.length > 20) ? (fullText.slice(0, 20) + '…') : fullText;
     const colName = targetTd ? (targetTd.dataset.col || '') : '';
     const rowNum = targetTd ? (targetTd.dataset.row || String(r + 1)) : String(r + 1);
 
@@ -1111,6 +1126,37 @@ class ResultsPanel {
           </button>
         ` : ''}
       ` : ''}
+      ${(colName && this.currentNodeId) ? `
+        <div class="grid-context-menu-divider"></div>
+        <div class="grid-context-menu-section-header">Cleansing & Filtering</div>
+        ${!isNull ? `
+          <button class="grid-context-menu-item" id="ctx-filter-only">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            <span>Filter Only "${this.escapeHtml(displayVal)}"</span>
+          </button>
+          <button class="grid-context-menu-item" id="ctx-filter-out">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon><line x1="4" y1="4" x2="20" y2="20"></line></svg>
+            <span>Filter Out "${this.escapeHtml(displayVal)}"</span>
+          </button>
+        ` : `
+          <button class="grid-context-menu-item" id="ctx-filter-out-nulls">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon><line x1="4" y1="4" x2="20" y2="20"></line></svg>
+            <span>Filter Out Nulls</span>
+          </button>
+          <button class="grid-context-menu-item" id="ctx-clean-nulls-zero">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <span>Clean: Replace Nulls with 0</span>
+          </button>
+          <button class="grid-context-menu-item" id="ctx-clean-nulls-blank">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <span>Clean: Replace Nulls with Blank ""</span>
+          </button>
+        `}
+        <button class="grid-context-menu-item" id="ctx-clean-trim">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6m-3-3v6M14 10l7 7m0-7l-7 7"/></svg>
+          <span>Clean: Trim Whitespace</span>
+        </button>
+      ` : ''}
       ${isTruncated ? `
         <div class="grid-context-menu-divider"></div>
         <button class="grid-context-menu-item" id="ctx-view-full">
@@ -1123,14 +1169,11 @@ class ResultsPanel {
     document.body.appendChild(menu);
     this.activeContextMenu = menu;
 
-    const menuWidth = 240;
-    const baseHeight = isTruncated ? 210 : 175;
-    const sortHeight = colName ? (this.sortBy ? 85 : 60) : 0;
-    const menuHeight = baseHeight + sortHeight;
+    const menuRect = menu.getBoundingClientRect();
     let posX = x;
     let posY = y;
-    if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 8;
-    if (posY + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight - 8;
+    if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 8;
+    if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 8;
     menu.style.left = `${Math.max(8, posX)}px`;
     menu.style.top = `${Math.max(8, posY)}px`;
 
@@ -1172,6 +1215,75 @@ class ResultsPanel {
     menu.querySelector('#ctx-clear-sort')?.addEventListener('click', () => {
       this.closeContextMenu();
       this.clearSort();
+    });
+
+    menu.querySelector('#ctx-filter-only')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'filter', {
+          mode: 'basic',
+          logical_op: 'AND',
+          conditions: [{ column: colName, operator: '==', value: fullText }]
+        }, `Filter_${colName}_Only`);
+      }
+    });
+
+    menu.querySelector('#ctx-filter-out')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'filter', {
+          mode: 'basic',
+          logical_op: 'AND',
+          conditions: [{ column: colName, operator: '!=', value: fullText }]
+        }, `Filter_Out_${colName}`);
+      }
+    });
+
+    menu.querySelector('#ctx-filter-out-nulls')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'filter', {
+          mode: 'basic',
+          logical_op: 'AND',
+          conditions: [{ column: colName, operator: 'is_not_null', value: '' }]
+        }, `Filter_${colName}_NotNull`);
+      }
+    });
+
+    menu.querySelector('#ctx-clean-nulls-zero')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'clean', {
+          columns: [colName],
+          replace_nulls_numeric: true
+        }, `Clean_${colName}_Zeros`);
+      }
+    });
+
+    menu.querySelector('#ctx-clean-nulls-blank')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'clean', {
+          columns: [colName],
+          replace_nulls_string: true
+        }, `Clean_${colName}_Blanks`);
+      }
+    });
+
+    menu.querySelector('#ctx-clean-trim')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'clean', {
+          columns: [colName],
+          trim_whitespace: true
+        }, `Clean_${colName}_Trim`);
+      }
     });
 
     menu.querySelector('#ctx-view-full')?.addEventListener('click', () => {
@@ -1227,17 +1339,36 @@ class ResultsPanel {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
         <span>Hide Column</span>
       </button>
+      ${this.currentNodeId ? `
+        <div class="grid-context-menu-divider"></div>
+        <div class="grid-context-menu-section-header">Cleansing & Filtering</div>
+        <button class="grid-context-menu-item" id="col-menu-filter-nulls">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon><line x1="4" y1="4" x2="20" y2="20"></line></svg>
+          <span>Filter Out Nulls</span>
+        </button>
+        <button class="grid-context-menu-item" id="col-menu-clean-zeros">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span>Clean: Replace Nulls with 0</span>
+        </button>
+        <button class="grid-context-menu-item" id="col-menu-clean-blanks">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span>Clean: Replace Nulls with Blank ""</span>
+        </button>
+        <button class="grid-context-menu-item" id="col-menu-clean-trim">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6m-3-3v6M14 10l7 7m0-7l-7 7"/></svg>
+          <span>Clean: Trim Whitespace</span>
+        </button>
+      ` : ''}
     `;
 
     document.body.appendChild(menu);
     this.activeContextMenu = menu;
 
-    const menuWidth = 245;
-    const menuHeight = this.sortBy ? 245 : 215;
+    const menuRect = menu.getBoundingClientRect();
     let posX = x;
     let posY = y;
-    if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 8;
-    if (posY + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight - 8;
+    if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 8;
+    if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 8;
     menu.style.left = `${Math.max(8, posX)}px`;
     menu.style.top = `${Math.max(8, posY)}px`;
 
@@ -1282,6 +1413,51 @@ class ResultsPanel {
       this.closeContextMenu();
       this.hiddenColumns.add(colName);
       this.renderGrid(this.lastRenderedData);
+    });
+
+    menu.querySelector('#col-menu-filter-nulls')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'filter', {
+          mode: 'basic',
+          logical_op: 'AND',
+          conditions: [{ column: colName, operator: 'is_not_null', value: '' }]
+        }, `Filter_${colName}_NotNull`);
+      }
+    });
+
+    menu.querySelector('#col-menu-clean-zeros')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'clean', {
+          columns: [colName],
+          replace_nulls_numeric: true
+        }, `Clean_${colName}_Zeros`);
+      }
+    });
+
+    menu.querySelector('#col-menu-clean-blanks')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'clean', {
+          columns: [colName],
+          replace_nulls_string: true
+        }, `Clean_${colName}_Blanks`);
+      }
+    });
+
+    menu.querySelector('#col-menu-clean-trim')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      const canvas = this.getActiveCanvas();
+      if (canvas && this.currentNodeId) {
+        canvas.appendConnectedTool(this.currentNodeId, this.currentPort, 'clean', {
+          columns: [colName],
+          trim_whitespace: true
+        }, `Clean_${colName}_Trim`);
+      }
     });
   }
 

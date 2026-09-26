@@ -7327,3 +7327,324 @@ td.cell-truncated::after {
 /* ============================================================
    END Workflow Tab Strip
    ============================================================ */
+
+/* ============================================================
+   Canvas Ergonomics: Alignment, Distribution & Floating HUD
+   ============================================================ */
+.align-distribute-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg-hover, rgba(255, 255, 255, 0.04));
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.align-distribute-group .btn-icon {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.align-distribute-group .btn-icon:hover {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+}
+
+.selection-floating-hud {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 100;
+  pointer-events: auto;
+  user-select: none;
+  animation: hudFadeIn 0.12s ease-out;
+}
+
+@keyframes hudFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.selection-floating-hud .hud-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.selection-floating-hud .hud-btn:hover {
+  background: var(--bg-hover);
+  color: var(--color-primary);
+}
+
+.selection-floating-hud .hud-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-subtle);
+  margin: 0 2px;
+}
+
+/* ============================================================
+   Auto-Connect & Wire Splice Previews
+   ============================================================ */
+.wire.wire-splice-preview {
+  stroke: var(--color-primary, #0072ce) !important;
+  stroke-width: 4px !important;
+  stroke-dasharray: 6, 4 !important;
+  animation: wireSplicePulse 0.75s linear infinite !important;
+  filter: drop-shadow(0 0 6px rgba(0, 114, 206, 0.7));
+}
+
+@keyframes wireSplicePulse {
+  to { stroke-dashoffset: -20; }
+}
+
+/* ============================================================
+   Wireless Connections & Badges
+   ============================================================ */
+.wire.wire-wireless {
+  stroke-dasharray: 4, 5 !important;
+  opacity: 0.18 !important;
+  transition: opacity 0.2s, stroke 0.2s, stroke-width 0.2s;
+}
+
+.wire.wire-wireless:hover,
+.wire.wire-wireless.selected,
+.wire.wire-wireless.wire-wireless-active {
+  opacity: 0.95 !important;
+  stroke: var(--color-primary, #0072ce) !important;
+  stroke-width: 2.8px !important;
+  stroke-dasharray: 6, 4 !important;
+  animation: wireSplicePulse 1s linear infinite !important;
+}
+
+.wireless-badge {
+  position: absolute;
+  font-size: 8.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-surface-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  pointer-events: none;
+  user-select: none;
+  z-index: 15;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transform: scale(0.95);
+}
+
+.wireless-badge.is-visible {
+  opacity: 0.92;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.wireless-badge:hover {
+  opacity: 1;
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.02);
+}
+
+.wireless-badge-icon {
+  font-size: 8px;
+  opacity: 0.7;
+}
+
+.wireless-badge-name {
+  font-size: 8.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.wireless-badge-tx {
+  margin-left: 4px;
+}
+
+.wireless-badge-rx {
+  margin-right: 4px;
+}
+
+.canvas-wrapper.wireless-tooltips-disabled .wireless-badge,
+body.wireless-tooltips-disabled .wireless-badge {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.canvas-wrapper.node-tooltips-disabled .anchor-tooltip,
+body.node-tooltips-disabled .anchor-tooltip {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.node-card.wireless-active {
+  outline: 2px solid var(--color-primary) !important;
+  box-shadow: 0 0 14px rgba(0, 114, 206, 0.5) !important;
+}
+
+.wire-action-bar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 5px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 50;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.wire-action-bar .wire-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wire-action-bar .wire-action-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.wire-action-bar .wire-action-btn.btn-delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.wire-action-bar .wire-action-btn.btn-wireless.is-wireless {
+  color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.15);
+}
+
+/* ============================================================
+   Semantic Anchor Tooltips
+   ============================================================ */
+.anchor-tooltip {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 9.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  min-width: 140px;
+  max-width: 220px;
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  transform: translateY(-2px);
+}
+
+.anchor-tooltip.visible,
+.anchor-tooltip.is-visible {
+  opacity: 0.96;
+  transform: translateY(0);
+}
+
+.anchor-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+
+.anchor-tooltip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.anchor-tooltip-title {
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--text-primary);
+}
+
+.anchor-tooltip-desc {
+  font-size: 9px;
+  color: var(--text-muted);
+  line-height: 1.3;
+  margin-bottom: 3px;
+}
+
+.anchor-tooltip-meta {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 3px;
+  margin-top: 3px;
+}
+
+.anchor-tooltip-meta b {
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   Data Cleansing in Context Menus
+   ============================================================ */
+.grid-context-menu-section-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 6px 12px 2px 12px;
+}

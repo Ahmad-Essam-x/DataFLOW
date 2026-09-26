@@ -6,6 +6,50 @@
  */
 
 class Canvas {
+  static ANCHOR_SEMANTICS = {
+    filter: {
+      T: { name: 'True (T)', desc: 'Records meeting the filter condition', color: '#10b981' },
+      F: { name: 'False (F)', desc: 'Records not meeting the filter condition', color: '#ef4444' }
+    },
+    join: {
+      L: { name: 'Left Unmatched (L)', desc: 'Records from Left stream that did not match any Right record', color: '#0072ce' },
+      J: { name: 'Joined (J)', desc: 'Records matched on join keys between Left and Right streams', color: '#10b981' },
+      R: { name: 'Right Unmatched (R)', desc: 'Records from Right stream that did not match any Left record', color: '#f59e0b' }
+    },
+    join_multiple: {
+      I: { name: 'Inputs (#1, #2...)', desc: 'Connect 2 or more input streams to perform multi-join', color: '#0072ce' },
+      J: { name: 'Joined (J)', desc: 'Combined joined records from all inputs', color: '#10b981' }
+    },
+    unique: {
+      U: { name: 'Unique (U)', desc: 'First occurrence of unique records', color: '#10b981' },
+      D: { name: 'Duplicates (D)', desc: 'Subsequent duplicate records', color: '#f59e0b' }
+    },
+    find_replace: {
+      F: { name: 'Find (F)', desc: 'Target data stream to search and replace values within', color: '#0072ce' },
+      R: { name: 'Replace (R)', desc: 'Reference lookup table providing replacement values', color: '#6f42c1' }
+    },
+    append_fields: {
+      T: { name: 'Target (T)', desc: 'Primary stream to receive Cartesian appended fields', color: '#0072ce' },
+      S: { name: 'Source (S)', desc: 'Source stream to replicate across every target row', color: '#6f42c1' }
+    },
+    summarize: {
+      I: { name: 'Input (I)', desc: 'Input records to group and aggregate', color: '#0072ce' },
+      O: { name: 'Output (O)', desc: 'Aggregated output data with summary metrics', color: '#10b981' }
+    },
+    formula: {
+      I: { name: 'Input (I)', desc: 'Input stream to add or modify calculated fields', color: '#0072ce' },
+      O: { name: 'Output (O)', desc: 'Calculated stream containing formula expressions', color: '#10b981' }
+    },
+    select: {
+      I: { name: 'Input (I)', desc: 'Incoming dataset to rename, reorder, or filter columns', color: '#0072ce' },
+      O: { name: 'Output (O)', desc: 'Refined dataset with select modifications applied', color: '#10b981' }
+    },
+    clean: {
+      I: { name: 'Input (I)', desc: 'Input data to cleanse, impute, or whitespace-trim', color: '#0072ce' },
+      O: { name: 'Output (O)', desc: 'Cleansed data with trimmed strings and imputed nulls', color: '#10b981' }
+    }
+  };
+
   constructor(containerOrId, options = {}) {
     // Accept either a string ID (legacy) or a DOM element (TabManager host div)
     const tabId = options.tabId || null;
@@ -91,6 +135,20 @@ class Canvas {
       ? Boolean(window.userSettings.get('auto_cache_upstream', false))
       : localStorage.getItem('dataflow_auto_cache_upstream') === 'true';
 
+    // Tooltips Preferences (Default true)
+    this.nodeTooltipsEnabled = window.userSettings
+      ? Boolean(window.userSettings.get('node_tooltips_enabled', true))
+      : (localStorage.getItem('dataflow_node_tooltips') !== 'false');
+
+    this.wirelessTooltipsEnabled = window.userSettings
+      ? Boolean(window.userSettings.get('wireless_tooltips_enabled', true))
+      : (localStorage.getItem('dataflow_wireless_tooltips') !== 'false');
+
+    if (this.wrapper) {
+      this.wrapper.classList.toggle('node-tooltips-disabled', !this.nodeTooltipsEnabled);
+      this.wrapper.classList.toggle('wireless-tooltips-disabled', !this.wirelessTooltipsEnabled);
+    }
+
     // Interaction states
     this.isPanning = false;
     this.panStart = { x: 0, y: 0 };
@@ -118,7 +176,7 @@ class Canvas {
     // Mouse coordinates tracking for spotlight spawn
     this.lastMouseCanvas = { x: 200, y: 150 };
 
-    // Floating wire delete button element
+    // Floating wire action toolbar
     this.createWireDeleteBtn();
     this.createMarqueeElement();
     this.createContextMenu();
@@ -133,7 +191,7 @@ class Canvas {
 
   /** Checks if a click event targeted empty canvas background (not interactive objects) */
   isCanvasBackground(e) {
-    if (e.target.closest('.node-card, .tool-container, .comment-note, .wire-group, .wire-delete-btn, .port, .overview-floating-window, .minimap-box, #overview-window, .canvas-overview-navigator, .wire-probe-card, .canvas-hint, .canvas-dropzone-overlay, .spotlight-backdrop')) {
+    if (e.target.closest('.node-card, .tool-container, .comment-note, .wire-group, .wire-delete-btn, .wire-action-bar, .wireless-badge, .selection-floating-hud, .port, .overview-floating-window, .minimap-box, #overview-window, .canvas-overview-navigator, .wire-probe-card, .canvas-hint, .canvas-dropzone-overlay, .spotlight-backdrop')) {
       return false;
     }
     return Boolean(
@@ -269,21 +327,40 @@ class Canvas {
   }
 
   createWireDeleteBtn() {
-    // Each canvas instance gets its own wire-delete button (supports multi-tab)
-    const btn = document.createElement('div');
-    btn.className = 'wire-delete-btn';
-    btn.innerHTML = '&times;';
-    btn.title = 'Click to delete this connection (Delete / Backspace)';
-    btn.style.display = 'none';
-    if (this.wrapper) this.wrapper.appendChild(btn);
+    // Each canvas instance gets its own wire action bar (supports multi-tab)
+    const bar = document.createElement('div');
+    bar.className = 'wire-action-bar';
+    bar.style.display = 'none';
 
-    btn.addEventListener('click', (e) => {
+    bar.innerHTML = `
+      <button class="wire-action-btn btn-wireless" id="wire-btn-wireless" title="Toggle Wireless Connection">
+        📡
+      </button>
+      <button class="wire-action-btn btn-delete" id="wire-btn-delete" title="Delete Connection (Delete / Backspace)">
+        &times;
+      </button>
+    `;
+
+    bar.querySelector('#wire-btn-wireless')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.selectedConnectionId) {
+        this.toggleConnectionWireless(this.selectedConnectionId);
+      }
+    });
+
+    bar.querySelector('#wire-btn-delete')?.addEventListener('click', (e) => {
       e.stopPropagation();
       if (this.selectedConnectionId) {
         this.removeConnection(this.selectedConnectionId);
       }
     });
-    this.wireDeleteBtn = btn;
+
+    if (this.wrapper) this.wrapper.appendChild(bar);
+    this.wireDeleteBtn = bar;
+  }
+
+  createFloatingHud() {
+    this.floatingHudEl = null;
   }
 
   createMarqueeElement() {
@@ -672,6 +749,14 @@ class Canvas {
           this.draggingNode.x = newX;
           this.draggingNode.y = newY;
           this.updateNodeElementPosition(this.draggingNode);
+
+          // Check if hovering over an existing wire for splice preview
+          const wireCandidate = this.findWireNear(newX + 28, newY + 28, 28);
+          this.clearWireSplicePreviews();
+          if (wireCandidate && wireCandidate.source !== this.draggingNode.id && wireCandidate.target !== this.draggingNode.id) {
+            const wEl = document.getElementById(`wire-${wireCandidate.id}`);
+            if (wEl) wEl.classList.add('wire-splice-preview');
+          }
         }
 
         this.renderWires();
@@ -821,6 +906,7 @@ class Canvas {
       this._lastDragClientPos = null;
 
       if (this.draggingNode) {
+        const movedNode = this.draggingNode;
         if (!this.dragMoved && this._pendingSingleSelectOnMouseUp) {
           this.selectNode(this._pendingSingleSelectOnMouseUp, false);
         }
@@ -831,6 +917,19 @@ class Canvas {
         this.containers.forEach(c => this.updateContainerEnclosedNodes(c));
         this.renderWires();
         this.onWorkflowChange();
+
+        // Check if dropped onto a wire for auto-splice
+        if (this.dragMoved && this.selectedNodeIds.size === 1 && movedNode) {
+          const wireCandidate = this.findWireNear(movedNode.x + 28, movedNode.y + 28, 28);
+          this.clearWireSplicePreviews();
+          if (wireCandidate && wireCandidate.source !== movedNode.id && wireCandidate.target !== movedNode.id) {
+            const meta = this.toolRegistry[movedNode.type] || { inputs: ['I'], outputs: ['O'] };
+            if (meta.inputs && meta.inputs.length >= 1 && meta.outputs && meta.outputs.length >= 1) {
+              this.spliceNodeIntoConnection(movedNode.id, wireCandidate.id);
+            }
+          }
+        }
+        this.clearWireSplicePreviews();
         if (this.dragMoved && window.appHistory) window.appHistory.pushSnapshot('Move Nodes');
       }
 
@@ -951,11 +1050,20 @@ class Canvas {
       if (isNativeFileDrag(e) && this.fileDragCounter <= 0) {
         this.fileDragCounter = 1;
         showDropzone();
+      } else if (!isNativeFileDrag(e)) {
+        const coords = this.getCanvasCoords(e.clientX, e.clientY);
+        const wireCandidate = this.findWireNear(coords.x, coords.y, 30);
+        this.clearWireSplicePreviews();
+        if (wireCandidate) {
+          const wEl = document.getElementById(`wire-${wireCandidate.id}`);
+          if (wEl) wEl.classList.add('wire-splice-preview');
+        }
       }
     });
 
     this.container.addEventListener('dragleave', (e) => {
       if (!this.isActive()) return;
+      this.clearWireSplicePreviews();
       if (isNativeFileDrag(e)) {
         this.fileDragCounter--;
         if (this.fileDragCounter <= 0) {
@@ -972,6 +1080,9 @@ class Canvas {
       hideDropzone();
 
       const coords = this.getCanvasCoords(e.clientX, e.clientY);
+      const wireCandidate = this.findWireNear(coords.x, coords.y, 32);
+      const portCandidate = !wireCandidate ? this.findOutputPortNear(coords.x, coords.y, 75) : null;
+      this.clearWireSplicePreviews();
 
       // 1. Native OS File Drop (.csv, .xlsx, .xls, .tsv, .txt, .json)
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -989,7 +1100,22 @@ class Canvas {
           } else if (tool.type === 'comment') {
             this.addComment(coords.x, coords.y);
           } else {
-            this.addNode(tool.type, coords.x - 28, coords.y - 28);
+            const newNode = this.addNode(tool.type, coords.x - 28, coords.y - 28);
+            const meta = this.toolRegistry[tool.type] || { inputs: ['I'], outputs: ['O'] };
+
+            if (wireCandidate && meta.inputs && meta.inputs.length >= 1 && meta.outputs && meta.outputs.length >= 1) {
+              this.spliceNodeIntoConnection(newNode.id, wireCandidate.id);
+            } else if (portCandidate && meta.inputs && meta.inputs.length >= 1) {
+              const inPort = meta.inputs[0];
+              this.addConnection(portCandidate.nodeId, portCandidate.portName, newNode.id, inPort);
+              this.renderWires();
+              this.onWorkflowChange();
+              if (window.appHistory) window.appHistory.pushSnapshot('Auto-Connect Tool');
+              if (window.showToast) {
+                const srcNode = this.nodes.find(n => n.id === portCandidate.nodeId);
+                window.showToast('success', 'Auto-Connected', `Connected '${srcNode ? srcNode.name : 'tool'}' to '${newNode.name}'.`);
+              }
+            }
           }
         } catch (err) {
           console.error('Failed to parse dropped tool data:', err);
@@ -1021,6 +1147,14 @@ class Canvas {
         <div class="context-menu-item" id="ctx-align-v">
           <span>↕️ Align Vertically</span>
         </div>
+        ${this.selectedNodeIds.size >= 3 ? `
+          <div class="context-menu-item" id="ctx-distribute-h">
+            <span>⫼ Distribute Horizontally</span>
+          </div>
+          <div class="context-menu-item" id="ctx-distribute-v">
+            <span>⫽ Distribute Vertically</span>
+          </div>
+        ` : ''}
         <div class="context-menu-divider"></div>
       ` : ''}
       <div class="context-menu-item" id="ctx-copy">
@@ -1070,6 +1204,8 @@ class Canvas {
     });
     this.contextMenu.querySelector('#ctx-align-h')?.addEventListener('click', () => this.alignHorizontally());
     this.contextMenu.querySelector('#ctx-align-v')?.addEventListener('click', () => this.alignVertically());
+    this.contextMenu.querySelector('#ctx-distribute-h')?.addEventListener('click', () => this.distributeHorizontally());
+    this.contextMenu.querySelector('#ctx-distribute-v')?.addEventListener('click', () => this.distributeVertically());
     this.contextMenu.querySelector('#ctx-copy')?.addEventListener('click', () => this.copySelected());
     this.contextMenu.querySelector('#ctx-cut')?.addEventListener('click', () => this.cutSelected());
     this.contextMenu.querySelector('#ctx-duplicate')?.addEventListener('click', () => this.duplicateSelected());
@@ -1198,8 +1334,14 @@ class Canvas {
     this.contextMenu.querySelector('#ctx-clear-canvas')?.addEventListener('click', () => this.clearCanvas());
   }
 
+  // --------------------------------------------------------------------
+  // Alignment & Distribution Engine (Alteryx Designer Parity)
+  // --------------------------------------------------------------------
   alignHorizontally() {
-    if (this.selectedNodeIds.size < 2) return;
+    if (this.selectedNodeIds.size < 2) {
+      if (window.showToast) window.showToast('warning', 'Align', 'Select at least 2 tools to align.');
+      return;
+    }
     const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id));
     const avgY = Math.round(selected.reduce((acc, n) => acc + n.y, 0) / selected.length);
     selected.forEach(n => {
@@ -1207,13 +1349,17 @@ class Canvas {
       this.updateNodeElementPosition(n);
     });
     this.renderWires();
+    this.updateSelectionVisuals();
     this.onWorkflowChange();
     if (window.appHistory) window.appHistory.pushSnapshot('Align Horizontally');
     if (window.showToast) window.showToast('info', 'Aligned', `Aligned ${selected.length} tools horizontally.`);
   }
 
   alignVertically() {
-    if (this.selectedNodeIds.size < 2) return;
+    if (this.selectedNodeIds.size < 2) {
+      if (window.showToast) window.showToast('warning', 'Align', 'Select at least 2 tools to align.');
+      return;
+    }
     const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id));
     const avgX = Math.round(selected.reduce((acc, n) => acc + n.x, 0) / selected.length);
     selected.forEach(n => {
@@ -1221,9 +1367,417 @@ class Canvas {
       this.updateNodeElementPosition(n);
     });
     this.renderWires();
+    this.updateSelectionVisuals();
     this.onWorkflowChange();
     if (window.appHistory) window.appHistory.pushSnapshot('Align Vertically');
     if (window.showToast) window.showToast('info', 'Aligned', `Aligned ${selected.length} tools vertically.`);
+  }
+
+  alignLeft() {
+    if (this.selectedNodeIds.size < 2) return;
+    const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id));
+    const minX = Math.min(...selected.map(n => n.x));
+    selected.forEach(n => {
+      n.x = minX;
+      this.updateNodeElementPosition(n);
+    });
+    this.renderWires();
+    this.updateSelectionVisuals();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Align Left');
+  }
+
+  alignRight() {
+    if (this.selectedNodeIds.size < 2) return;
+    const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id));
+    const maxX = Math.max(...selected.map(n => n.x));
+    selected.forEach(n => {
+      n.x = maxX;
+      this.updateNodeElementPosition(n);
+    });
+    this.renderWires();
+    this.updateSelectionVisuals();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Align Right');
+  }
+
+  alignTop() {
+    if (this.selectedNodeIds.size < 2) return;
+    const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id));
+    const minY = Math.min(...selected.map(n => n.y));
+    selected.forEach(n => {
+      n.y = minY;
+      this.updateNodeElementPosition(n);
+    });
+    this.renderWires();
+    this.updateSelectionVisuals();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Align Top');
+  }
+
+  alignBottom() {
+    if (this.selectedNodeIds.size < 2) return;
+    const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id));
+    const maxY = Math.max(...selected.map(n => n.y));
+    selected.forEach(n => {
+      n.y = maxY;
+      this.updateNodeElementPosition(n);
+    });
+    this.renderWires();
+    this.updateSelectionVisuals();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Align Bottom');
+  }
+
+  distributeHorizontally() {
+    if (this.selectedNodeIds.size < 3) {
+      if (window.showToast) window.showToast('warning', 'Distribute', 'Select at least 3 tools to distribute spacing.');
+      return;
+    }
+    const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id)).sort((a, b) => a.x - b.x);
+    const firstX = selected[0].x;
+    const lastX = selected[selected.length - 1].x;
+    const step = (lastX - firstX) / (selected.length - 1);
+    selected.forEach((n, idx) => {
+      n.x = Math.round(firstX + idx * step);
+      this.updateNodeElementPosition(n);
+    });
+    this.renderWires();
+    this.updateSelectionVisuals();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Distribute Horizontally');
+    if (window.showToast) window.showToast('info', 'Distributed', `Distributed ${selected.length} tools evenly along X axis.`);
+  }
+
+  distributeVertically() {
+    if (this.selectedNodeIds.size < 3) {
+      if (window.showToast) window.showToast('warning', 'Distribute', 'Select at least 3 tools to distribute spacing.');
+      return;
+    }
+    const selected = this.nodes.filter(n => this.selectedNodeIds.has(n.id)).sort((a, b) => a.y - b.y);
+    const firstY = selected[0].y;
+    const lastY = selected[selected.length - 1].y;
+    const step = (lastY - firstY) / (selected.length - 1);
+    selected.forEach((n, idx) => {
+      n.y = Math.round(firstY + idx * step);
+      this.updateNodeElementPosition(n);
+    });
+    this.renderWires();
+    this.updateSelectionVisuals();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Distribute Vertically');
+    if (window.showToast) window.showToast('info', 'Distributed', `Distributed ${selected.length} tools evenly along Y axis.`);
+  }
+
+  // --------------------------------------------------------------------
+  // Auto-Connect & Wire Splice Geometric Engine
+  // --------------------------------------------------------------------
+  distToSegment(px, py, ax, ay, bx, by) {
+    const abx = bx - ax;
+    const aby = by - ay;
+    const apx = px - ax;
+    const apy = py - ay;
+    const lenSq = abx * abx + aby * aby;
+    if (lenSq === 0) return Math.hypot(apx, apy);
+    const u = Math.max(0, Math.min(1, (apx * abx + apy * aby) / lenSq));
+    const nx = ax + u * abx;
+    const ny = ay + u * aby;
+    return Math.hypot(px - nx, py - ny);
+  }
+
+  findWireNear(canvasX, canvasY, threshold = 28) {
+    let bestConn = null;
+    let bestDist = threshold;
+
+    for (const conn of this.connections) {
+      const p1 = this.getPortPosition(conn.source, conn.sourceHandle, 'output');
+      const p2 = this.getPortPosition(conn.target, conn.targetHandle, 'input');
+
+      // Bounding box early exit
+      const minX = Math.min(p1.x, p2.x) - threshold - 15;
+      const maxX = Math.max(p1.x, p2.x) + threshold + 15;
+      const minY = Math.min(p1.y, p2.y) - threshold - 15;
+      const maxY = Math.max(p1.y, p2.y) + threshold + 15;
+      if (canvasX < minX || canvasX > maxX || canvasY < minY || canvasY > maxY) continue;
+
+      // Sample cubic Bézier curve
+      const dx = Math.max(35, Math.abs(p2.x - p1.x) * 0.5);
+      const c1 = { x: p1.x + dx, y: p1.y };
+      const c2 = { x: p2.x - dx, y: p2.y };
+
+      const sampleCount = 10;
+      let prevPt = null;
+      for (let i = 1; i <= sampleCount; i++) {
+        const t = i / (sampleCount + 1);
+        const mt = 1 - t;
+        const curPt = {
+          x: mt * mt * mt * p1.x + 3 * mt * mt * t * c1.x + 3 * mt * t * t * c2.x + t * t * t * p2.x,
+          y: mt * mt * mt * p1.y + 3 * mt * mt * t * c1.y + 3 * mt * t * t * c2.y + t * t * t * p2.y
+        };
+        if (prevPt) {
+          const d = this.distToSegment(canvasX, canvasY, prevPt.x, prevPt.y, curPt.x, curPt.y);
+          if (d < bestDist) {
+            bestDist = d;
+            bestConn = conn;
+          }
+        }
+        prevPt = curPt;
+      }
+    }
+    return bestConn;
+  }
+
+  findOutputPortNear(canvasX, canvasY, maxRadius = 75) {
+    let bestPort = null;
+    let minDist = maxRadius;
+
+    for (const node of this.nodes) {
+      const meta = this.toolRegistry[node.type] || { outputs: ['O'] };
+      const outputs = meta.outputs || [];
+      for (const port of outputs) {
+        const pos = this.getPortPosition(node.id, port, 'output');
+        const d = Math.hypot(canvasX - pos.x, canvasY - pos.y);
+        const dx = canvasX - pos.x;
+        const dy = Math.abs(canvasY - pos.y);
+        // Prioritize natural left-to-right flow (dropping to the right of the output port)
+        if (d < minDist && (dx >= -15 && dy <= 55)) {
+          minDist = d;
+          bestPort = { nodeId: node.id, portName: port, x: pos.x, y: pos.y };
+        }
+      }
+    }
+    return bestPort;
+  }
+
+  clearWireSplicePreviews() {
+    const scope = this.wiresGroup || document;
+    scope.querySelectorAll('.wire-splice-preview').forEach(w => w.classList.remove('wire-splice-preview'));
+  }
+
+  spliceNodeIntoConnection(newNodeId, connId) {
+    const conn = this.connections.find(c => c.id === connId);
+    const newNode = this.nodes.find(n => n.id === newNodeId);
+    if (!conn || !newNode) return false;
+
+    const meta = this.toolRegistry[newNode.type] || { inputs: ['I'], outputs: ['O'] };
+    const inputs = meta.inputs || [];
+    const outputs = meta.outputs || [];
+    if (inputs.length === 0 || outputs.length === 0) return false;
+
+    const inPort = inputs[0];
+    const outPort = outputs[0];
+
+    const srcNode = this.nodes.find(n => n.id === conn.source);
+    const tgtNode = this.nodes.find(n => n.id === conn.target);
+
+    // Remove the original spliced wire
+    this.connections = this.connections.filter(c => c.id !== connId);
+
+    // Create the two new spliced connections
+    this.addConnection(conn.source, conn.sourceHandle, newNodeId, inPort);
+    this.addConnection(newNodeId, outPort, conn.target, conn.targetHandle);
+
+    this.renderWires();
+    this.selectNode(newNodeId);
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot('Splice Tool into Wire');
+    if (window.showToast) {
+      window.showToast('success', 'Wire Spliced', `Spliced '${newNode.name}' between '${srcNode ? srcNode.name : conn.source}' and '${tgtNode ? tgtNode.name : conn.target}'.`);
+    }
+    return true;
+  }
+
+  // --------------------------------------------------------------------
+  // Interactive Data Cleansing & Downstream Tool Spawning
+  // --------------------------------------------------------------------
+  appendConnectedTool(sourceNodeId, sourcePort = 'O', toolType, toolConfig = {}, customName = null) {
+    const sourceNode = this.nodes.find(n => n.id === sourceNodeId);
+    if (!sourceNode) {
+      if (window.showToast) window.showToast('error', 'Error', 'Source tool not found on canvas.');
+      return null;
+    }
+
+    const SPAN_X = 140;
+    const SPAN_Y = 80;
+    let targetX = sourceNode.x + SPAN_X;
+    let targetY = sourceNode.y;
+
+    // Shift downward if position is occupied
+    while (this.nodes.some(n => Math.hypot(n.x - targetX, n.y - targetY) < 55)) {
+      targetY += SPAN_Y;
+    }
+
+    const newNode = this.addNode(toolType, targetX, targetY);
+    if (!newNode) return null;
+
+    if (customName) {
+      newNode.name = customName;
+      const annotEl = document.querySelector(`#node-elem-${newNode.id} .node-annotation`);
+      if (annotEl) annotEl.textContent = customName;
+    }
+
+    if (toolConfig && Object.keys(toolConfig).length > 0) {
+      newNode.config = Object.assign({}, newNode.config, toolConfig);
+    }
+
+    const meta = this.toolRegistry[toolType] || { inputs: ['I'], outputs: ['O'] };
+    const targetPort = (meta.inputs && meta.inputs[0]) || 'I';
+
+    this.addConnection(sourceNode.id, sourcePort || 'O', newNode.id, targetPort);
+    this.selectNode(newNode.id);
+    this.renderWires();
+    this.onWorkflowChange();
+
+    if (window.appHistory) window.appHistory.pushSnapshot(`Append ${newNode.name}`);
+    if (window.showToast) {
+      window.showToast('success', 'Prep Tool Added', `Appended and connected '${newNode.name}' downstream.`);
+    }
+
+    return newNode;
+  }
+
+  // --------------------------------------------------------------------
+  // Wireless Connections & Lineage Navigation
+  // --------------------------------------------------------------------
+  toggleConnectionWireless(connId) {
+    const conn = this.connections.find(c => c.id === connId);
+    if (!conn) return;
+    conn.wireless = !conn.wireless;
+    this.renderWires();
+    this.onWorkflowChange();
+    if (window.appHistory) window.appHistory.pushSnapshot(conn.wireless ? 'Set Connection Wireless' : 'Set Connection Wired');
+    if (window.showToast) {
+      window.showToast('info', 'Connection Style', `Connection set to ${conn.wireless ? 'Wireless (📡)' : 'Standard Wire'}.`);
+    }
+  }
+
+  centerOnNode(node) {
+    if (!node || !this.container) return;
+    const rect = this.container.getBoundingClientRect();
+    this.panX = Math.round(rect.width / 2 - (node.x + 28) * this.zoom);
+    this.panY = Math.round(rect.height / 2 - (node.y + 28) * this.zoom);
+    this.updateTransform();
+  }
+
+  highlightWirelessConnections(nodeId, active) {
+    if (!this.wrapper) return;
+    const paths = document.querySelectorAll(`path.wire-wireless[data-source-node-id="${nodeId}"], path.wire-wireless[data-target-node-id="${nodeId}"]`);
+    paths.forEach(p => {
+      p.classList.toggle('wire-wireless-active', active);
+    });
+    const badges = this.wrapper.querySelectorAll(`.wireless-badge[data-source-id="${nodeId}"], .wireless-badge[data-target-id="${nodeId}"]`);
+    badges.forEach(b => {
+      b.classList.toggle('is-visible', active && this.wirelessTooltipsEnabled);
+    });
+  }
+
+  showWireContextMenu(x, y, conn) {
+    if (!this.contextMenu) return;
+    const isWireless = Boolean(conn.wireless);
+
+    this.contextMenu.innerHTML = `
+      <div class="context-menu-item" id="ctx-wire-wireless">
+        <span>${isWireless ? '🔗 Make Connection Wired' : '📡 Make Connection Wireless'}</span>
+      </div>
+      <div class="context-menu-item" id="ctx-wire-inspect">
+        <span>👁️ Inspect Data Stream</span>
+      </div>
+      <div class="context-menu-divider"></div>
+      <div class="context-menu-item" id="ctx-wire-delete" style="color:var(--color-error);">
+        <span>🗑️ Delete Connection</span>
+        <kbd style="font-size:10px; margin-left:auto; color:var(--text-muted);">Del</kbd>
+      </div>
+    `;
+
+    this.contextMenu.style.left = `${Math.min(window.innerWidth - 220, x)}px`;
+    this.contextMenu.style.top = `${Math.min(window.innerHeight - 200, y)}px`;
+    this.contextMenu.style.display = 'flex';
+
+    this.contextMenu.querySelector('#ctx-wire-wireless')?.addEventListener('click', () => {
+      this.toggleConnectionWireless(conn.id);
+    });
+
+    this.contextMenu.querySelector('#ctx-wire-inspect')?.addEventListener('click', () => {
+      const srcNode = this.nodes.find(n => n.id === conn.source);
+      if (srcNode && window.appResultsPanel) {
+        this.selectNode(srcNode.id);
+        window.appResultsPanel.showNodeResults(srcNode, conn.sourceHandle);
+        window.appResultsPanel.switchToTab('data-view');
+      }
+    });
+
+    this.contextMenu.querySelector('#ctx-wire-delete')?.addEventListener('click', () => {
+      this.removeConnection(conn.id);
+    });
+  }
+
+  // --------------------------------------------------------------------
+  // Semantic Anchor Tooltips Engine
+  // --------------------------------------------------------------------
+  showAnchorTooltip(portEl, node, portName, type) {
+    if (!this.nodeTooltipsEnabled) return;
+    this.hideAnchorTooltip();
+    const tooltip = document.createElement('div');
+    tooltip.id = 'anchor-tooltip';
+    tooltip.className = 'anchor-tooltip';
+
+    const semMap = Canvas.ANCHOR_SEMANTICS[node.type];
+    const sem = semMap ? semMap[portName] : null;
+    const title = sem ? sem.name : (type === 'output' ? `Output (${portName})` : `Input (${portName})`);
+    const desc = sem ? sem.desc : (type === 'output' ? 'Data stream emitted from this tool' : 'Incoming data stream to be processed');
+    const badgeColor = sem ? (sem.color || '#0072ce') : (type === 'output' ? '#10b981' : '#0072ce');
+
+    // Find connections
+    const conns = type === 'output'
+      ? this.connections.filter(c => c.source === node.id && c.sourceHandle === portName)
+      : this.connections.filter(c => c.target === node.id && c.targetHandle === portName);
+
+    let connDesc = '<span style="color:var(--text-muted);">Unconnected</span>';
+    if (conns.length > 0) {
+      const names = conns.map(c => {
+        const otherNode = this.nodes.find(n => n.id === (type === 'output' ? c.target : c.source));
+        return otherNode ? otherNode.name : (type === 'output' ? c.target : c.source);
+      });
+      connDesc = `Connected: <b>${this.escapeHtml(names.join(', '))}</b>`;
+    }
+
+    // Execution record count
+    const res = this.lastExecutionResults ? this.lastExecutionResults[node.id] : null;
+    let recStr = '';
+    if (res && res.record_counts && res.record_counts[portName] !== undefined) {
+      recStr = `<span>Records: <b>${res.record_counts[portName].toLocaleString()}</b></span>`;
+    }
+
+    tooltip.innerHTML = `
+      <div class="anchor-tooltip-header">
+        <div class="anchor-tooltip-badge" style="background: ${badgeColor};">${this.escapeHtml(portName)}</div>
+        <div class="anchor-tooltip-title">${this.escapeHtml(title)}</div>
+      </div>
+      <div class="anchor-tooltip-desc">${this.escapeHtml(desc)}</div>
+      <div class="anchor-tooltip-meta">
+        <div>${connDesc}</div>
+        ${recStr}
+      </div>
+    `;
+
+    document.body.appendChild(tooltip);
+    this.activeAnchorTooltip = tooltip;
+
+    const rect = portEl.getBoundingClientRect();
+    const isOutput = type === 'output';
+    const left = isOutput ? rect.right + 8 : rect.left - 220;
+    const top = rect.top + rect.height / 2 - 25;
+
+    tooltip.style.left = `${Math.max(10, Math.min(window.innerWidth - 250, left))}px`;
+    tooltip.style.top = `${Math.max(10, Math.min(window.innerHeight - 100, top))}px`;
+    tooltip.classList.add('visible', 'is-visible');
+  }
+
+  hideAnchorTooltip() {
+    if (this.activeAnchorTooltip) {
+      this.activeAnchorTooltip.remove();
+      this.activeAnchorTooltip = null;
+    }
   }
 
   selectAll() {
@@ -2726,17 +3280,19 @@ class Canvas {
     }
 
     const id = `conn_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    this.connections.push({
+    const connObj = {
       id: id,
       source: sourceNodeId,
       sourceHandle: sourceHandle || 'O',
       target: targetNodeId,
       targetHandle: targetHandle || 'I'
-    });
+    };
+    this.connections.push(connObj);
 
     this.renderWires();
     this.onWorkflowChange();
     if (window.appHistory) window.appHistory.pushSnapshot('Add Connection');
+    return connObj;
   }
 
   removeConnection(connId) {
@@ -2814,6 +3370,7 @@ class Canvas {
       const id = el.id.replace('comment-elem-', '');
       el.classList.toggle('selected', this.selectedCommentIds.has(id));
     });
+
   }
 
   selectConnection(connId) {
@@ -2837,9 +3394,15 @@ class Canvas {
     const midX = (p1.x + p2.x) / 2;
     const midY = (p1.y + p2.y) / 2;
 
-    this.wireDeleteBtn.style.left = `${midX - 11}px`;
-    this.wireDeleteBtn.style.top = `${midY - 11}px`;
+    this.wireDeleteBtn.style.left = `${midX - 28}px`;
+    this.wireDeleteBtn.style.top = `${midY - 14}px`;
     this.wireDeleteBtn.style.display = 'flex';
+
+    const wirelessBtn = this.wireDeleteBtn.querySelector('#wire-btn-wireless');
+    if (wirelessBtn) {
+      wirelessBtn.classList.toggle('is-wireless', Boolean(conn.wireless));
+      wirelessBtn.title = conn.wireless ? 'Make Connection Wired' : 'Make Connection Wireless';
+    }
   }
 
   renderAll() {
@@ -2924,7 +3487,8 @@ class Canvas {
     const annot = document.createElement('div');
     annot.className = 'node-annotation';
     annot.textContent = node.name;
-    annot.title = node.name;
+    annot.title = this.nodeTooltipsEnabled ? node.name : '';
+    annot._savedTitle = node.name;
     nodeEl.appendChild(annot);
 
     // Render Input Ports (Left side)
@@ -2935,7 +3499,9 @@ class Canvas {
       portEl.dataset.port = portName;
       portEl.dataset.nodeId = node.id;
       portEl.dataset.portType = 'input';
-      portEl.title = this.getInputPortTooltip(node.type, portName);
+      const inTip = this.getInputPortTooltip(node.type, portName);
+      portEl.title = this.nodeTooltipsEnabled ? inTip : '';
+      portEl._savedTitle = inTip;
       portEl.textContent = portName;
 
       const total = inputs.length;
@@ -2948,6 +3514,8 @@ class Canvas {
       portEl.style.top = `${topPercent}%`;
 
       this.attachPortEvents(portEl, node.id, portName, 'input');
+      portEl.addEventListener('mouseenter', () => this.showAnchorTooltip(portEl, node, portName, 'input'));
+      portEl.addEventListener('mouseleave', () => this.hideAnchorTooltip());
       nodeEl.appendChild(portEl);
     });
 
@@ -2959,7 +3527,9 @@ class Canvas {
       portEl.dataset.port = portName;
       portEl.dataset.nodeId = node.id;
       portEl.dataset.portType = 'output';
-      portEl.title = this.getPortTooltip(node.type, portName);
+      const outTip = this.getPortTooltip(node.type, portName);
+      portEl.title = this.nodeTooltipsEnabled ? outTip : '';
+      portEl._savedTitle = outTip;
       portEl.textContent = portName;
 
       const total = outputs.length;
@@ -2972,6 +3542,8 @@ class Canvas {
       portEl.style.top = `${topPercent}%`;
 
       this.attachPortEvents(portEl, node.id, portName, 'output');
+      portEl.addEventListener('mouseenter', () => this.showAnchorTooltip(portEl, node, portName, 'output'));
+      portEl.addEventListener('mouseleave', () => this.hideAnchorTooltip());
       nodeEl.appendChild(portEl);
     });
 
@@ -3009,6 +3581,13 @@ class Canvas {
           this.multiDragOffsets.set(id, { x: n.x, y: n.y });
         }
       });
+    });
+
+    nodeEl.addEventListener('mouseenter', () => {
+      this.highlightWirelessConnections(node.id, true);
+    });
+    nodeEl.addEventListener('mouseleave', () => {
+      this.highlightWirelessConnections(node.id, false);
     });
 
     this.nodesLayer.appendChild(nodeEl);
@@ -3246,6 +3825,7 @@ class Canvas {
     // Update port-connected classes on all ports (scoped to this canvas wrapper)
     const portScope = this.wrapper || document;
     portScope.querySelectorAll('.port.port-connected').forEach(p => p.classList.remove('port-connected'));
+    portScope.querySelectorAll('.wireless-badge').forEach(b => b.remove());
 
     const arrowNormal = (this.svg && this.svg.querySelector(`#tab-arrow-${this.tabId}`)) ? `url(#tab-arrow-${this.tabId})` : 'url(#arrow)';
     const arrowSelected = (this.svg && this.svg.querySelector(`#tab-arrow-selected-${this.tabId}`)) ? `url(#tab-arrow-selected-${this.tabId})` : 'url(#arrow-selected)';
@@ -3277,21 +3857,98 @@ class Canvas {
 
       const hitZone = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       hitZone.setAttribute('d', d);
+      hitZone.setAttribute('data-connection-id', conn.id);
       hitZone.className.baseVal = 'wire-hit-zone';
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.id = `wire-${conn.id}`;
+      path.setAttribute('data-connection-id', conn.id);
       path.setAttribute('d', d);
-      path.className.baseVal = `wire ${conn.id === this.selectedConnectionId ? 'selected' : ''}`;
+      path.className.baseVal = `wire ${conn.wireless ? 'wire-wireless' : ''} ${conn.id === this.selectedConnectionId ? 'selected' : ''}`;
       path.setAttribute('marker-end', conn.id === this.selectedConnectionId ? arrowSelected : arrowNormal);
+
+      if (conn.wireless) {
+        // Transmitter badge (near source output port)
+        const txBadge = document.createElement('div');
+        txBadge.className = 'wireless-badge wireless-badge-tx';
+        txBadge.dataset.connId = conn.id;
+        txBadge.dataset.sourceId = conn.source;
+        txBadge.dataset.targetId = conn.target;
+        txBadge.innerHTML = `<span class="wireless-badge-icon">📡</span> <span class="wireless-badge-name">${this.escapeHtml(tgtNode ? tgtNode.name : 'Target')}</span>`;
+        txBadge.style.left = `${p1.x + 8}px`;
+        txBadge.style.top = `${p1.y - 10}px`;
+        txBadge.title = `Wireless link to '${tgtNode ? tgtNode.name : 'Target'}'. Click to jump to target.`;
+
+        // Receiver badge (near target input port)
+        const rxBadge = document.createElement('div');
+        rxBadge.className = 'wireless-badge wireless-badge-rx';
+        rxBadge.dataset.connId = conn.id;
+        rxBadge.dataset.sourceId = conn.source;
+        rxBadge.dataset.targetId = conn.target;
+        rxBadge.innerHTML = `<span class="wireless-badge-icon">📡</span> <span class="wireless-badge-name">${this.escapeHtml(srcNode ? srcNode.name : 'Source')}</span>`;
+        rxBadge.style.left = `${p2.x - 75}px`;
+        rxBadge.style.top = `${p2.y - 10}px`;
+        rxBadge.title = `Wireless link from '${srcNode ? srcNode.name : 'Source'}'. Click to jump to source.`;
+
+        path.setAttribute('data-source-node-id', conn.source);
+        path.setAttribute('data-target-node-id', conn.target);
+        hitZone.setAttribute('data-source-node-id', conn.source);
+        hitZone.setAttribute('data-target-node-id', conn.target);
+
+        const setHoverState = (active) => {
+          path.classList.toggle('wire-wireless-active', active);
+          const showBadges = active && this.wirelessTooltipsEnabled;
+          txBadge.classList.toggle('is-visible', showBadges);
+          rxBadge.classList.toggle('is-visible', showBadges);
+          const srcEl = document.getElementById(`node-elem-${conn.source}`);
+          const tgtEl = document.getElementById(`node-elem-${conn.target}`);
+          if (srcEl) srcEl.classList.toggle('wireless-active', active);
+          if (tgtEl) tgtEl.classList.toggle('wireless-active', active);
+        };
+
+        txBadge.addEventListener('mouseenter', () => setHoverState(true));
+        txBadge.addEventListener('mouseleave', () => setHoverState(false));
+        rxBadge.addEventListener('mouseenter', () => setHoverState(true));
+        rxBadge.addEventListener('mouseleave', () => setHoverState(false));
+        hitZone.addEventListener('mouseenter', () => setHoverState(true));
+        hitZone.addEventListener('mouseleave', () => setHoverState(false));
+        path.addEventListener('mouseenter', () => setHoverState(true));
+        path.addEventListener('mouseleave', () => setHoverState(false));
+
+        txBadge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.selectNode(conn.target);
+          if (tgtNode) this.centerOnNode(tgtNode);
+        });
+
+        rxBadge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.selectNode(conn.source);
+          if (srcNode) this.centerOnNode(srcNode);
+        });
+
+        if (this.wrapper) {
+          this.wrapper.appendChild(txBadge);
+          this.wrapper.appendChild(rxBadge);
+        }
+      }
 
       const handleWireSelect = (e) => {
         e.stopPropagation();
         this.selectConnection(conn.id);
       };
 
+      const handleWireContextMenu = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.selectConnection(conn.id);
+        this.showWireContextMenu(e.clientX, e.clientY, conn);
+      };
+
       hitZone.addEventListener('click', handleWireSelect);
       path.addEventListener('click', handleWireSelect);
+      hitZone.addEventListener('contextmenu', handleWireContextMenu);
+      path.addEventListener('contextmenu', handleWireContextMenu);
 
       // Wire Hover Data Probe
       hitZone.addEventListener('mouseenter', (e) => {
@@ -3407,6 +4064,84 @@ class Canvas {
     if (window.showToast) {
       window.showToast('info', 'Wire Data Probes', `Connection wire hover data probes are now ${this.wireProbesEnabled ? 'Enabled' : 'Disabled'}.`);
     }
+  }
+
+  setNodeTooltipsEnabled(enabled) {
+    this.nodeTooltipsEnabled = Boolean(enabled);
+    if (window.userSettings) {
+      window.userSettings.set('node_tooltips_enabled', this.nodeTooltipsEnabled);
+    }
+    localStorage.setItem('dataflow_node_tooltips', this.nodeTooltipsEnabled ? 'true' : 'false');
+    if (!this.nodeTooltipsEnabled) {
+      this.hideAnchorTooltip();
+    }
+    if (this.wrapper) {
+      this.wrapper.classList.toggle('node-tooltips-disabled', !this.nodeTooltipsEnabled);
+      this.wrapper.querySelectorAll('.port').forEach(p => {
+        if (!this.nodeTooltipsEnabled) {
+          p._savedTitle = p.title || p._savedTitle;
+          p.title = '';
+        } else if (p._savedTitle) {
+          p.title = p._savedTitle;
+        }
+      });
+      this.wrapper.querySelectorAll('.node-annotation').forEach(a => {
+        if (!this.nodeTooltipsEnabled) {
+          a._savedTitle = a.title || a._savedTitle;
+          a.title = '';
+        } else if (a._savedTitle) {
+          a.title = a._savedTitle;
+        }
+      });
+    }
+    const checkEl = document.getElementById('check-view-node-tooltips');
+    if (checkEl) checkEl.textContent = this.nodeTooltipsEnabled ? '✓' : '';
+    const settingCheckbox = document.getElementById('setting-node-tooltips');
+    if (settingCheckbox) settingCheckbox.checked = this.nodeTooltipsEnabled;
+    if (window.appTabManager && window.appTabManager.tabs) {
+      window.appTabManager.tabs.forEach(t => {
+        if (t.canvas && t.canvas !== this) {
+          t.canvas.nodeTooltipsEnabled = this.nodeTooltipsEnabled;
+          if (t.canvas.wrapper) {
+            t.canvas.wrapper.classList.toggle('node-tooltips-disabled', !this.nodeTooltipsEnabled);
+          }
+          if (!this.nodeTooltipsEnabled) t.canvas.hideAnchorTooltip();
+        }
+      });
+    }
+    if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+  }
+
+  setWirelessTooltipsEnabled(enabled) {
+    this.wirelessTooltipsEnabled = Boolean(enabled);
+    if (window.userSettings) {
+      window.userSettings.set('wireless_tooltips_enabled', this.wirelessTooltipsEnabled);
+    }
+    localStorage.setItem('dataflow_wireless_tooltips', this.wirelessTooltipsEnabled ? 'true' : 'false');
+    if (this.wrapper) {
+      this.wrapper.classList.toggle('wireless-tooltips-disabled', !this.wirelessTooltipsEnabled);
+      if (!this.wirelessTooltipsEnabled) {
+        this.wrapper.querySelectorAll('.wireless-badge.is-visible').forEach(b => b.classList.remove('is-visible'));
+      }
+    }
+    const checkEl = document.getElementById('check-view-wireless-tooltips');
+    if (checkEl) checkEl.textContent = this.wirelessTooltipsEnabled ? '✓' : '';
+    const settingCheckbox = document.getElementById('setting-wireless-tooltips');
+    if (settingCheckbox) settingCheckbox.checked = this.wirelessTooltipsEnabled;
+    if (window.appTabManager && window.appTabManager.tabs) {
+      window.appTabManager.tabs.forEach(t => {
+        if (t.canvas && t.canvas !== this) {
+          t.canvas.wirelessTooltipsEnabled = this.wirelessTooltipsEnabled;
+          if (t.canvas.wrapper) {
+            t.canvas.wrapper.classList.toggle('wireless-tooltips-disabled', !this.wirelessTooltipsEnabled);
+            if (!this.wirelessTooltipsEnabled) {
+              t.canvas.wrapper.querySelectorAll('.wireless-badge.is-visible').forEach(b => b.classList.remove('is-visible'));
+            }
+          }
+        }
+      });
+    }
+    if (window.appMenuBar) window.appMenuBar.syncMenuStates();
   }
 
   setNodeBadgeDuration(duration) {

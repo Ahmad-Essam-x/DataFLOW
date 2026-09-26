@@ -575,6 +575,8 @@ def test_e2e_wire_rendering_and_visibility(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
     page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.connections && window.appCanvas.connections.length >= 10")
+    page.wait_for_selector(".wire", state="attached")
 
     # 1. Verify default tab wires SVG dimensions and paths
     initial_wires = page.evaluate("""() => {
@@ -656,6 +658,8 @@ def test_e2e_results_panel_column_sorting(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
     page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes && window.appCanvas.nodes.length > 0")
+    page.wait_for_selector(".node-card")
 
     # Select the first node to view its data in the results panel
     page.evaluate("""() => {
@@ -785,4 +789,639 @@ def test_e2e_results_panel_column_sorting(live_server, browser_context):
     assert menu_click_res["sortDir"] == "desc"
 
     page.close()
+
+
+# ----------------------------------------------------------------------
+# 13. Alignment & Distribution Tools (Toolbar & Floating HUD)
+# ----------------------------------------------------------------------
+def test_e2e_alignment_and_distribution(live_server, browser_context):
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
+
+    # Set up 3 specific nodes on the canvas
+    setup_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+        const n1 = c.addNode('input', 100, 120);
+        const n2 = c.addNode('filter', 250, 200);
+        const n3 = c.addNode('select', 600, 310);
+        c.selectedNodeIds.clear();
+        c.selectedNodeIds.add(n1.id);
+        c.selectedNodeIds.add(n2.id);
+        c.selectedNodeIds.add(n3.id);
+        c.updateSelectionVisuals();
+        return {
+            count: c.nodes.length,
+            n1: { id: n1.id, x: n1.x, y: n1.y },
+            n2: { id: n2.id, x: n2.x, y: n2.y },
+            n3: { id: n3.id, x: n3.x, y: n3.y }
+        };
+    }""")
+    assert setup_res["count"] == 3
+
+    # 1. Verify alignment buttons are NOT present in the main toolbar (kept ONLY on right-click)
+    toolbar_btns_present = page.evaluate("""() => {
+        return {
+            alignH: Boolean(document.getElementById('btn-align-h')),
+            alignV: Boolean(document.getElementById('btn-align-v')),
+            distH: Boolean(document.getElementById('btn-distribute-h')),
+            distV: Boolean(document.getElementById('btn-distribute-v'))
+        };
+    }""")
+    assert not any(toolbar_btns_present.values()), "Alignment buttons must not be present in toolbar"
+
+    # 2. Verify right-click context menu displays alignment and distribution actions for multi-selection
+    ctx_menu_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.showNodeContextMenu(200, 200);
+        const menu = c.contextMenu;
+        return {
+            visible: menu && menu.style.display !== 'none',
+            hasAlignH: Boolean(menu.querySelector('#ctx-align-h')),
+            hasAlignV: Boolean(menu.querySelector('#ctx-align-v')),
+            hasDistH: Boolean(menu.querySelector('#ctx-distribute-h')),
+            hasDistV: Boolean(menu.querySelector('#ctx-distribute-v'))
+        };
+    }""")
+    assert ctx_menu_res["visible"] is True
+    assert ctx_menu_res["hasAlignH"] is True
+    assert ctx_menu_res["hasAlignV"] is True
+    assert ctx_menu_res["hasDistH"] is True
+    assert ctx_menu_res["hasDistV"] is True
+
+    # 3. Test Align Horizontally via context menu click: All nodes should share the exact same Y position
+    align_h_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.contextMenu.querySelector('#ctx-align-h').click();
+        return c.nodes.map(n => n.y);
+    }""")
+    assert len(set(align_h_res)) == 1, f"Expected all nodes to have identical Y coordinate, got {align_h_res}"
+
+    # 4. Test Distribute Horizontally via context menu: Spacing between nodes should be equal
+    dist_h_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.nodes[0].x = 100;
+        c.nodes[1].x = 200;
+        c.nodes[2].x = 600;
+        c.showNodeContextMenu(200, 200);
+        c.contextMenu.querySelector('#ctx-distribute-h').click();
+        return c.nodes.map(n => n.x).sort((a, b) => a - b);
+    }""")
+    # (600 - 100) / 2 = 250 interval -> 100, 350, 600
+    assert dist_h_res[0] == 100
+    assert dist_h_res[1] == 350
+    assert dist_h_res[2] == 600
+
+    # 5. Test Align Vertically via context menu: All nodes should share the exact same X position
+    align_v_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.showNodeContextMenu(200, 200);
+        c.contextMenu.querySelector('#ctx-align-v').click();
+        return c.nodes.map(n => n.x);
+    }""")
+    assert len(set(align_v_res)) == 1, f"Expected all nodes to have identical X coordinate, got {align_v_res}"
+
+    page.close()
+
+
+# ----------------------------------------------------------------------
+# 14. Wireless Connections & Semantic Anchor Tooltips
+# ----------------------------------------------------------------------
+def test_e2e_wireless_connections_and_semantic_tooltips(live_server, browser_context):
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
+
+    # Set up 2 connected nodes on the canvas
+    setup_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+        const n1 = c.addNode('input', 100, 100);
+        const n2 = c.addNode('filter', 400, 100);
+        const conn = c.addConnection(n1.id, 'O', n2.id, 'I');
+        return {
+            n1Id: n1.id,
+            n2Id: n2.id,
+            connId: conn.id,
+            wirelessInitial: Boolean(conn.wireless)
+        };
+    }""")
+    assert setup_res["wirelessInitial"] is False
+    conn_id = setup_res["connId"]
+    n1_id = setup_res["n1Id"]
+
+    # 1. Toggle connection to wireless
+    toggle_res = page.evaluate(f"""() => {{
+        const c = window.appCanvas;
+        c.toggleConnectionWireless('{conn_id}');
+        const conn = c.connections.find(x => x.id === '{conn_id}');
+        const badges = document.querySelectorAll('.wireless-badge');
+        const wire = document.querySelector(`.wire[data-connection-id="{conn_id}"]`);
+        
+        // Check initial visibility: badges must NOT be persistent (not is-visible, opacity ~ 0)
+        let anyVisibleInitially = false;
+        badges.forEach(b => {{
+            if (b.classList.contains('is-visible') || parseFloat(window.getComputedStyle(b).opacity) > 0.1) {{
+                anyVisibleInitially = true;
+            }}
+        }});
+
+        return {{
+            isWireless: conn.wireless,
+            badgeCount: badges.length,
+            wireHasWirelessClass: wire ? wire.classList.contains('wire-wireless') : false,
+            anyVisibleInitially: anyVisibleInitially
+        }};
+    }}""")
+    assert toggle_res["isWireless"] is True
+    assert toggle_res["badgeCount"] == 2, "Expected 2 wireless transmitter/receiver badges (source & target)"
+    assert toggle_res["wireHasWirelessClass"] is True
+    assert toggle_res["anyVisibleInitially"] is False, "Wireless badges must NOT be persistent"
+
+    # 2. Hover node and verify wireless badges become visible
+    hover_res = page.evaluate(f"""() => {{
+        const c = window.appCanvas;
+        c.highlightWirelessConnections('{n1_id}', true);
+        const badges = document.querySelectorAll('.wireless-badge');
+        let allVisibleOnHover = true;
+        badges.forEach(b => {{
+            if (!b.classList.contains('is-visible')) allVisibleOnHover = false;
+        }});
+
+        const badgeFontSize = badges.length > 0 ? parseFloat(window.getComputedStyle(badges[0]).fontSize) : 0;
+
+        // Unhover
+        c.highlightWirelessConnections('{n1_id}', false);
+        let visibleAfterUnhover = false;
+        badges.forEach(b => {{
+            if (b.classList.contains('is-visible')) visibleAfterUnhover = true;
+        }});
+
+        return {{
+            allVisibleOnHover: allVisibleOnHover,
+            visibleAfterUnhover: visibleAfterUnhover,
+            badgeFontSize: badgeFontSize
+        }};
+    }}""")
+    assert hover_res["allVisibleOnHover"] is True, "Badges should become visible when node is hovered"
+    assert hover_res["visibleAfterUnhover"] is False, "Badges should hide when node hover ends"
+    assert hover_res["badgeFontSize"] <= 10.0, f"Expected subtle smaller font <= 10px, got {hover_res['badgeFontSize']}"
+
+    # 3. Toggle back to wired connection
+    toggle_back_res = page.evaluate(f"""() => {{
+        const c = window.appCanvas;
+        c.toggleConnectionWireless('{conn_id}');
+        const conn = c.connections.find(x => x.id === '{conn_id}');
+        const badges = document.querySelectorAll('.wireless-badge');
+        return {{
+            isWireless: conn.wireless,
+            badgeCount: badges.length
+        }};
+    }}""")
+    assert toggle_back_res["isWireless"] is False
+    assert toggle_back_res["badgeCount"] == 0
+
+    # 4. Test Semantic Anchor Tooltip on Filter Node Ports (compact font size check)
+    tooltip_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        const filterNode = c.nodes.find(n => n.type === 'filter');
+        const portEl = document.querySelector(`#node-elem-${filterNode.id} .port-output[data-port="T"]`);
+        if (!portEl) return { error: 'port not found' };
+
+        c.showAnchorTooltip(portEl, filterNode, 'T', 'output');
+        const tooltip = document.getElementById('anchor-tooltip');
+        const isVisible = tooltip && tooltip.classList.contains('is-visible');
+        const text = tooltip ? tooltip.textContent : '';
+        const tooltipFontSize = tooltip ? parseFloat(window.getComputedStyle(tooltip).fontSize) : 0;
+
+        c.hideAnchorTooltip();
+        const hiddenAfter = !document.getElementById('anchor-tooltip');
+
+        return {
+            isVisible: isVisible,
+            text: text,
+            hiddenAfter: hiddenAfter,
+            tooltipFontSize: tooltipFontSize
+        };
+    }""")
+    assert tooltip_res.get("error") is None
+    assert tooltip_res["isVisible"] is True
+    assert "True" in tooltip_res["text"] or "T" in tooltip_res["text"]
+    assert tooltip_res["hiddenAfter"] is True
+    assert tooltip_res["tooltipFontSize"] <= 11.0, f"Expected small anchor tooltip font <= 11px, got {tooltip_res['tooltipFontSize']}"
+
+    page.close()
+
+
+# ----------------------------------------------------------------------
+# 15. Auto-Connect & Wire Snapping
+# ----------------------------------------------------------------------
+def test_e2e_auto_connect_and_wire_snapping(live_server, browser_context):
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
+
+    # Set up Node A -> Node B and splice Node C in between
+    splice_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+        const nA = c.addNode('input', 100, 150);
+        const nB = c.addNode('select', 600, 150);
+        const connAB = c.addConnection(nA.id, 'O', nB.id, 'I');
+
+        // Add a new node C positioned between A and B
+        const nC = c.addNode('filter', 350, 150);
+
+        // Find wire near node C's center (350, 150)
+        const hitConn = c.findWireNear(350, 150, 40);
+
+        // Execute splice: A -> C -> B
+        const spliceSuccess = c.spliceNodeIntoConnection(nC.id, connAB.id);
+
+        const conns = c.connections.map(cn => ({
+            from: cn.source,
+            fromPort: cn.sourceHandle,
+            to: cn.target,
+            toPort: cn.targetHandle
+        }));
+
+        return {
+            hitConnId: hitConn ? hitConn.id : null,
+            targetConnId: connAB.id,
+            spliceSuccess: spliceSuccess,
+            connsCount: conns.length,
+            conns: conns,
+            nodeAId: nA.id,
+            nodeBId: nB.id,
+            nodeCId: nC.id
+        };
+    }""")
+
+    assert splice_res["hitConnId"] == splice_res["targetConnId"]
+    assert splice_res["spliceSuccess"] is True
+    assert splice_res["connsCount"] == 2
+
+    # Verify A connects to C, and C connects to B
+    conns = splice_res["conns"]
+    a_id = splice_res["nodeAId"]
+    b_id = splice_res["nodeBId"]
+    c_id = splice_res["nodeCId"]
+
+    has_a_to_c = any(cn["from"] == a_id and cn["to"] == c_id for cn in conns)
+    has_c_to_b = any(cn["from"] == c_id and cn["to"] == b_id for cn in conns)
+    assert has_a_to_c, f"Expected A->C connection, got {conns}"
+    assert has_c_to_b, f"Expected C->B connection, got {conns}"
+
+    page.close()
+
+
+# ----------------------------------------------------------------------
+# 16. Interactive Data Cleansing & Filtering from Data View
+# ----------------------------------------------------------------------
+def test_e2e_interactive_data_cleansing_from_data_view(live_server, browser_context):
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes && window.appCanvas.nodes.length > 0")
+    page.wait_for_selector(".node-card")
+
+    # Select the first node to populate data view
+    page.evaluate("""() => {
+        const c = window.appCanvas;
+        const n = c.nodes[0];
+        c.selectNode(n.id);
+        window.appResultsPanel.showNodeResults(n);
+    }""")
+    page.wait_for_timeout(600)
+
+    # 1. Test Cell Context Menu Cleansing Options
+    cell_menu_res = page.evaluate("""() => {
+        const rp = window.appResultsPanel;
+        const td = document.querySelector('.data-table td[data-col-idx="0"]');
+        if (!td) return { error: 'No data cell found' };
+
+        const r = parseInt(td.dataset.rowIdx, 10);
+        const c = parseInt(td.dataset.colIdx, 10);
+        rp.openContextMenu(150, 200, r, c, td);
+
+        const menu = document.querySelector('.grid-context-menu');
+        const filterOnlyBtn = document.getElementById('ctx-filter-only');
+        const filterOutBtn = document.getElementById('ctx-filter-out');
+        const cleanTrimBtn = document.getElementById('ctx-clean-trim');
+
+        return {
+            menuOpen: Boolean(menu),
+            hasFilterOnly: Boolean(filterOnlyBtn),
+            hasFilterOut: Boolean(filterOutBtn),
+            hasCleanTrim: Boolean(cleanTrimBtn)
+        };
+    }""")
+    assert cell_menu_res.get("error") is None
+    assert cell_menu_res["menuOpen"] is True
+    assert cell_menu_res["hasFilterOut"] is True
+    assert cell_menu_res["hasCleanTrim"] is True
+
+    # 2. Click "Clean: Trim Whitespace" -> Appends clean node connected downstream
+    click_clean_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        const initialCount = c.nodes.length;
+        const cleanTrimBtn = document.getElementById('ctx-clean-trim');
+        cleanTrimBtn.click();
+
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const newCount = c.nodes.length;
+                const newestNode = c.nodes[c.nodes.length - 1];
+                const newestConn = c.connections[c.connections.length - 1];
+                resolve({
+                    initialCount: initialCount,
+                    newCount: newCount,
+                    newNodeType: newestNode ? newestNode.type : null,
+                    isCleanTrimConfig: newestNode ? Boolean(newestNode.config && newestNode.config.trim_whitespace) : false,
+                    isConnectedToSource: newestConn ? newestConn.target === newestNode.id : false
+                });
+            }, 300);
+        });
+    }""")
+    assert click_clean_res["newCount"] == click_clean_res["initialCount"] + 1
+    assert click_clean_res["newNodeType"] == "clean"
+    assert click_clean_res["isCleanTrimConfig"] is True
+    assert click_clean_res["isConnectedToSource"] is True
+
+    # 3. Test Column Menu Cleansing Options
+    col_menu_res = page.evaluate("""() => {
+        const rp = window.appResultsPanel;
+        const th = document.querySelector('.data-table th[data-col-name]');
+        const colName = th ? th.dataset.colName : 'col';
+        rp.openColumnMenu(200, 200, colName, 0);
+
+        const filterNullsBtn = document.getElementById('col-menu-filter-nulls');
+        const cleanZerosBtn = document.getElementById('col-menu-clean-zeros');
+        const cleanBlanksBtn = document.getElementById('col-menu-clean-blanks');
+        const cleanTrimBtn = document.getElementById('col-menu-clean-trim');
+
+        return {
+            hasFilterNulls: Boolean(filterNullsBtn),
+            hasCleanZeros: Boolean(cleanZerosBtn),
+            hasCleanBlanks: Boolean(cleanBlanksBtn),
+            hasCleanTrim: Boolean(cleanTrimBtn)
+        };
+    }""")
+    assert col_menu_res["hasFilterNulls"] is True
+    assert col_menu_res["hasCleanZeros"] is True
+    assert col_menu_res["hasCleanBlanks"] is True
+    assert col_menu_res["hasCleanTrim"] is True
+
+    # 4. Click "Filter Out Nulls" from column menu -> Appends filter tool downstream
+    click_col_filter_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        const initialCount = c.nodes.length;
+        const filterNullsBtn = document.getElementById('col-menu-filter-nulls');
+        filterNullsBtn.click();
+
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const newCount = c.nodes.length;
+                const newestNode = c.nodes[c.nodes.length - 1];
+                const newestConn = c.connections[c.connections.length - 1];
+                resolve({
+                    initialCount: initialCount,
+                    newCount: newCount,
+                    newNodeType: newestNode ? newestNode.type : null,
+                    conditions: (newestNode && newestNode.config) ? newestNode.config.conditions : [],
+                    isConnectedToSource: newestConn ? newestConn.target === newestNode.id : false
+                });
+            }, 300);
+        });
+    }""")
+    assert click_col_filter_res["newCount"] == click_col_filter_res["initialCount"] + 1
+    assert click_col_filter_res["newNodeType"] == "filter"
+    assert click_col_filter_res["isConnectedToSource"] is True
+    assert any(cond.get("operator") == "is_not_null" for cond in click_col_filter_res["conditions"])
+
+    page.close()
+
+
+# ----------------------------------------------------------------------
+# 17. View Menu Tooltip Toggles & Preference Persistence
+# ----------------------------------------------------------------------
+def test_e2e_view_menu_tooltip_toggles_and_config_persistence(live_server, browser_context):
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
+
+    # 1. Verify View Menu has the new Tooltip Toggle items with initial checkmarks
+    initial_menu_res = page.evaluate("""() => {
+        const checkNode = document.getElementById('check-view-node-tooltips');
+        const checkWireless = document.getElementById('check-view-wireless-tooltips');
+        const c = window.appCanvas;
+        return {
+            hasCheckNode: Boolean(checkNode),
+            hasCheckWireless: Boolean(checkWireless),
+            nodeCheckText: checkNode ? checkNode.textContent.trim() : '',
+            wirelessCheckText: checkWireless ? checkWireless.textContent.trim() : '',
+            nodeTooltipsEnabled: c.nodeTooltipsEnabled,
+            wirelessTooltipsEnabled: c.wirelessTooltipsEnabled
+        };
+    }""")
+    assert initial_menu_res["hasCheckNode"] is True
+    assert initial_menu_res["hasCheckWireless"] is True
+    assert initial_menu_res["nodeCheckText"] == "✓"
+    assert initial_menu_res["wirelessCheckText"] == "✓"
+    assert initial_menu_res["nodeTooltipsEnabled"] is True
+    assert initial_menu_res["wirelessTooltipsEnabled"] is True
+
+    # 2. Test Node Tooltips Toggle OFF & ON
+    node_toggle_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+        const n1 = c.addNode('filter', 150, 150);
+
+        // Turn OFF via View menu command
+        window.app.executeCommand('view:toggle-node-tooltips');
+        const stateOff = c.nodeTooltipsEnabled;
+        const checkOff = document.getElementById('check-view-node-tooltips').textContent.trim();
+        const settingOff = window.userSettings ? window.userSettings.get('node_tooltips_enabled') : null;
+
+        // Try showing anchor tooltip while disabled
+        const portEl = document.querySelector(`#node-elem-${n1.id} .port-output[data-port="T"]`);
+        c.showAnchorTooltip(portEl, n1, 'T', 'output');
+        const tooltipWhileOff = document.getElementById('anchor-tooltip');
+
+        // Turn back ON
+        window.app.executeCommand('view:toggle-node-tooltips');
+        const stateOn = c.nodeTooltipsEnabled;
+        const checkOn = document.getElementById('check-view-node-tooltips').textContent.trim();
+        const settingOn = window.userSettings ? window.userSettings.get('node_tooltips_enabled') : null;
+
+        // Try showing anchor tooltip while enabled
+        c.showAnchorTooltip(portEl, n1, 'T', 'output');
+        const tooltipWhileOn = document.getElementById('anchor-tooltip');
+        const tooltipVisible = tooltipWhileOn && tooltipWhileOn.classList.contains('is-visible');
+        c.hideAnchorTooltip();
+
+        return {
+            stateOff: stateOff,
+            checkOff: checkOff,
+            settingOff: settingOff,
+            tooltipWhileOffExists: Boolean(tooltipWhileOff),
+            stateOn: stateOn,
+            checkOn: checkOn,
+            settingOn: settingOn,
+            tooltipVisible: tooltipVisible
+        };
+    }""")
+    assert node_toggle_res["stateOff"] is False
+    assert node_toggle_res["checkOff"] == ""
+    assert node_toggle_res["settingOff"] is False
+    assert node_toggle_res["tooltipWhileOffExists"] is False, "Anchor tooltip should not appear when node tooltips are OFF"
+    assert node_toggle_res["stateOn"] is True
+    assert node_toggle_res["checkOn"] == "✓"
+    assert node_toggle_res["settingOn"] is True
+    assert node_toggle_res["tooltipVisible"] is True
+
+    # 3. Test Wireless Connection Tooltips Toggle OFF & ON
+    wireless_toggle_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+        const n1 = c.addNode('input', 100, 100);
+        const n2 = c.addNode('filter', 400, 100);
+        const conn = c.addConnection(n1.id, 'O', n2.id, 'I');
+        c.toggleConnectionWireless(conn.id);
+
+        // Turn OFF wireless tooltips via View menu
+        window.app.executeCommand('view:toggle-wireless-tooltips');
+        const stateOff = c.wirelessTooltipsEnabled;
+        const checkOff = document.getElementById('check-view-wireless-tooltips').textContent.trim();
+        const settingOff = window.userSettings ? window.userSettings.get('wireless_tooltips_enabled') : null;
+
+        // Trigger hover on node while disabled -> badges must NOT be visible
+        c.highlightWirelessConnections(n1.id, true);
+        const badgesOff = document.querySelectorAll('.wireless-badge.is-visible');
+        const countVisibleOff = badgesOff.length;
+
+        // Turn back ON
+        window.app.executeCommand('view:toggle-wireless-tooltips');
+        const stateOn = c.wirelessTooltipsEnabled;
+        const checkOn = document.getElementById('check-view-wireless-tooltips').textContent.trim();
+        const settingOn = window.userSettings ? window.userSettings.get('wireless_tooltips_enabled') : null;
+
+        // Trigger hover on node while enabled -> badges MUST be visible
+        c.highlightWirelessConnections(n1.id, true);
+        const badgesOn = document.querySelectorAll('.wireless-badge.is-visible');
+        const countVisibleOn = badgesOn.length;
+
+        // Unhover
+        c.highlightWirelessConnections(n1.id, false);
+
+        return {
+            stateOff: stateOff,
+            checkOff: checkOff,
+            settingOff: settingOff,
+            countVisibleOff: countVisibleOff,
+            stateOn: stateOn,
+            checkOn: checkOn,
+            settingOn: settingOn,
+            countVisibleOn: countVisibleOn
+        };
+    }""")
+    assert wireless_toggle_res["stateOff"] is False
+    assert wireless_toggle_res["checkOff"] == ""
+    assert wireless_toggle_res["settingOff"] is False
+    assert wireless_toggle_res["countVisibleOff"] == 0, "Badges should not be visible when wireless tooltips are OFF"
+    assert wireless_toggle_res["stateOn"] is True
+    assert wireless_toggle_res["checkOn"] == "✓"
+    assert wireless_toggle_res["settingOn"] is True
+    assert wireless_toggle_res["countVisibleOn"] == 2
+
+    # 4. Verify Other View Menu User Configs Function and Persist
+    configs_res = page.evaluate("""() => {
+        const app = window.app;
+        const settings = window.userSettings;
+
+        // 4a. Tool Palette toggle
+        const palette = document.getElementById('tool-palette-ribbon') || document.getElementById('palette-bar');
+        const initialPaletteDisplay = palette.style.display;
+        app.executeCommand('view:toggle-palette');
+        const toggledPaletteDisplay = palette.style.display;
+        const paletteSetting = settings.get('palette_visible');
+        const checkPalette = document.getElementById('check-view-palette').textContent.trim();
+        // Restore
+        app.executeCommand('view:toggle-palette');
+
+        // 4b. Configuration Panel toggle
+        const config = document.getElementById('config-panel') || document.getElementById('config-sidebar');
+        const initialConfigDisplay = config.style.display;
+        app.executeCommand('view:toggle-config');
+        const toggledConfigDisplay = config.style.display;
+        const configSetting = settings.get('config_visible');
+        const checkConfig = document.getElementById('check-view-config').textContent.trim();
+        // Restore
+        app.executeCommand('view:toggle-config');
+
+        // 4c. Results Panel toggle
+        const results = document.getElementById('results-panel');
+        const initialCollapsed = results.classList.contains('collapsed');
+        app.executeCommand('view:toggle-results');
+        const toggledCollapsed = results.classList.contains('collapsed');
+        const resultsSetting = settings.get('results_visible');
+        const checkResults = document.getElementById('check-view-results').textContent.trim();
+        // Restore
+        app.executeCommand('view:toggle-results');
+
+        // 4d. In-grid Histograms toggle
+        app.executeCommand('view:toggle-histograms');
+        const histSetting = settings.get('show_histograms');
+        const checkHist = document.getElementById('check-view-histograms').textContent.trim();
+        // Restore
+        app.executeCommand('view:toggle-histograms');
+
+        // 4e. Execution Badges duration
+        app.executeCommand('view:badge-duration:5000');
+        const badgeDurationSetting = settings.get('node_badge_duration');
+        const checkBadge5s = document.getElementById('check-badge-5000').textContent.trim();
+        // Restore to default 3s
+        app.executeCommand('view:badge-duration:3000');
+
+        return {
+            paletteToggled: toggledPaletteDisplay !== initialPaletteDisplay,
+            paletteSetting: paletteSetting,
+            checkPalette: checkPalette,
+            configToggled: toggledConfigDisplay !== initialConfigDisplay,
+            configSetting: configSetting,
+            checkConfig: checkConfig,
+            resultsToggled: toggledCollapsed !== initialCollapsed,
+            resultsSetting: resultsSetting,
+            checkResults: checkResults,
+            histSetting: histSetting,
+            checkHist: checkHist,
+            badgeDurationSetting: badgeDurationSetting,
+            checkBadge5s: checkBadge5s
+        };
+    }""")
+    assert configs_res["paletteToggled"] is True
+    assert configs_res["paletteSetting"] is False
+    assert configs_res["checkPalette"] == ""
+
+    assert configs_res["configToggled"] is True
+    assert configs_res["configSetting"] is False
+    assert configs_res["checkConfig"] == ""
+
+    assert configs_res["resultsToggled"] is True
+    assert configs_res["resultsSetting"] is False
+    assert configs_res["checkResults"] == ""
+
+    assert configs_res["histSetting"] is True
+    assert configs_res["checkHist"] == "✓"
+
+    assert configs_res["badgeDurationSetting"] == "5000"
+    assert configs_res["checkBadge5s"] == "✓"
+
+    page.close()
+
 

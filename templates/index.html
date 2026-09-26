@@ -256,6 +256,14 @@
             <span class="action-label">Wire Data Probes</span>
             <kbd>Ctrl+Alt+W</kbd>
           </button>
+          <button class="menubar-action" data-action="view:toggle-node-tooltips">
+            <span class="menu-check" id="check-view-node-tooltips">✓</span>
+            <span class="action-label">Node Tooltips</span>
+          </button>
+          <button class="menubar-action" data-action="view:toggle-wireless-tooltips">
+            <span class="menu-check" id="check-view-wireless-tooltips">✓</span>
+            <span class="action-label">Wireless Connection Tooltips</span>
+          </button>
           <div class="menubar-divider"></div>
           <div class="menubar-submenu-wrapper">
             <div class="menubar-action menu-has-submenu">
@@ -484,6 +492,7 @@
         </svg>
         <span>Align Flow</span>
       </button>
+
 
       <!-- Clear Canvas -->
       <button id="btn-clear" class="btn btn-ghost" title="Clear all nodes and wires">
@@ -915,6 +924,26 @@
               <div class="setting-text">
                 <span class="setting-title">Enable Connection Wire Data Probes</span>
                 <span class="setting-desc">Display interactive live data previews and record counts when hovering over connection wires on the canvas.</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-checkbox-label">
+              <input type="checkbox" id="setting-node-tooltips" class="setting-checkbox">
+              <div class="setting-text">
+                <span class="setting-title">Enable Node &amp; Anchor Tooltips</span>
+                <span class="setting-desc">Display port descriptions, stream information, and tool details when hovering over nodes on the canvas.</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-checkbox-label">
+              <input type="checkbox" id="setting-wireless-tooltips" class="setting-checkbox">
+              <div class="setting-text">
+                <span class="setting-title">Enable Wireless Connection Tooltips</span>
+                <span class="setting-desc">Display transmitter (📡 Target) and receiver (📡 Source) badges when hovering over wireless connections or connected nodes.</span>
               </div>
             </label>
           </div>

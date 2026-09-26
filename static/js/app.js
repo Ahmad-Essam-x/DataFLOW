@@ -229,6 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load server-persisted settings (overrides localStorage, re-applies all settings to DOM/app).
   // This is async but non-blocking — the page is already usable with localStorage values.
   if (window.userSettings) {
+    window.userSettings.applyAll();
     window.userSettings.load().catch(err => console.warn('[App] userSettings.load() failed:', err));
   }
 
@@ -2024,10 +2025,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           const paletteEl = document.getElementById('tool-palette-ribbon') || document.getElementById('palette-bar');
           if (paletteEl) {
             const isHidden = paletteEl.style.display === 'none';
-            paletteEl.style.display = isHidden ? 'flex' : 'none';
+            const willShow = isHidden;
+            paletteEl.style.display = willShow ? 'flex' : 'none';
+            if (window.userSettings) window.userSettings.set('palette_visible', willShow);
+            localStorage.setItem('dataflow_palette_visible', willShow ? 'true' : 'false');
             if (window.appMenuBar) window.appMenuBar.syncMenuStates();
             if (window.showToast) {
-              window.showToast('info', 'Tool Palette', `Tool Palette ${isHidden ? 'Shown' : 'Hidden'}.`);
+              window.showToast('info', 'Tool Palette', `Tool Palette ${willShow ? 'Shown' : 'Hidden'}.`);
             }
           }
           break;
@@ -2037,10 +2041,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           const configEl = document.getElementById('config-panel') || document.getElementById('config-sidebar');
           if (configEl) {
             const isHidden = configEl.style.display === 'none';
-            configEl.style.display = isHidden ? 'flex' : 'none';
+            const willShow = isHidden;
+            configEl.style.display = willShow ? 'flex' : 'none';
+            if (window.userSettings) window.userSettings.set('config_visible', willShow);
+            localStorage.setItem('dataflow_config_visible', willShow ? 'true' : 'false');
             if (window.appMenuBar) window.appMenuBar.syncMenuStates();
             if (window.showToast) {
-              window.showToast('info', 'Configuration Panel', `Configuration Panel ${isHidden ? 'Shown' : 'Hidden'}.`);
+              window.showToast('info', 'Configuration Panel', `Configuration Panel ${willShow ? 'Shown' : 'Hidden'}.`);
             }
           }
           break;
@@ -2049,7 +2056,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         case 'view:toggle-results': {
           const resultsEl = document.getElementById('results-panel');
           if (resultsEl) {
-            resultsEl.classList.toggle('collapsed');
+            const isCollapsed = resultsEl.classList.toggle('collapsed');
+            const willShow = !isCollapsed;
+            if (window.userSettings) window.userSettings.set('results_visible', willShow);
+            localStorage.setItem('dataflow_results_visible', willShow ? 'true' : 'false');
             if (window.appMenuBar) window.appMenuBar.syncMenuStates();
           }
           break;
@@ -2062,6 +2072,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           } else if (resultsPanel) {
             resultsPanel.showHistograms = !resultsPanel.showHistograms;
             resultsPanel.renderGrid();
+          }
+          if (resultsPanel) {
+            if (window.userSettings) window.userSettings.set('show_histograms', resultsPanel.showHistograms);
+            localStorage.setItem('dataflow_show_histograms', resultsPanel.showHistograms ? 'true' : 'false');
           }
           if (window.appMenuBar) window.appMenuBar.syncMenuStates();
           break;
@@ -2113,6 +2127,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         case 'view:reset-panels': {
           localStorage.removeItem('dataflow_panel_dimensions');
+          if (window.userSettings) {
+            window.userSettings.set('panel_dimensions', {});
+            window.userSettings.set('palette_visible', true);
+            window.userSettings.set('config_visible', true);
+            window.userSettings.set('results_visible', true);
+            window.userSettings.set('minimap_visible', true);
+          }
           const paletteEl = document.getElementById('tool-palette-ribbon') || document.getElementById('palette-bar');
           if (paletteEl) {
             paletteEl.style.display = 'flex';
@@ -2142,6 +2163,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         case 'options:toggle-wire-probes': {
           const curC = getActiveCanvas();
           if (curC) curC.setWireProbesEnabled(!curC.wireProbesEnabled);
+          if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+          break;
+        }
+
+        case 'view:toggle-node-tooltips': {
+          const curC = getActiveCanvas();
+          if (curC) {
+            curC.setNodeTooltipsEnabled(!curC.nodeTooltipsEnabled);
+            if (window.showToast) {
+              window.showToast('info', 'Node Tooltips', `Node tooltips are now ${curC.nodeTooltipsEnabled ? 'Enabled' : 'Disabled'}.`);
+            }
+          }
+          if (window.appMenuBar) window.appMenuBar.syncMenuStates();
+          break;
+        }
+
+        case 'view:toggle-wireless-tooltips': {
+          const curC = getActiveCanvas();
+          if (curC) {
+            curC.setWirelessTooltipsEnabled(!curC.wirelessTooltipsEnabled);
+            if (window.showToast) {
+              window.showToast('info', 'Wireless Tooltips', `Wireless connection tooltips are now ${curC.wirelessTooltipsEnabled ? 'Enabled' : 'Disabled'}.`);
+            }
+          }
           if (window.appMenuBar) window.appMenuBar.syncMenuStates();
           break;
         }
@@ -2394,6 +2439,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.showToast('info', 'Flow Aligned', 'Arranged workflow nodes in clean left-to-right execution layers.');
     });
   }
+
 
   // Clear Canvas
   const clearBtn = document.getElementById('btn-clear');

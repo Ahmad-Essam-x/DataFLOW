@@ -255,6 +255,22 @@ class MenuBar {
         (window.userSettings ? window.userSettings.get('minimap_visible', true) : (localStorage.getItem('dataflow_overview_enabled') !== 'false'));
       checkOverview.textContent = isOverviewVisible ? '✓' : '';
     }
+
+    // 7. Node Tooltips checkmark
+    const checkNodeTooltips = document.getElementById('check-view-node-tooltips');
+    if (checkNodeTooltips) {
+      const nodeTooltipsOn = window.appCanvas ? window.appCanvas.nodeTooltipsEnabled :
+        (window.userSettings ? Boolean(window.userSettings.get('node_tooltips_enabled', true)) : true);
+      checkNodeTooltips.textContent = nodeTooltipsOn ? '✓' : '';
+    }
+
+    // 8. Wireless Connection Tooltips checkmark
+    const checkWirelessTooltips = document.getElementById('check-view-wireless-tooltips');
+    if (checkWirelessTooltips) {
+      const wirelessTooltipsOn = window.appCanvas ? window.appCanvas.wirelessTooltipsEnabled :
+        (window.userSettings ? Boolean(window.userSettings.get('wireless_tooltips_enabled', true)) : true);
+      checkWirelessTooltips.textContent = wirelessTooltipsOn ? '✓' : '';
+    }
   }
 
   handleAction(action) {
@@ -445,6 +461,16 @@ class MenuBar {
       wireCheck.checked = window.appCanvas.wireProbesEnabled;
     }
 
+    const nodeTipsCheck = document.getElementById('setting-node-tooltips');
+    if (nodeTipsCheck && window.appCanvas) {
+      nodeTipsCheck.checked = window.appCanvas.nodeTooltipsEnabled;
+    }
+
+    const wirelessTipsCheck = document.getElementById('setting-wireless-tooltips');
+    if (wirelessTipsCheck && window.appCanvas) {
+      wirelessTipsCheck.checked = window.appCanvas.wirelessTooltipsEnabled;
+    }
+
     const snapSelect = document.getElementById('setting-grid-snap');
     if (snapSelect && window.appCanvas) {
       snapSelect.value = String(window.appCanvas.gridSnapSize || 0);
@@ -523,6 +549,16 @@ class MenuBar {
     const wireCheck = document.getElementById('setting-wire-probes');
     if (wireCheck && window.appCanvas) {
       window.appCanvas.setWireProbesEnabled(wireCheck.checked);
+    }
+
+    const nodeTipsCheck = document.getElementById('setting-node-tooltips');
+    if (nodeTipsCheck && window.appCanvas) {
+      window.appCanvas.setNodeTooltipsEnabled(nodeTipsCheck.checked);
+    }
+
+    const wirelessTipsCheck = document.getElementById('setting-wireless-tooltips');
+    if (wirelessTipsCheck && window.appCanvas) {
+      window.appCanvas.setWirelessTooltipsEnabled(wirelessTipsCheck.checked);
     }
 
     const snapSelect = document.getElementById('setting-grid-snap');
