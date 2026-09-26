@@ -16,7 +16,7 @@ import pandas as pd
 import sys
 import shutil
 
-from backend.engine.node_registry import TOOL_METADATA
+from backend.engine.node_registry import TOOL_METADATA, infer_alteryx_type, map_alteryx_to_category
 from backend.engine.executor import WorkflowExecutor
 from backend.engine.cache_manager import SessionRunCacheManager
 from backend.engine.workflow_manager import WorkflowManager
@@ -600,6 +600,17 @@ def upload_file():
                     row_count = sum(1 for _ in f_in) - 1
 
         columns = [str(c) for c in df_preview.columns]
+        meta_list = []
+        for col in df_preview.columns:
+            s = df_preview[col]
+            alt_t = infer_alteryx_type(s)
+            cat = map_alteryx_to_category(alt_t)
+            meta_list.append({
+                "name": str(col),
+                "type": cat,
+                "alteryx_type": alt_t,
+                "dtype": alt_t
+            })
         preview_records = df_preview.fillna("").to_dict(orient="records")
 
     except Exception as e:
@@ -613,6 +624,7 @@ def upload_file():
         "delimiter": detected_delimiter if file_type == "csv" else None,
         "sheets": sheets,
         "columns": columns,
+        "column_meta": meta_list,
         "row_count": max(0, row_count),
         "preview": preview_records
     })
@@ -855,6 +867,81 @@ def browse_directory():
         "folders": folders,
         "files": files
     })
+
+
+@app.route("/api/file-schema", methods=["GET"])
+def get_file_schema():
+    """Extracts column names and inferred types for a dataset file without running workflow."""
+    raw_file = request.args.get("file", "").strip()
+    if not raw_file:
+        return jsonify({"success": False, "error": "Query parameter 'file' is required."}), 400
+
+    resolved_path = None
+    if os.path.isabs(raw_file) and os.path.exists(raw_file):
+        resolved_path = raw_file
+    elif os.path.exists(os.path.join(DATA_DIR, raw_file)):
+        resolved_path = os.path.join(DATA_DIR, raw_file)
+    elif raw_file.startswith(("data/", "data\\")) and os.path.exists(os.path.join(DATA_DIR, raw_file[5:])):
+        resolved_path = os.path.join(DATA_DIR, raw_file[5:])
+    elif os.path.exists(os.path.join(BASE_DIR, raw_file)):
+        resolved_path = os.path.join(BASE_DIR, raw_file)
+    elif os.path.exists(raw_file):
+        resolved_path = raw_file
+
+    if not resolved_path:
+        return jsonify({"success": False, "error": f"File '{raw_file}' not found."}), 404
+
+    allowed_dirs = [d for d in [DATA_DIR, BASE_DIR, OUTPUT_DIR] if d]
+    if not is_safe_path(resolved_path, allowed_dirs):
+        return jsonify({"success": False, "error": "Access forbidden: path outside workspace."}), 403
+
+    ext = os.path.splitext(resolved_path)[1].lower()
+    sheet_param = request.args.get("sheet", "0").strip()
+    delimiter = request.args.get("delimiter", ",").strip()
+
+    try:
+        import pandas as pd
+        if ext in [".xlsx", ".xls", ".xlsm", ".xlsb"]:
+            sheet_name = int(sheet_param) if sheet_param.isdigit() else sheet_param
+            df_preview = fast_read_excel(resolved_path, sheet_name=sheet_name, nrows=5)
+            if isinstance(df_preview, dict):
+                df_preview = next(iter(df_preview.values())) if df_preview else pd.DataFrame()
+        elif ext in [".parquet", ".pq"]:
+            df_preview = pd.read_parquet(resolved_path)
+            if len(df_preview) > 5:
+                df_preview = df_preview.iloc[:5]
+        elif ext == ".json":
+            df_preview = pd.read_json(resolved_path)
+            if len(df_preview) > 5:
+                df_preview = df_preview.iloc[:5]
+        else:
+            sep = "\t" if ext in [".tsv", ".tab"] else (delimiter or ",")
+            try:
+                df_preview = pd.read_csv(resolved_path, sep=sep, nrows=5)
+            except Exception:
+                df_preview = pd.read_csv(resolved_path, sep=None, engine="python", nrows=5)
+
+        columns = [str(c) for c in df_preview.columns]
+        meta_list = []
+        for col in df_preview.columns:
+            s = df_preview[col]
+            alt_t = infer_alteryx_type(s)
+            cat = map_alteryx_to_category(alt_t)
+            meta_list.append({
+                "name": str(col),
+                "type": cat,
+                "alteryx_type": alt_t,
+                "dtype": alt_t
+            })
+
+        return jsonify({
+            "success": True,
+            "file": raw_file,
+            "columns": columns,
+            "column_meta": meta_list
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to inspect file schema: {str(e)}"}), 500
 
 
 @app.route("/api/excel-sheets", methods=["GET"])

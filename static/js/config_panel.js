@@ -3,6 +3,114 @@
  * Generates tailored configuration forms for each tool type and synchronizes node parameters.
  */
 
+// Pre-seeded schemas for bundled sample datasets for instantaneous design-time propagation
+const SAMPLE_DATASET_SCHEMAS = {
+  'sales_orders.csv': {
+    columns: ['OrderID', 'CustomerID', 'CustomerName', 'Segment', 'Region', 'State', 'OrderDate', 'Quantity', 'UnitPrice', 'Discount', 'CustomerNotes'],
+    columnMeta: [
+      { name: 'OrderID', type: 'string', alteryx_type: 'String' },
+      { name: 'CustomerID', type: 'string', alteryx_type: 'String' },
+      { name: 'CustomerName', type: 'string', alteryx_type: 'String' },
+      { name: 'Segment', type: 'string', alteryx_type: 'String' },
+      { name: 'Region', type: 'string', alteryx_type: 'String' },
+      { name: 'State', type: 'string', alteryx_type: 'String' },
+      { name: 'OrderDate', type: 'datetime', alteryx_type: 'Date' },
+      { name: 'Quantity', type: 'numeric', alteryx_type: 'Int64' },
+      { name: 'UnitPrice', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'Discount', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'CustomerNotes', type: 'string', alteryx_type: 'String' }
+    ]
+  },
+  'customers.csv': {
+    columns: ['CustomerID', 'CustomerName', 'Email', 'Region', 'Segment', 'SignupDate'],
+    columnMeta: [
+      { name: 'CustomerID', type: 'string', alteryx_type: 'String' },
+      { name: 'CustomerName', type: 'string', alteryx_type: 'String' },
+      { name: 'Email', type: 'string', alteryx_type: 'String' },
+      { name: 'Region', type: 'string', alteryx_type: 'String' },
+      { name: 'Segment', type: 'string', alteryx_type: 'String' },
+      { name: 'SignupDate', type: 'datetime', alteryx_type: 'Date' }
+    ]
+  },
+  'warehouse_inventory.xlsx': {
+    columns: ['SKU', 'CompositeBatchCode', 'WarehouseLocation', 'QtyOnHand', 'ReorderLevel'],
+    columnMeta: [
+      { name: 'SKU', type: 'string', alteryx_type: 'String' },
+      { name: 'CompositeBatchCode', type: 'string', alteryx_type: 'String' },
+      { name: 'WarehouseLocation', type: 'string', alteryx_type: 'String' },
+      { name: 'QtyOnHand', type: 'numeric', alteryx_type: 'Int64' },
+      { name: 'ReorderLevel', type: 'numeric', alteryx_type: 'Int64' }
+    ]
+  },
+  'quarterly_campaign_responses.csv': {
+    columns: ['Email', 'CampaignCode', 'Region', 'Q1_Score', 'Q2_Score', 'Q3_Score', 'Q4_Score'],
+    columnMeta: [
+      { name: 'Email', type: 'string', alteryx_type: 'String' },
+      { name: 'CampaignCode', type: 'string', alteryx_type: 'String' },
+      { name: 'Region', type: 'string', alteryx_type: 'String' },
+      { name: 'Q1_Score', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'Q2_Score', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'Q3_Score', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'Q4_Score', type: 'numeric', alteryx_type: 'Double' }
+    ]
+  },
+  'orders.xlsx': {
+    columns: ['OrderID', 'CustomerID', 'Product', 'Category', 'Quantity', 'UnitPrice', 'Discount', 'OrderDate'],
+    columnMeta: [
+      { name: 'OrderID', type: 'string', alteryx_type: 'String' },
+      { name: 'CustomerID', type: 'string', alteryx_type: 'String' },
+      { name: 'Product', type: 'string', alteryx_type: 'String' },
+      { name: 'Category', type: 'string', alteryx_type: 'String' },
+      { name: 'Quantity', type: 'numeric', alteryx_type: 'Int64' },
+      { name: 'UnitPrice', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'Discount', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'OrderDate', type: 'datetime', alteryx_type: 'Date' }
+    ]
+  },
+  'dirty_data.csv': {
+    columns: ['RecordID', 'RawCity', 'Score', 'Status', 'Notes'],
+    columnMeta: [
+      { name: 'RecordID', type: 'numeric', alteryx_type: 'Int64' },
+      { name: 'RawCity', type: 'string', alteryx_type: 'String' },
+      { name: 'Score', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'Status', type: 'string', alteryx_type: 'String' },
+      { name: 'Notes', type: 'string', alteryx_type: 'String' }
+    ]
+  },
+  'join_customers.csv': {
+    columns: ['CustomerID', 'CustomerName', 'Segment', 'Region'],
+    columnMeta: [
+      { name: 'CustomerID', type: 'string', alteryx_type: 'String' },
+      { name: 'CustomerName', type: 'string', alteryx_type: 'String' },
+      { name: 'Segment', type: 'string', alteryx_type: 'String' },
+      { name: 'Region', type: 'string', alteryx_type: 'String' }
+    ]
+  },
+  'join_orders.csv': {
+    columns: ['OrderID', 'CustomerID', 'OrderAmount', 'OrderStatus'],
+    columnMeta: [
+      { name: 'OrderID', type: 'string', alteryx_type: 'String' },
+      { name: 'CustomerID', type: 'string', alteryx_type: 'String' },
+      { name: 'OrderAmount', type: 'numeric', alteryx_type: 'Double' },
+      { name: 'OrderStatus', type: 'string', alteryx_type: 'String' }
+    ]
+  }
+};
+
+function mapSelectTypeToAlteryx(selType) {
+  const t = String(selType || '').toLowerCase();
+  if (t === 'int64' || t === 'integer') return 'Int64';
+  if (t === 'int32') return 'Int32';
+  if (t === 'int16') return 'Int16';
+  if (t === 'double' || t === 'float') return 'Double';
+  if (t === 'date') return 'Date';
+  if (t === 'datetime') return 'DateTime';
+  if (t === 'time') return 'Time';
+  if (t === 'bool' || t === 'boolean') return 'Bool';
+  if (t === 'string' || t === 'v_wstring' || t === 'wstring') return 'V_WString';
+  return 'V_WString';
+}
+
 class ConfigPanel {
   constructor(canvas) {
     this._canvas = canvas;
@@ -13,6 +121,8 @@ class ConfigPanel {
     this.iconEl = document.getElementById('config-tool-icon');
     this.categoryEl = document.getElementById('config-tool-category');
     this.contentEl = document.getElementById('config-content');
+
+    window.appSchemaEngine = this;
   }
 
   get canvas() {
@@ -185,48 +295,532 @@ class ConfigPanel {
     this.contentEl.appendChild(container);
   }
 
+  async fetchFileSchema(filePath, node) {
+    if (!filePath || !node) return;
+    const baseName = filePath.split(/[\\/]/).pop();
+    if (SAMPLE_DATASET_SCHEMAS[baseName] || SAMPLE_DATASET_SCHEMAS[filePath]) {
+      const preset = SAMPLE_DATASET_SCHEMAS[baseName] || SAMPLE_DATASET_SCHEMAS[filePath];
+      if (!node.config) node.config = {};
+      node.config.preview_columns = [...preset.columns];
+      node.config.column_meta = [...preset.columnMeta];
+      if (this.canvas) this.canvas.onWorkflowChange();
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/file-schema?file=${encodeURIComponent(filePath)}`);
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.columns) && json.columns.length > 0) {
+        if (!node.config) node.config = {};
+        node.config.preview_columns = json.columns;
+        node.config.column_meta = json.column_meta || [];
+        if (this.canvas) this.canvas.onWorkflowChange();
+      }
+    } catch (err) {
+      // Graceful fallback if offline or backend unavailable
+    }
+  }
+
+  getInferredNodeInputSchema(nodeId, inputHandle = 'I', visited = new Set()) {
+    if (!this.canvas || !this.canvas.connections) return { columns: [], columnMeta: [] };
+    const conns = this.canvas.connections.filter(c => c.target === nodeId && (!c.targetHandle || c.targetHandle === inputHandle));
+    if (conns.length === 0) return { columns: [], columnMeta: [] };
+    const conn = conns[0];
+    const srcPort = conn.sourceHandle || 'O';
+    return this.computeNodeOutputSchema(conn.source, srcPort, visited);
+  }
+
+  computeNodeOutputSchema(nodeId, outputPort = 'O', visited = new Set()) {
+    const visitKey = `${nodeId}:${outputPort}`;
+    if (!nodeId || visited.has(visitKey)) {
+      return { columns: [], columnMeta: [] };
+    }
+    visited.add(visitKey);
+
+    const node = this.canvas && this.canvas.nodes ? this.canvas.nodes.find(n => n.id === nodeId) : null;
+    if (!node) return { columns: [], columnMeta: [] };
+
+    const normalizeMeta = (colName, typeHint = 'unknown', alteryxHint = null) => {
+      const low = (colName || '').toLowerCase();
+      let cat = typeHint;
+      if (!cat || cat === 'unknown' || cat === 'none') {
+        if (/date|time|timestamp|_dt\b/.test(low)) cat = 'datetime';
+        else if (/\b(id|num|qty|amount|price|cost|sales|revenue|rate|count|total|tax|disc|discount|margin|profit|weight|score)\b|_id$/.test(low)) cat = 'numeric';
+        else cat = 'string';
+      } else {
+        cat = this.getTypeCategory(cat);
+      }
+      let altType = alteryxHint;
+      if (!altType) {
+        if (cat === 'numeric') altType = 'Int64';
+        else if (cat === 'datetime') altType = 'DateTime';
+        else if (cat === 'date') altType = 'Date';
+        else if (cat === 'bool') altType = 'Bool';
+        else altType = 'V_WString';
+      }
+      return { name: colName, type: cat, alteryx_type: altType };
+    };
+
+    const getUpstream = (inHandle = 'I') => this.getInferredNodeInputSchema(nodeId, inHandle, visited);
+
+    switch (node.type) {
+      case 'input_data': {
+        if (window.appLastResult && window.appLastResult.node_results) {
+          const res = window.appLastResult.node_results[node.id];
+          if (res && res.columns && res.columns[outputPort] && res.columns[outputPort].length > 0) {
+            const cols = res.columns[outputPort];
+            const meta = res.column_meta && res.column_meta[outputPort] ? res.column_meta[outputPort] : cols.map(c => normalizeMeta(c));
+            return { columns: [...cols], columnMeta: [...meta] };
+          }
+        }
+        if (node.config && Array.isArray(node.config.preview_columns) && node.config.preview_columns.length > 0) {
+          const cols = node.config.preview_columns;
+          const meta = node.config.column_meta && node.config.column_meta.length > 0 ? node.config.column_meta : cols.map(c => normalizeMeta(c));
+          return { columns: [...cols], columnMeta: [...meta] };
+        }
+        const fp = (node.config && node.config.file_path) || '';
+        const baseName = fp ? fp.split(/[\\/]/).pop() : '';
+        if (SAMPLE_DATASET_SCHEMAS[baseName] || SAMPLE_DATASET_SCHEMAS[fp]) {
+          const preset = SAMPLE_DATASET_SCHEMAS[baseName] || SAMPLE_DATASET_SCHEMAS[fp];
+          return { columns: [...preset.columns], columnMeta: [...preset.columnMeta] };
+        }
+        if (node.config && node.config.source_type === 'inline' && Array.isArray(node.config.data) && node.config.data.length > 0) {
+          const cols = Object.keys(node.config.data[0]);
+          return { columns: cols, columnMeta: cols.map(c => normalizeMeta(c)) };
+        }
+        return { columns: [], columnMeta: [] };
+      }
+
+      case 'text_input': {
+        const cfg = node.config || {};
+        const cols = cfg.columns && Array.isArray(cfg.columns) && cfg.columns.length > 0 ? cfg.columns : ['Field_1', 'Field_2'];
+        return { columns: [...cols], columnMeta: cols.map(c => normalizeMeta(c)) };
+      }
+
+      case 'select': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const fields = cfg.fields;
+
+        if (!fields || !Array.isArray(fields) || fields.length === 0) {
+          return upstream;
+        }
+
+        const outCols = [];
+        const outMeta = [];
+        const upstreamMetaMap = new Map();
+        upstream.columnMeta.forEach(m => upstreamMetaMap.set(m.name, m));
+        const configuredOriginals = new Set();
+
+        for (const item of fields) {
+          const orig = item.original || item.name || item.field;
+          if (!orig) continue;
+          configuredOriginals.add(orig);
+
+          // If upstream columns are known and this column is not in upstream, it was dropped or removed upstream
+          if (upstream.columns.length > 0 && !upstream.columns.includes(orig)) {
+            continue;
+          }
+
+          const keep = item.keep !== false && item.selected !== false;
+          if (!keep) continue;
+
+          const rename = (item.rename && item.rename.trim()) ? item.rename.trim() : orig;
+          const origMeta = upstreamMetaMap.get(orig);
+          const itemType = (item.type && item.type !== 'none') ? item.type : (origMeta ? origMeta.type : 'unknown');
+          const alteryxType = (item.type && item.type !== 'none') ? mapSelectTypeToAlteryx(item.type) : (origMeta ? origMeta.alteryx_type : null);
+
+          outCols.push(rename);
+          outMeta.push(normalizeMeta(rename, itemType, alteryxType));
+        }
+
+        // Include any new upstream columns that were not configured in fields yet
+        if (upstream.columns.length > 0) {
+          for (const c of upstream.columns) {
+            if (!configuredOriginals.has(c)) {
+              outCols.push(c);
+              const m = upstreamMetaMap.get(c);
+              outMeta.push(m || normalizeMeta(c));
+            }
+          }
+        }
+
+        return { columns: outCols, columnMeta: outMeta };
+      }
+
+      case 'formula': {
+        const upstream = getUpstream('I');
+        const cols = [...upstream.columns];
+        const meta = [...upstream.columnMeta];
+        const cfg = node.config || {};
+        const formulas = cfg.formulas || [];
+
+        for (const f of formulas) {
+          const targetCol = (f.output_field || f.column || f.field || '').trim();
+          if (!targetCol) continue;
+          const fType = f.type || 'string';
+          const fMeta = normalizeMeta(targetCol, fType);
+
+          const existingIdx = cols.indexOf(targetCol);
+          if (existingIdx !== -1) {
+            meta[existingIdx] = fMeta;
+          } else {
+            cols.push(targetCol);
+            meta.push(fMeta);
+          }
+        }
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'multi_row_formula': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        if (cfg.create_new_field || cfg.new_field) {
+          const colName = (cfg.new_field_name || cfg.field_name || 'NewField').trim();
+          if (colName && !upstream.columns.includes(colName)) {
+            return {
+              columns: [...upstream.columns, colName],
+              columnMeta: [...upstream.columnMeta, normalizeMeta(colName, cfg.type || 'float')]
+            };
+          }
+        }
+        return upstream;
+      }
+
+      case 'multi_field_formula': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        if (cfg.output_new_fields) {
+          const prefix = cfg.prefix || '';
+          const suffix = cfg.suffix || '';
+          const selCols = Array.isArray(cfg.fields) ? cfg.fields : upstream.columns;
+          const cols = [...upstream.columns];
+          const meta = [...upstream.columnMeta];
+          selCols.forEach(c => {
+            const newName = `${prefix}${c}${suffix}`;
+            if (newName !== c && !cols.includes(newName)) {
+              cols.push(newName);
+              meta.push(normalizeMeta(newName, cfg.type || 'string'));
+            }
+          });
+          return { columns: cols, columnMeta: meta };
+        }
+        return upstream;
+      }
+
+      case 'record_id': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const colName = (cfg.column_name || cfg.name || 'RecordID').trim() || 'RecordID';
+        const pos = cfg.position || 'first';
+        const recMeta = normalizeMeta(colName, 'numeric', 'Int64');
+
+        const cleanCols = upstream.columns.filter(c => c !== colName);
+        const cleanMeta = upstream.columnMeta.filter(m => m.name !== colName);
+
+        if (pos === 'last') {
+          return {
+            columns: [...cleanCols, colName],
+            columnMeta: [...cleanMeta, recMeta]
+          };
+        } else {
+          return {
+            columns: [colName, ...cleanCols],
+            columnMeta: [recMeta, ...cleanMeta]
+          };
+        }
+      }
+
+      case 'date_time': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        let outCol = (cfg.output_column || cfg.column_name || '').trim();
+        if (!outCol) {
+          const colName = cfg.column || (upstream.columns[0] || 'DateTime');
+          outCol = (cfg.conversion_type === 'date_to_string') ? `${colName}_String` : `${colName}_DateTime`;
+        }
+        const isDateOnly = (cfg.format_template || '').toLowerCase().includes('date') && !(cfg.format_template || '').toLowerCase().includes('time');
+        const dtMeta = normalizeMeta(outCol, isDateOnly ? 'date' : 'datetime', isDateOnly ? 'Date' : 'DateTime');
+
+        const cols = [...upstream.columns];
+        const meta = [...upstream.columnMeta];
+        if (!cols.includes(outCol)) {
+          cols.push(outCol);
+          meta.push(dtMeta);
+        }
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'text_to_columns': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        if (cfg.split_type === 'rows' || cfg.split_to === 'rows') {
+          return upstream;
+        }
+        const numCols = parseInt(cfg.num_columns || cfg.num_fields || 2, 10);
+        const rootName = (cfg.root_name || (cfg.column ? `${cfg.column}_` : 'col_')).trim();
+        const cols = [...upstream.columns];
+        const meta = [...upstream.columnMeta];
+        for (let i = 1; i <= numCols; i++) {
+          const newName = `${rootName}${i}`;
+          if (!cols.includes(newName)) {
+            cols.push(newName);
+            meta.push(normalizeMeta(newName, 'string', 'V_WString'));
+          }
+        }
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'summarize': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const actions = cfg.actions || [];
+        if (actions.length === 0) {
+          return upstream;
+        }
+        const cols = [];
+        const meta = [];
+        const upstreamMetaMap = new Map();
+        upstream.columnMeta.forEach(m => upstreamMetaMap.set(m.name, m));
+
+        for (const act of actions) {
+          const field = act.field || '';
+          const actType = act.action || 'GroupBy';
+          const customOut = (act.output_name || '').trim();
+          let outName = customOut;
+          if (!outName) {
+            if (actType.toLowerCase() === 'groupby') {
+              outName = field;
+            } else {
+              outName = `${actType}_${field}`;
+            }
+          }
+          if (!outName) continue;
+
+          let cat = 'string';
+          let altType = 'V_WString';
+          const actLower = actType.toLowerCase();
+          if (actLower === 'groupby') {
+            const origM = upstreamMetaMap.get(field);
+            cat = origM ? origM.type : 'string';
+            altType = origM ? origM.alteryx_type : 'V_WString';
+          } else if (actLower.includes('count')) {
+            cat = 'numeric';
+            altType = 'Int64';
+          } else if (['sum', 'avg', 'average', 'mean', 'min', 'max', 'stddev', 'variance', 'median', 'percentile'].includes(actLower)) {
+            cat = 'numeric';
+            altType = 'Double';
+          } else if (actLower === 'concat') {
+            cat = 'string';
+            altType = 'V_WString';
+          }
+          cols.push(outName);
+          meta.push(normalizeMeta(outName, cat, altType));
+        }
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'join': {
+        const leftUpstream = getUpstream('L');
+        const rightUpstream = getUpstream('R');
+
+        if (outputPort === 'L') return leftUpstream;
+        if (outputPort === 'R') return rightUpstream;
+
+        // Port 'J' (Joined)
+        const cfg = node.config || {};
+        if (Array.isArray(cfg.select_fields) && cfg.select_fields.length > 0) {
+          const cols = [];
+          const meta = [];
+          cfg.select_fields.forEach(sf => {
+            if (sf.selected !== false) {
+              const outName = (sf.rename && sf.rename.trim()) ? sf.rename.trim() : (sf.field || sf.original);
+              cols.push(outName);
+              meta.push(normalizeMeta(outName, sf.type));
+            }
+          });
+          return { columns: cols, columnMeta: meta };
+        }
+
+        const cols = [...leftUpstream.columns];
+        const meta = [...leftUpstream.columnMeta];
+        const leftSet = new Set(leftUpstream.columns);
+
+        rightUpstream.columns.forEach((rc, idx) => {
+          const outName = leftSet.has(rc) ? `Right_${rc}` : rc;
+          cols.push(outName);
+          const rm = rightUpstream.columnMeta[idx];
+          meta.push(normalizeMeta(outName, rm ? rm.type : 'unknown', rm ? rm.alteryx_type : null));
+        });
+
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'join_multiple':
+      case 'multi_join': {
+        const inputs = this.getMultiUpstreamInputs(node.id);
+        const cols = [];
+        const meta = [];
+        const seen = new Set();
+        inputs.forEach((inp, inpIdx) => {
+          (inp.columns || []).forEach((c, cIdx) => {
+            let finalName = c;
+            if (seen.has(finalName)) {
+              finalName = `Input${inpIdx + 1}_${c}`;
+            }
+            seen.add(finalName);
+            cols.push(finalName);
+            const m = inp.columnMeta ? inp.columnMeta[cIdx] : null;
+            meta.push(normalizeMeta(finalName, m ? m.type : 'unknown'));
+          });
+        });
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'union': {
+        const inputs = this.getMultiUpstreamInputs(node.id);
+        const cfg = node.config || {};
+        const mode = cfg.mode || 'by_name';
+        if (mode === 'by_position' && inputs.length > 0) {
+          return { columns: inputs[0].columns || [], columnMeta: inputs[0].columnMeta || [] };
+        }
+        const cols = [];
+        const meta = [];
+        const seen = new Set();
+        inputs.forEach(inp => {
+          (inp.columns || []).forEach((c, idx) => {
+            if (!seen.has(c)) {
+              seen.add(c);
+              cols.push(c);
+              const m = inp.columnMeta ? inp.columnMeta[idx] : null;
+              meta.push(m || normalizeMeta(c));
+            }
+          });
+        });
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'append_fields': {
+        const targetUp = getUpstream('T');
+        const sourceUp = getUpstream('S');
+        const cfg = node.config || {};
+        const prefix = cfg.prefix || 'Source_';
+        const targetSet = new Set(targetUp.columns);
+
+        const cols = [...targetUp.columns];
+        const meta = [...targetUp.columnMeta];
+
+        sourceUp.columns.forEach((sc, idx) => {
+          const outName = targetSet.has(sc) ? `${prefix}${sc}` : sc;
+          cols.push(outName);
+          const sm = sourceUp.columnMeta[idx];
+          meta.push(normalizeMeta(outName, sm ? sm.type : 'unknown'));
+        });
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'find_replace': {
+        const findUp = getUpstream('F');
+        const replaceUp = getUpstream('R');
+        const cfg = node.config || {};
+        const cols = [...findUp.columns];
+        const meta = [...findUp.columnMeta];
+        if (cfg.action === 'append' && Array.isArray(cfg.append_fields)) {
+          cfg.append_fields.forEach(af => {
+            if (!cols.includes(af)) {
+              cols.push(af);
+              const rm = replaceUp.columnMeta.find(m => m.name === af);
+              meta.push(rm || normalizeMeta(af));
+            }
+          });
+        }
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'transpose': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const keyCols = Array.isArray(cfg.key_columns) ? cfg.key_columns.filter(k => upstream.columns.includes(k)) : [];
+        const nameCol = cfg.name_column || 'Name';
+        const valCol = cfg.value_column || 'Value';
+        const cols = [...keyCols, nameCol, valCol];
+        const meta = keyCols.map(k => upstream.columnMeta.find(m => m.name === k) || normalizeMeta(k));
+        meta.push(normalizeMeta(nameCol, 'string', 'V_WString'));
+        meta.push(normalizeMeta(valCol, 'string', 'V_WString'));
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'crosstab': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const groupCols = Array.isArray(cfg.group_columns) ? cfg.group_columns.filter(k => upstream.columns.includes(k)) : [];
+        if (window.appLastResult && window.appLastResult.node_results && window.appLastResult.node_results[node.id]) {
+          const res = window.appLastResult.node_results[node.id];
+          if (res.columns && res.columns['O']) {
+            return { columns: res.columns['O'], columnMeta: res.column_meta ? res.column_meta['O'] : res.columns['O'].map(c => normalizeMeta(c)) };
+          }
+        }
+        return { columns: groupCols, columnMeta: groupCols.map(g => upstream.columnMeta.find(m => m.name === g) || normalizeMeta(g)) };
+      }
+
+      case 'llm_process': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const cols = [...upstream.columns];
+        const meta = [...upstream.columnMeta];
+        const outCol = (cfg.output_column || 'AI_Response').trim();
+        if (!cols.includes(outCol)) {
+          cols.push(outCol);
+          meta.push(normalizeMeta(outCol, 'string', 'V_WString'));
+        }
+        return { columns: cols, columnMeta: meta };
+      }
+
+      default: {
+        const upstream = getUpstream('I');
+        if (upstream.columns.length > 0) {
+          return upstream;
+        }
+        if (window.appLastResult && window.appLastResult.node_results && window.appLastResult.node_results[node.id]) {
+          const res = window.appLastResult.node_results[node.id];
+          const port = outputPort || 'O';
+          if (res.columns && res.columns[port] && res.columns[port].length > 0) {
+            return {
+              columns: res.columns[port],
+              columnMeta: res.column_meta && res.column_meta[port] ? res.column_meta[port] : res.columns[port].map(c => normalizeMeta(c))
+            };
+          }
+        }
+        return { columns: [], columnMeta: [] };
+      }
+    }
+  }
+
   getUpstreamColumns(nodeId, inputHandle = 'I') {
-    // Look for connection into this node
-    const conn = this.canvas.connections.find(c => c.target === nodeId && (!c.targetHandle || c.targetHandle === inputHandle));
-    if (!conn) return [];
-
-    const srcNode = this.canvas.nodes.find(n => n.id === conn.source);
-    if (!srcNode) return [];
-
-    // Check if we have columns stored in executor data cache via window.appExecutorResults
-    if (window.appLastResult && window.appLastResult.node_results) {
-      const srcRes = window.appLastResult.node_results[srcNode.id];
+    const schema = this.getInferredNodeInputSchema(nodeId, inputHandle);
+    if (schema.columns && schema.columns.length > 0) {
+      return schema.columns;
+    }
+    const conn = this.canvas && this.canvas.connections ? this.canvas.connections.find(c => c.target === nodeId && (!c.targetHandle || c.targetHandle === inputHandle)) : null;
+    if (conn && window.appLastResult && window.appLastResult.node_results) {
+      const srcRes = window.appLastResult.node_results[conn.source];
       if (srcRes && srcRes.columns && srcRes.columns[conn.sourceHandle || 'O']) {
         return srcRes.columns[conn.sourceHandle || 'O'];
       }
     }
-
     return [];
   }
 
   getUpstreamColumnMeta(nodeId, inputHandle = 'I') {
-    const conn = this.canvas.connections.find(c => c.target === nodeId && (!c.targetHandle || c.targetHandle === inputHandle));
-    if (!conn) return [];
-
-    const srcNode = this.canvas.nodes.find(n => n.id === conn.source);
-    if (!srcNode) return [];
-
-    const port = conn.sourceHandle || 'O';
-    if (window.appLastResult && window.appLastResult.node_results) {
-      const srcRes = window.appLastResult.node_results[srcNode.id];
-      if (srcRes) {
-        if (srcRes.column_meta && srcRes.column_meta[port]) {
-          return srcRes.column_meta[port];
-        }
-        if (srcRes.columns && srcRes.columns[port]) {
-          return srcRes.columns[port].map(c => {
-            const low = c.toLowerCase();
-            let inferred = 'unknown';
-            if (/date|time|timestamp|_dt\b/.test(low)) inferred = 'datetime';
-            else if (/\b(id|num|qty|amount|price|cost|sales|revenue|rate|count|total|tax|disc|discount|margin|profit|weight|score)\b|_id$/.test(low)) inferred = 'numeric';
-            return { name: c, type: inferred };
-          });
-        }
+    const schema = this.getInferredNodeInputSchema(nodeId, inputHandle);
+    if (schema.columnMeta && schema.columnMeta.length > 0) {
+      return schema.columnMeta;
+    }
+    const conn = this.canvas && this.canvas.connections ? this.canvas.connections.find(c => c.target === nodeId && (!c.targetHandle || c.targetHandle === inputHandle)) : null;
+    if (conn && window.appLastResult && window.appLastResult.node_results) {
+      const srcRes = window.appLastResult.node_results[conn.source];
+      if (srcRes && srcRes.column_meta && srcRes.column_meta[conn.sourceHandle || 'O']) {
+        return srcRes.column_meta[conn.sourceHandle || 'O'];
       }
     }
     return [];
@@ -237,29 +831,15 @@ class ConfigPanel {
     const conns = this.canvas.connections.filter(c => c.target === nodeId);
     return conns.map((conn, idx) => {
       const srcNode = this.canvas.nodes ? this.canvas.nodes.find(n => n.id === conn.source) : null;
-      let columns = [];
-      let columnMeta = [];
       const port = conn.sourceHandle || 'O';
-      if (srcNode && window.appLastResult && window.appLastResult.node_results) {
-        const srcRes = window.appLastResult.node_results[srcNode.id];
-        if (srcRes) {
-          if (srcRes.columns && srcRes.columns[port]) {
-            columns = srcRes.columns[port];
-          }
-          if (srcRes.column_meta && srcRes.column_meta[port]) {
-            columnMeta = srcRes.column_meta[port];
-          } else if (columns.length > 0) {
-            columnMeta = columns.map(c => ({ name: c, type: 'unknown' }));
-          }
-        }
-      }
+      const schema = srcNode ? this.computeNodeOutputSchema(srcNode.id, port) : { columns: [], columnMeta: [] };
       const label = srcNode ? (srcNode.label || srcNode.name || `${srcNode.type} (#${srcNode.id})`) : `Input #${idx + 1}`;
       return {
         index: idx + 1,
         conn,
         sourceNode: srcNode,
-        columns,
-        columnMeta,
+        columns: schema.columns,
+        columnMeta: schema.columnMeta,
         label
       };
     });
@@ -373,6 +953,10 @@ class ConfigPanel {
     const hasWildcard = (str) => str && (str.includes('*') || str.includes('?'));
     const isWildcard = hasWildcard(filePath);
     const isExcel = cfg.file_type === 'excel' || (filePath && (filePath.endsWith('.xlsx') || filePath.endsWith('.xls') || filePath.endsWith('.xlsm') || filePath.endsWith('.xlsb')));
+
+    if (filePath && (!cfg.preview_columns || cfg.preview_columns.length === 0)) {
+      this.fetchFileSchema(filePath, node);
+    }
 
     container.innerHTML = `
       <div class="form-group">
@@ -630,6 +1214,7 @@ class ConfigPanel {
         filePathInput.value = val;
         node.config.file_type = (val.endsWith('.xlsx') || val.endsWith('.xls') || val.endsWith('.xlsm')) ? 'excel' : 'csv';
         toggleFileTypeUI(val);
+        this.fetchFileSchema(val, node);
         this.canvas.onWorkflowChange();
       }
     });
@@ -646,6 +1231,7 @@ class ConfigPanel {
       uploadGroup.style.display = isWc ? 'none' : '';
       pathLabel.textContent = isWc ? 'Multi-File Pattern (Glob)' : 'File Path';
       toggleFileTypeUI(val);
+      this.fetchFileSchema(val, node);
       this.canvas.onWorkflowChange();
     });
 
@@ -662,6 +1248,7 @@ class ConfigPanel {
               filePathInput.value = selectedPath;
               node.config.file_type = (selectedPath.endsWith('.xlsx') || selectedPath.endsWith('.xls') || selectedPath.endsWith('.xlsm')) ? 'excel' : 'csv';
               toggleFileTypeUI(selectedPath);
+              this.fetchFileSchema(selectedPath, node);
               this.canvas.onWorkflowChange();
             }
           });
@@ -688,6 +1275,10 @@ class ConfigPanel {
           node.config.file_path = json.file_name;
           filePathInput.value = json.file_name;
           node.config.file_type = json.file_type;
+          if (Array.isArray(json.columns)) {
+            node.config.preview_columns = json.columns;
+            node.config.column_meta = json.column_meta || [];
+          }
           toggleFileTypeUI(json.file_name);
           this.canvas.onWorkflowChange();
         } else {
@@ -1838,10 +2429,46 @@ class ConfigPanel {
     const cfg = node.config || {};
     let fields = cfg.fields || [];
 
-    // If no fields configured yet, initialize from upstream columns
-    if (fields.length === 0 && upstreamCols.length > 0) {
-      fields = upstreamCols.map(c => ({ original: c, keep: true, rename: c, type: 'none' }));
-      node.config.fields = fields;
+    // Intelligent reconciliation with upstream column changes
+    if (upstreamCols && upstreamCols.length > 0) {
+      if (!fields || fields.length === 0) {
+        fields = upstreamCols.map(c => ({ original: c, keep: true, rename: c, type: 'none' }));
+        node.config.fields = fields;
+      } else {
+        const existingByOrig = new Map();
+        fields.forEach(f => {
+          const orig = f.original || f.name || f.field;
+          if (orig) existingByOrig.set(orig, f);
+        });
+
+        const reconciled = [];
+        const seen = new Set();
+
+        // 1. Preserve existing configured fields that are still present upstream
+        for (const f of fields) {
+          const orig = f.original || f.name || f.field;
+          if (orig && upstreamCols.includes(orig)) {
+            reconciled.push(f);
+            seen.add(orig);
+          }
+        }
+
+        // 2. Add any newly added or renamed upstream columns
+        for (const col of upstreamCols) {
+          if (!seen.has(col)) {
+            reconciled.push({
+              original: col,
+              keep: true,
+              rename: col,
+              type: 'none'
+            });
+            seen.add(col);
+          }
+        }
+
+        fields = reconciled;
+        node.config.fields = fields;
+      }
     }
 
     const upstreamMeta = this.getUpstreamColumnMeta(node.id);
@@ -1878,7 +2505,7 @@ class ConfigPanel {
           </thead>
           <tbody id="cfg-select-tbody">
             ${fields.map((f, i) => `
-              <tr style="border-top: 1px solid var(--border-subtle);" data-idx="${i}">
+              <tr class="select-field-row" style="border-top: 1px solid var(--border-subtle);" data-idx="${i}">
                 <td style="padding: 6px; text-align: center;">
                   <input type="checkbox" class="field-keep" ${f.keep !== false ? 'checked' : ''}>
                 </td>
@@ -1914,7 +2541,7 @@ class ConfigPanel {
         </table>
       </div>
 
-      ${fields.length === 0 ? '<p class="form-hint" style="margin-top: 10px;">Connect an upstream tool and run the workflow to auto-populate columns.</p>' : ''}
+      ${fields.length === 0 ? '<p class="form-hint" style="margin-top: 10px;">Connect an upstream tool to auto-populate columns.</p>' : ''}
     `;
 
     // Bulk buttons
@@ -4963,7 +5590,7 @@ class ConfigPanel {
               `;
             }).join('') : `
               <div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 11px;">
-                Connect an upstream tool and run to view input fields.
+                Connect an upstream tool to view input fields.
               </div>
             `}
           </div>
@@ -7172,14 +7799,43 @@ class ConfigPanel {
     const targetCols = this.getUpstreamColumns(node.id, 'T');
     const sourceCols = this.getUpstreamColumns(node.id, 'S');
 
-    // Auto-populate select_fields if empty and upstream columns exist
-    if (selectFields.length === 0 && (targetCols.length > 0 || sourceCols.length > 0)) {
-      targetCols.forEach(c => selectFields.push({ field: c, source: 'T', selected: true, rename: c }));
-      sourceCols.forEach(c => {
-        const outName = targetCols.includes(c) ? `${sourcePrefix}${c}` : c;
-        selectFields.push({ field: outName, source: 'S', selected: true, rename: outName });
-      });
-      node.config.select_fields = selectFields;
+    // Auto-populate or reconcile select_fields with upstream columns
+    if (targetCols.length > 0 || sourceCols.length > 0) {
+      if (!selectFields || selectFields.length === 0) {
+        selectFields = [];
+        targetCols.forEach(c => selectFields.push({ field: c, source: 'T', selected: true, rename: c }));
+        sourceCols.forEach(c => {
+          const outName = targetCols.includes(c) ? `${sourcePrefix}${c}` : c;
+          selectFields.push({ field: outName, source: 'S', selected: true, rename: outName });
+        });
+        node.config.select_fields = selectFields;
+      } else {
+        const existingMap = new Map();
+        selectFields.forEach(sf => {
+          if (sf && sf.field) existingMap.set(`${sf.source || 'T'}:${sf.field}`, sf);
+        });
+
+        const reconciled = [];
+        targetCols.forEach(c => {
+          const key = `T:${c}`;
+          if (existingMap.has(key)) {
+            reconciled.push(existingMap.get(key));
+          } else {
+            reconciled.push({ field: c, source: 'T', selected: true, rename: c });
+          }
+        });
+        sourceCols.forEach(c => {
+          const outName = targetCols.includes(c) ? `${sourcePrefix}${c}` : c;
+          const key = `S:${outName}`;
+          if (existingMap.has(key)) {
+            reconciled.push(existingMap.get(key));
+          } else {
+            reconciled.push({ field: outName, source: 'S', selected: true, rename: outName });
+          }
+        });
+        selectFields = reconciled;
+        node.config.select_fields = selectFields;
+      }
     }
 
     container.innerHTML = `

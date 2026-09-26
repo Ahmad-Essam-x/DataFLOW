@@ -22,6 +22,14 @@ def _find_free_port():
 @pytest.fixture(scope="module")
 def live_server():
     """Starts the Flask server in a daemon thread on an ephemeral port."""
+    import os
+    settings_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "user_settings.json")
+    if os.path.exists(settings_file):
+        try:
+            os.remove(settings_file)
+        except Exception:
+            pass
+
     port = _find_free_port()
     server_url = f"http://127.0.0.1:{port}"
 
@@ -43,6 +51,12 @@ def live_server():
             time.sleep(0.1)
 
     yield server_url
+
+    if os.path.exists(settings_file):
+        try:
+            os.remove(settings_file)
+        except Exception:
+            pass
 
 
 @pytest.fixture(scope="module")
@@ -1421,6 +1435,187 @@ def test_e2e_view_menu_tooltip_toggles_and_config_persistence(live_server, brows
 
     assert configs_res["badgeDurationSetting"] == "5000"
     assert configs_res["checkBadge5s"] == "✓"
+
+    page.close()
+
+
+# ----------------------------------------------------------------------
+# 18. Design-Time Upstream Schema Propagation & Tool Intelligence
+# ----------------------------------------------------------------------
+def test_e2e_design_time_schema_propagation_and_select_intelligence(live_server, browser_context):
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_selector(".tool-card")
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
+
+    # Step 1: Build a multi-step pipeline on canvas:
+    # Input Data (sales_orders.csv) -> Select 1 -> Formula 1 -> Select 2 -> Filter 1
+    init_res = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+
+        const n1 = c.addNode('input_data', 100, 150);
+        n1.config.source_type = 'file';
+        n1.config.file_path = 'sales_orders.csv';
+
+        const n2 = c.addNode('select', 300, 150);
+        const n3 = c.addNode('formula', 500, 150);
+        const n4 = c.addNode('select', 700, 150);
+        const n5 = c.addNode('filter', 900, 150);
+
+        c.addConnection(n1.id, 'O', n2.id, 'I');
+        c.addConnection(n2.id, 'O', n3.id, 'I');
+        c.addConnection(n3.id, 'O', n4.id, 'I');
+        c.addConnection(n4.id, 'O', n5.id, 'I');
+
+        return { n1Id: n1.id, n2Id: n2.id, n3Id: n3.id, n4Id: n4.id, n5Id: n5.id };
+    }""")
+
+    # Step 2: Click on Select 1 (n2Id) WITHOUT running any workflow
+    # Verify that Select 1 has automatically discovered all 11 incoming columns from sales_orders.csv
+    page.evaluate("""(id) => {
+        window.appCanvas.selectNode(id);
+    }""", init_res["n2Id"])
+    page.wait_for_selector(".select-field-row")
+
+    sel1_fields = page.evaluate("""() => {
+        const c = window.appCanvas;
+        const n2 = c.nodes.find(n => n.type === 'select');
+        return (n2.config.fields || []).map(f => f.original);
+    }""")
+    assert "OrderID" in sel1_fields
+    assert "CustomerID" in sel1_fields
+    assert "CustomerName" in sel1_fields
+    assert "Discount" in sel1_fields
+
+    # Step 3: In Select 1, customize columns:
+    # - Rename CustomerID -> Account_ID
+    # - Drop Discount (keep = false)
+    page.evaluate("""(id) => {
+        const c = window.appCanvas;
+        const n2 = c.nodes.find(n => n.id === id);
+        const custField = n2.config.fields.find(f => f.original === 'CustomerID');
+        if (custField) custField.rename = 'Account_ID';
+        const discField = n2.config.fields.find(f => f.original === 'Discount');
+        if (discField) discField.keep = false;
+        c.onWorkflowChange();
+    }""", init_res["n2Id"])
+
+    # Step 4: Click on Formula 1 (n3Id)
+    # Verify Formula 1's upstream columns include Account_ID and do NOT include Discount
+    page.evaluate("""(id) => {
+        window.appCanvas.selectNode(id);
+    }""", init_res["n3Id"])
+    page.wait_for_selector(".formula-func-browser")
+
+    f1_cols = page.evaluate("""(id) => {
+        return window.appConfigPanel.getUpstreamColumns(id);
+    }""", init_res["n3Id"])
+    assert "Account_ID" in f1_cols
+    assert "Discount" not in f1_cols
+
+    # Add a formula column in Formula 1: Tax_Total = [UnitPrice] * 0.1
+    page.evaluate("""(id) => {
+        const c = window.appCanvas;
+        const n3 = c.nodes.find(n => n.id === id);
+        n3.config.formulas = [
+            {
+                output_field: 'Tax_Total',
+                expression: '[UnitPrice] * 0.1',
+                type: 'float'
+            }
+        ];
+        c.onWorkflowChange();
+    }""", init_res["n3Id"])
+
+    # Step 5: Click on Select 2 (n4Id)
+    # Verify Select 2 dynamically reconciled to include Account_ID and Tax_Total, while Discount is absent!
+    page.evaluate("""(id) => {
+        window.appCanvas.selectNode(id);
+    }""", init_res["n4Id"])
+    page.wait_for_selector(".select-field-row")
+
+    sel2_fields = page.evaluate("""(id) => {
+        const c = window.appCanvas;
+        const n4 = c.nodes.find(n => n.id === id);
+        return (n4.config.fields || []).map(f => f.original);
+    }""", init_res["n4Id"])
+    assert "Account_ID" in sel2_fields
+    assert "Tax_Total" in sel2_fields
+    assert "Discount" not in sel2_fields
+
+    # Step 6: Go back to Select 1 (n2Id) and rename CustomerName -> Client_Name
+    page.evaluate("""(id) => {
+        window.appCanvas.selectNode(id);
+        const c = window.appCanvas;
+        const n2 = c.nodes.find(n => n.id === id);
+        const nameField = n2.config.fields.find(f => f.original === 'CustomerName');
+        if (nameField) nameField.rename = 'Client_Name';
+        c.onWorkflowChange();
+    }""", init_res["n2Id"])
+
+    # Step 7: Select Select 2 (n4Id) again
+    # Verify Client_Name immediately reflected in Select 2 without running workflow!
+    page.evaluate("""(id) => {
+        window.appCanvas.selectNode(id);
+    }""", init_res["n4Id"])
+    page.wait_for_selector(".select-field-row")
+
+    sel2_fields_updated = page.evaluate("""(id) => {
+        const c = window.appCanvas;
+        const n4 = c.nodes.find(n => n.id === id);
+        return (n4.config.fields || []).map(f => f.original);
+    }""", init_res["n4Id"])
+    assert "Client_Name" in sel2_fields_updated
+
+    # Step 8: Select Filter 1 (n5Id)
+    # Verify Filter 1's upstream columns include Client_Name, Account_ID, and Tax_Total
+    page.evaluate("""(id) => {
+        window.appCanvas.selectNode(id);
+    }""", init_res["n5Id"])
+
+    f5_cols = page.evaluate("""(id) => {
+        return window.appConfigPanel.getUpstreamColumns(id);
+    }""", init_res["n5Id"])
+    assert "Client_Name" in f5_cols
+    assert "Account_ID" in f5_cols
+    assert "Tax_Total" in f5_cols
+    assert "Discount" not in f5_cols
+
+    # Step 9: Configure Filter 1 with condition: [Tax_Total] > 0
+    page.evaluate("""(id) => {
+        const c = window.appCanvas;
+        const n5 = c.nodes.find(n => n.id === id);
+        n5.config.conditions = [
+            {
+                column: 'Tax_Total',
+                operator: '>',
+                value: '0'
+            }
+        ];
+        c.onWorkflowChange();
+    }""", init_res["n5Id"])
+
+    # Step 10: Run the workflow and verify complete execution end-to-end
+    page.evaluate("() => { window.appLastResult = null; }")
+    page.click("#btn-run")
+    page.wait_for_selector("#btn-run:not([disabled])", timeout=15000)
+    page.wait_for_function("() => window.appLastResult !== null", timeout=15000)
+
+    run_summary = page.evaluate("""(n4Id) => {
+        const res = window.appLastResult;
+        const n4Res = res && res.node_results ? res.node_results[n4Id] : null;
+        return {
+            success: res ? res.success : false,
+            n4Cols: n4Res ? n4Res.columns['O'] : []
+        };
+    }""", init_res["n4Id"])
+
+    assert run_summary["success"] is True
+    assert "Account_ID" in run_summary["n4Cols"]
+    assert "Client_Name" in run_summary["n4Cols"]
+    assert "Tax_Total" in run_summary["n4Cols"]
+    assert "Discount" not in run_summary["n4Cols"]
 
     page.close()
 
