@@ -27,14 +27,37 @@ class SelectNode(BaseNode):
         if not fields:
             return {"O": df.copy()}
 
+        unknown_item = next(
+            (item for item in fields if (item.get("original") or item.get("name") or item.get("field")) == "*Unknown"),
+            None
+        )
+        if unknown_item is not None:
+            select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+        elif "select_unknown" in self.config:
+            select_unknown = bool(self.config["select_unknown"])
+        else:
+            select_unknown = False
+
         out_df = pd.DataFrame()
-        rename_map = {}
+        processed_orig_cols = set()
 
         for item in fields:
             orig = item.get("original") or item.get("name") or item.get("field")
-            if not orig or orig not in df.columns:
+            if not orig:
                 continue
 
+            if orig == "*Unknown":
+                if select_unknown:
+                    for col in df.columns:
+                        if col not in processed_orig_cols:
+                            out_df[col] = df[col].copy()
+                            processed_orig_cols.add(col)
+                continue
+
+            if orig not in df.columns:
+                continue
+
+            processed_orig_cols.add(orig)
             keep = item.get("keep") if "keep" in item else item.get("selected", True)
             if not keep:
                 continue
@@ -81,6 +104,12 @@ class SelectNode(BaseNode):
             rename_to = item.get("rename", "").strip()
             final_col = rename_to if rename_to else orig
             out_df[final_col] = series
+
+        if select_unknown and unknown_item is None:
+            for col in df.columns:
+                if col not in processed_orig_cols:
+                    out_df[col] = df[col].copy()
+                    processed_orig_cols.add(col)
 
         return {"O": out_df}
 

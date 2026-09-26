@@ -7648,3 +7648,65 @@ body.node-tooltips-disabled .anchor-tooltip {
   color: var(--text-muted);
   padding: 6px 12px 2px 12px;
 }
+
+/* ============================================================
+   Dimmed Missing Fields & *Unknown Dynamic Rows
+   ============================================================ */
+.select-field-missing,
+.join-field-missing,
+.field-missing-row {
+  opacity: 0.55 !important;
+  font-style: italic;
+  background: rgba(239, 68, 68, 0.04);
+  transition: opacity 0.15s ease;
+}
+
+.select-field-missing:hover,
+.join-field-missing:hover,
+.field-missing-row:hover {
+  opacity: 0.88 !important;
+}
+
+.badge-missing {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 8.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  font-style: normal;
+  vertical-align: middle;
+}
+
+.select-field-unknown,
+.join-field-unknown {
+  border-top: 2px dashed var(--border-subtle) !important;
+  background: rgba(56, 189, 248, 0.04);
+}
+
+.badge-unknown {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  font-size: 8.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  font-style: normal;
+  vertical-align: middle;
+}
+
+.sort-rule-missing,
+.flt-cond-missing,
+.sum-act-missing {
+  opacity: 0.7 !important;
+  border-left: 3px solid #f59e0b !important;
+}
+

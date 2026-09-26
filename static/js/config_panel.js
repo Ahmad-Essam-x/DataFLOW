@@ -411,10 +411,19 @@ class ConfigPanel {
         const upstreamMetaMap = new Map();
         upstream.columnMeta.forEach(m => upstreamMetaMap.set(m.name, m));
         const configuredOriginals = new Set();
+        let unknownKeep = false;
+        const unknownItem = fields.find(f => (f.original || f.name || f.field) === '*Unknown');
+        if (unknownItem) {
+          if (unknownItem.keep !== undefined) unknownKeep = unknownItem.keep !== false;
+          else if (unknownItem.selected !== undefined) unknownKeep = unknownItem.selected !== false;
+          else unknownKeep = true;
+        } else if (cfg.select_unknown !== undefined) {
+          unknownKeep = Boolean(cfg.select_unknown);
+        }
 
         for (const item of fields) {
           const orig = item.original || item.name || item.field;
-          if (!orig) continue;
+          if (!orig || orig === '*Unknown') continue;
           configuredOriginals.add(orig);
 
           // If upstream columns are known and this column is not in upstream, it was dropped or removed upstream
@@ -434,8 +443,8 @@ class ConfigPanel {
           outMeta.push(normalizeMeta(rename, itemType, alteryxType));
         }
 
-        // Include any new upstream columns that were not configured in fields yet
-        if (upstream.columns.length > 0) {
+        // Include any new upstream columns that were not configured in fields yet ONLY if unknownKeep is true
+        if (unknownKeep && upstream.columns.length > 0) {
           for (const c of upstream.columns) {
             if (!configuredOriginals.has(c)) {
               outCols.push(c);
@@ -632,13 +641,61 @@ class ConfigPanel {
         if (Array.isArray(cfg.select_fields) && cfg.select_fields.length > 0) {
           const cols = [];
           const meta = [];
+          let unknownKeep = false;
+          const unknownItem = cfg.select_fields.find(sf => (sf.field || sf.original) === '*Unknown');
+          if (unknownItem) {
+            if (unknownItem.keep !== undefined) unknownKeep = unknownItem.keep !== false;
+            else if (unknownItem.selected !== undefined) unknownKeep = unknownItem.selected !== false;
+            else unknownKeep = true;
+          } else if (cfg.select_unknown !== undefined) {
+            unknownKeep = Boolean(cfg.select_unknown);
+          }
+          const configuredOriginals = new Set();
+          const leftCols = new Set(leftUpstream.columns || []);
+          const rightCols = new Set(rightUpstream.columns || []);
+
           cfg.select_fields.forEach(sf => {
-            if (sf.selected !== false) {
-              const outName = (sf.rename && sf.rename.trim()) ? sf.rename.trim() : (sf.field || sf.original);
+            const field = sf.field || sf.original;
+            if (!field || field === '*Unknown') return;
+            const src = sf.source || 'L';
+            const srcSet = src === 'R' ? rightCols : leftCols;
+            if (srcSet.size > 0 && !srcSet.has(sf.original || field.replace(/^Right_/, ''))) {
+              return; // missing from upstream
+            }
+            configuredOriginals.add(`${src}:${sf.original || field}`);
+
+            if (sf.selected !== false && sf.keep !== false) {
+              const outName = (sf.rename && sf.rename.trim()) ? sf.rename.trim() : field;
               cols.push(outName);
               meta.push(normalizeMeta(outName, sf.type));
             }
           });
+
+          if (unknownKeep) {
+            const leftMetaMap = new Map((leftUpstream.columnMeta || []).map(m => [m.name, m]));
+            const rightMetaMap = new Map((rightUpstream.columnMeta || []).map(m => [m.name, m]));
+            const existingColNames = new Set(cols);
+            (leftUpstream.columns || []).forEach(c => {
+              if (!configuredOriginals.has(`L:${c}`)) {
+                let outName = c;
+                if (existingColNames.has(outName)) outName = `Left_${c}`;
+                existingColNames.add(outName);
+                cols.push(outName);
+                const m = leftMetaMap.get(c);
+                meta.push(m || normalizeMeta(outName));
+              }
+            });
+            (rightUpstream.columns || []).forEach(c => {
+              if (!configuredOriginals.has(`R:${c}`)) {
+                let outName = existingColNames.has(c) ? `Right_${c}` : c;
+                existingColNames.add(outName);
+                cols.push(outName);
+                const m = rightMetaMap.get(c);
+                meta.push(m || normalizeMeta(outName));
+              }
+            });
+          }
+
           return { columns: cols, columnMeta: meta };
         }
 
@@ -659,6 +716,58 @@ class ConfigPanel {
       case 'join_multiple':
       case 'multi_join': {
         const inputs = this.getMultiUpstreamInputs(node.id);
+        const cfg = node.config || {};
+        if (Array.isArray(cfg.select_fields) && cfg.select_fields.length > 0) {
+          const cols = [];
+          const meta = [];
+          let unknownKeep = false;
+          const unknownItem = cfg.select_fields.find(sf => (sf.field || sf.original) === '*Unknown');
+          if (unknownItem) {
+            if (unknownItem.keep !== undefined) unknownKeep = unknownItem.keep !== false;
+            else if (unknownItem.selected !== undefined) unknownKeep = unknownItem.selected !== false;
+            else unknownKeep = true;
+          } else if (cfg.select_unknown !== undefined) {
+            unknownKeep = Boolean(cfg.select_unknown);
+          }
+          const configuredOriginals = new Set();
+          const inputColSets = inputs.map(u => new Set(u.columns || []));
+
+          cfg.select_fields.forEach(sf => {
+            const field = sf.field || sf.original;
+            if (!field || field === '*Unknown') return;
+            const srcIdx = parseInt(sf.source, 10) - 1;
+            if (srcIdx >= 0 && srcIdx < inputColSets.length && inputColSets[srcIdx].size > 0) {
+              if (!inputColSets[srcIdx].has(sf.original || field)) return;
+            }
+            configuredOriginals.add(`${sf.source}:${sf.original || field}`);
+
+            if (sf.selected !== false && sf.keep !== false) {
+              const outName = (sf.rename && sf.rename.trim()) ? sf.rename.trim() : field;
+              cols.push(outName);
+              meta.push(normalizeMeta(outName, sf.type));
+            }
+          });
+
+          if (unknownKeep) {
+            const existingColNames = new Set(cols);
+            inputs.forEach(u => {
+              (u.columns || []).forEach((c, cIdx) => {
+                if (!configuredOriginals.has(`${u.index}:${c}`)) {
+                  let outName = c;
+                  if (existingColNames.has(outName)) {
+                    outName = `Input${u.index}_${c}`;
+                  }
+                  existingColNames.add(outName);
+                  cols.push(outName);
+                  const m = u.columnMeta ? u.columnMeta[cIdx] : null;
+                  meta.push(normalizeMeta(outName, m ? m.type : 'unknown'));
+                }
+              });
+            });
+          }
+          return { columns: cols, columnMeta: meta };
+        }
+
         const cols = [];
         const meta = [];
         const seen = new Set();
@@ -704,7 +813,62 @@ class ConfigPanel {
         const targetUp = getUpstream('T');
         const sourceUp = getUpstream('S');
         const cfg = node.config || {};
-        const prefix = cfg.prefix || 'Source_';
+        if (Array.isArray(cfg.select_fields) && cfg.select_fields.length > 0) {
+          const cols = [];
+          const meta = [];
+          let unknownKeep = false;
+          const unknownItem = cfg.select_fields.find(sf => (sf.field || sf.original) === '*Unknown');
+          if (unknownItem) {
+            if (unknownItem.keep !== undefined) unknownKeep = unknownItem.keep !== false;
+            else if (unknownItem.selected !== undefined) unknownKeep = unknownItem.selected !== false;
+            else unknownKeep = true;
+          } else if (cfg.select_unknown !== undefined) {
+            unknownKeep = Boolean(cfg.select_unknown);
+          }
+          const configuredOriginals = new Set();
+          const targetCols = new Set(targetUp.columns || []);
+          const sourceCols = new Set(sourceUp.columns || []);
+
+          cfg.select_fields.forEach(sf => {
+            const field = sf.field || sf.original;
+            if (!field || field === '*Unknown') return;
+            const src = sf.source || 'T';
+            const srcSet = src === 'S' ? sourceCols : targetCols;
+            if (srcSet.size > 0 && !srcSet.has(sf.original || field)) return;
+            configuredOriginals.add(`${src}:${sf.original || field}`);
+
+            if (sf.selected !== false && sf.keep !== false) {
+              const outName = (sf.rename && sf.rename.trim()) ? sf.rename.trim() : field;
+              cols.push(outName);
+              meta.push(normalizeMeta(outName, sf.type));
+            }
+          });
+
+          if (unknownKeep) {
+            const targetMetaMap = new Map((targetUp.columnMeta || []).map(m => [m.name, m]));
+            const sourceMetaMap = new Map((sourceUp.columnMeta || []).map(m => [m.name, m]));
+            const existingColNames = new Set(cols);
+            (targetUp.columns || []).forEach(c => {
+              if (!configuredOriginals.has(`T:${c}`)) {
+                existingColNames.add(c);
+                cols.push(c);
+                meta.push(targetMetaMap.get(c) || normalizeMeta(c));
+              }
+            });
+            const prefix = cfg.source_prefix !== undefined ? cfg.source_prefix : (cfg.prefix || 'Source_');
+            (sourceUp.columns || []).forEach(c => {
+              if (!configuredOriginals.has(`S:${c}`)) {
+                const outName = existingColNames.has(c) ? `${prefix}${c}` : c;
+                existingColNames.add(outName);
+                cols.push(outName);
+                meta.push(sourceMetaMap.get(c) || normalizeMeta(outName));
+              }
+            });
+          }
+          return { columns: cols, columnMeta: meta };
+        }
+
+        const prefix = cfg.source_prefix !== undefined ? cfg.source_prefix : (cfg.prefix || 'Source_');
         const targetSet = new Set(targetUp.columns);
 
         const cols = [...targetUp.columns];
@@ -2430,43 +2594,64 @@ class ConfigPanel {
     let fields = cfg.fields || [];
 
     // Intelligent reconciliation with upstream column changes
+    let unknownItem = fields.find(f => (f.original || f.field || f.name) === '*Unknown');
+    if (!unknownItem) {
+      unknownItem = {
+        original: '*Unknown',
+        keep: cfg.select_unknown !== false,
+        rename: '*Unknown',
+        type: 'none',
+        isUnknown: true
+      };
+    } else {
+      unknownItem.isUnknown = true;
+      if (unknownItem.keep === undefined && cfg.select_unknown !== undefined) {
+        unknownItem.keep = cfg.select_unknown !== false;
+      }
+    }
+
     if (upstreamCols && upstreamCols.length > 0) {
       if (!fields || fields.length === 0) {
-        fields = upstreamCols.map(c => ({ original: c, keep: true, rename: c, type: 'none' }));
+        fields = upstreamCols.map(c => ({ original: c, keep: true, rename: c, type: 'none', isMissing: false }));
+        fields.push(unknownItem);
         node.config.fields = fields;
       } else {
-        const existingByOrig = new Map();
-        fields.forEach(f => {
-          const orig = f.original || f.name || f.field;
-          if (orig) existingByOrig.set(orig, f);
-        });
-
         const reconciled = [];
         const seen = new Set();
 
-        // 1. Preserve existing configured fields that are still present upstream
+        // 1. Preserve existing configured fields. If missing from upstream, DO NOT drop; set isMissing = true!
         for (const f of fields) {
           const orig = f.original || f.name || f.field;
-          if (orig && upstreamCols.includes(orig)) {
-            reconciled.push(f);
-            seen.add(orig);
-          }
+          if (!orig || orig === '*Unknown') continue;
+          f.isMissing = !upstreamCols.includes(orig);
+          reconciled.push(f);
+          seen.add(orig);
         }
 
-        // 2. Add any newly added or renamed upstream columns
+        // 2. Add any newly added or renamed upstream columns (inserting before *Unknown)
         for (const col of upstreamCols) {
           if (!seen.has(col)) {
             reconciled.push({
               original: col,
-              keep: true,
+              keep: unknownItem.keep !== false,
               rename: col,
-              type: 'none'
+              type: 'none',
+              isMissing: false
             });
             seen.add(col);
           }
         }
 
+        // 3. Keep *Unknown at the bottom
+        reconciled.push(unknownItem);
+
         fields = reconciled;
+        node.config.fields = fields;
+      }
+    } else {
+      // If upstream is not yet connected or has no columns, make sure *Unknown is present
+      if (!fields.some(f => (f.original || f.field || f.name) === '*Unknown')) {
+        fields.push(unknownItem);
         node.config.fields = fields;
       }
     }
@@ -2486,10 +2671,15 @@ class ConfigPanel {
         Select columns to keep, rename, reorder, or cast to new data types:
       </div>
 
-      <div class="cfg-toolbar">
+      <div class="cfg-toolbar" style="display: flex; gap: 4px; flex-wrap: wrap;">
         <button id="btn-select-all" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px;">Select All</button>
         <button id="btn-deselect-all" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px;">Deselect All</button>
         <button id="btn-invert-select" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px;">Invert</button>
+        ${fields.some(f => f.isMissing) ? `
+          <button id="btn-forget-missing" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" title="Remove columns no longer present upstream">
+            Forget Missing
+          </button>
+        ` : ''}
       </div>
 
       <div id="cfg-select-table-wrap" style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px;">
@@ -2504,39 +2694,100 @@ class ConfigPanel {
             </tr>
           </thead>
           <tbody id="cfg-select-tbody">
-            ${fields.map((f, i) => `
-              <tr class="select-field-row" style="border-top: 1px solid var(--border-subtle);" data-idx="${i}">
-                <td style="padding: 6px; text-align: center;">
-                  <input type="checkbox" class="field-keep" ${f.keep !== false ? 'checked' : ''}>
-                </td>
-                <td style="padding: 4px; text-align: center; white-space: nowrap;">
-                  <span class="drag-grip" title="Click and drag to reorder">⋮⋮</span>
-                  <button class="cfg-reorder-btn btn-row-up" data-idx="${i}" title="Move Up" ${i === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
-                  <button class="cfg-reorder-btn btn-row-down" data-idx="${i}" title="Move Down" ${i === fields.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
-                </td>
-                <td style="padding: 6px; font-weight: 500;">
-                  ${this.escapeHtml(f.original)}
-                  ${metaMap[f.original] ? `<span class="type-badge type-${this.getTypeCategory(metaMap[f.original])}" style="margin-left: 4px; font-size: 8.5px; padding: 0 4px;">${this.escapeHtml(metaMap[f.original])}</span>` : ''}
-                </td>
-                <td style="padding: 4px;">
-                  <input type="text" class="form-control field-rename" style="padding: 2px 6px; font-size: 11px;" value="${this.escapeHtml(f.rename || f.original)}">
-                </td>
-                <td style="padding: 4px;">
-                  <select class="form-control field-type" style="padding: 2px 4px; font-size: 11px;">
-                    <option value="none" ${(!f.type || f.type === 'none') ? 'selected' : ''}>Current</option>
-                    <option value="string" ${f.type === 'string' || f.type === 'v_wstring' ? 'selected' : ''}>String (V_WString)</option>
-                    <option value="int64" ${f.type === 'int64' || f.type === 'integer' ? 'selected' : ''}>Int64 (Integer)</option>
-                    <option value="int32" ${f.type === 'int32' ? 'selected' : ''}>Int32</option>
-                    <option value="int16" ${f.type === 'int16' ? 'selected' : ''}>Int16</option>
-                    <option value="double" ${f.type === 'double' || f.type === 'float' ? 'selected' : ''}>Double (Float)</option>
-                    <option value="date" ${f.type === 'date' ? 'selected' : ''}>Date</option>
-                    <option value="datetime" ${f.type === 'datetime' ? 'selected' : ''}>DateTime</option>
-                    <option value="time" ${f.type === 'time' ? 'selected' : ''}>Time</option>
-                    <option value="bool" ${f.type === 'bool' || f.type === 'boolean' ? 'selected' : ''}>Bool</option>
-                  </select>
-                </td>
-              </tr>
-            `).join('')}
+            ${fields.map((f, i) => {
+              if (f.original === '*Unknown') {
+                return `
+                  <tr class="select-field-row select-field-unknown" style="border-top: 2px dashed var(--border-subtle); background: rgba(56, 189, 248, 0.04);" data-idx="${i}">
+                    <td style="padding: 6px; text-align: center;">
+                      <input type="checkbox" class="field-keep" ${f.keep !== false ? 'checked' : ''} title="Select Unknown: Check to output new / dynamic columns arriving from upstream">
+                    </td>
+                    <td style="padding: 4px; text-align: center; color: var(--text-muted); font-size: 10px; font-style: italic;">
+                      Dynamic
+                    </td>
+                    <td style="padding: 6px; font-weight: 600; color: var(--color-primary);">
+                      *Unknown
+                      <span class="badge-unknown" style="margin-left: 4px;">Dynamic Fields</span>
+                    </td>
+                    <td style="padding: 4px;">
+                      <input type="text" class="form-control field-rename" style="padding: 2px 6px; font-size: 11px; font-style: italic; opacity: 0.6;" value="[Dynamic]" disabled>
+                    </td>
+                    <td style="padding: 4px; font-size: 11px; color: var(--text-muted); font-style: italic;">
+                      [Auto-detect]
+                    </td>
+                  </tr>
+                `;
+              }
+
+              if (f.isMissing) {
+                return `
+                  <tr class="select-field-row select-field-missing field-missing-row" style="border-top: 1px solid var(--border-subtle); opacity: 0.6; font-style: italic; background: rgba(239, 68, 68, 0.04);" data-idx="${i}">
+                    <td style="padding: 6px; text-align: center;">
+                      <input type="checkbox" class="field-keep" ${f.keep !== false ? 'checked' : ''}>
+                    </td>
+                    <td style="padding: 4px; text-align: center; white-space: nowrap;">
+                      <span class="drag-grip" title="Click and drag to reorder">⋮⋮</span>
+                      <button class="cfg-reorder-btn btn-row-up" data-idx="${i}" title="Move Up" ${i === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
+                      <button class="cfg-reorder-btn btn-row-down" data-idx="${i}" title="Move Down" ${i >= fields.length - 2 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
+                    </td>
+                    <td style="padding: 6px; font-weight: 500;">
+                      <span style="text-decoration: line-through; color: var(--text-muted);">${this.escapeHtml(f.original)}</span>
+                      <span class="badge-missing" style="margin-left: 4px;">⚠️ Missing</span>
+                    </td>
+                    <td style="padding: 4px;">
+                      <input type="text" class="form-control field-rename" style="padding: 2px 6px; font-size: 11px;" value="${this.escapeHtml(f.rename || f.original)}">
+                    </td>
+                    <td style="padding: 4px;">
+                      <select class="form-control field-type" style="padding: 2px 4px; font-size: 11px;">
+                        <option value="none" ${(!f.type || f.type === 'none') ? 'selected' : ''}>Current</option>
+                        <option value="string" ${f.type === 'string' || f.type === 'v_wstring' ? 'selected' : ''}>String (V_WString)</option>
+                        <option value="int64" ${f.type === 'int64' || f.type === 'integer' ? 'selected' : ''}>Int64 (Integer)</option>
+                        <option value="int32" ${f.type === 'int32' ? 'selected' : ''}>Int32</option>
+                        <option value="int16" ${f.type === 'int16' ? 'selected' : ''}>Int16</option>
+                        <option value="double" ${f.type === 'double' || f.type === 'float' ? 'selected' : ''}>Double (Float)</option>
+                        <option value="date" ${f.type === 'date' ? 'selected' : ''}>Date</option>
+                        <option value="datetime" ${f.type === 'datetime' ? 'selected' : ''}>DateTime</option>
+                        <option value="time" ${f.type === 'time' ? 'selected' : ''}>Time</option>
+                        <option value="bool" ${f.type === 'bool' || f.type === 'boolean' ? 'selected' : ''}>Bool</option>
+                      </select>
+                    </td>
+                  </tr>
+                `;
+              }
+
+              return `
+                <tr class="select-field-row" style="border-top: 1px solid var(--border-subtle);" data-idx="${i}">
+                  <td style="padding: 6px; text-align: center;">
+                    <input type="checkbox" class="field-keep" ${f.keep !== false ? 'checked' : ''}>
+                  </td>
+                  <td style="padding: 4px; text-align: center; white-space: nowrap;">
+                    <span class="drag-grip" title="Click and drag to reorder">⋮⋮</span>
+                    <button class="cfg-reorder-btn btn-row-up" data-idx="${i}" title="Move Up" ${i === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
+                    <button class="cfg-reorder-btn btn-row-down" data-idx="${i}" title="Move Down" ${i >= fields.length - 2 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
+                  </td>
+                  <td style="padding: 6px; font-weight: 500;">
+                    ${this.escapeHtml(f.original)}
+                    ${metaMap[f.original] ? `<span class="type-badge type-${this.getTypeCategory(metaMap[f.original])}" style="margin-left: 4px; font-size: 8.5px; padding: 0 4px;">${this.escapeHtml(metaMap[f.original])}</span>` : ''}
+                  </td>
+                  <td style="padding: 4px;">
+                    <input type="text" class="form-control field-rename" style="padding: 2px 6px; font-size: 11px;" value="${this.escapeHtml(f.rename || f.original)}">
+                  </td>
+                  <td style="padding: 4px;">
+                    <select class="form-control field-type" style="padding: 2px 4px; font-size: 11px;">
+                      <option value="none" ${(!f.type || f.type === 'none') ? 'selected' : ''}>Current</option>
+                      <option value="string" ${f.type === 'string' || f.type === 'v_wstring' ? 'selected' : ''}>String (V_WString)</option>
+                      <option value="int64" ${f.type === 'int64' || f.type === 'integer' ? 'selected' : ''}>Int64 (Integer)</option>
+                      <option value="int32" ${f.type === 'int32' ? 'selected' : ''}>Int32</option>
+                      <option value="int16" ${f.type === 'int16' ? 'selected' : ''}>Int16</option>
+                      <option value="double" ${f.type === 'double' || f.type === 'float' ? 'selected' : ''}>Double (Float)</option>
+                      <option value="date" ${f.type === 'date' ? 'selected' : ''}>Date</option>
+                      <option value="datetime" ${f.type === 'datetime' ? 'selected' : ''}>DateTime</option>
+                      <option value="time" ${f.type === 'time' ? 'selected' : ''}>Time</option>
+                      <option value="bool" ${f.type === 'bool' || f.type === 'boolean' ? 'selected' : ''}>Bool</option>
+                    </select>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -2545,18 +2796,29 @@ class ConfigPanel {
     `;
 
     // Bulk buttons
+    container.querySelector('#btn-forget-missing')?.addEventListener('click', () => {
+      node.config.fields = fields.filter(f => !f.isMissing);
+      this.render(node);
+      this.canvas.onWorkflowChange();
+      if (window.showToast) window.showToast('info', 'Columns Purged', 'Removed missing fields from Select configuration.');
+    });
+
     container.querySelector('#btn-select-all')?.addEventListener('click', () => {
       fields.forEach(f => f.keep = true);
+      node.config.select_unknown = true;
       this.render(node);
       this.canvas.onWorkflowChange();
     });
     container.querySelector('#btn-deselect-all')?.addEventListener('click', () => {
       fields.forEach(f => f.keep = false);
+      node.config.select_unknown = false;
       this.render(node);
       this.canvas.onWorkflowChange();
     });
     container.querySelector('#btn-invert-select')?.addEventListener('click', () => {
       fields.forEach(f => f.keep = !f.keep);
+      const unk = fields.find(f => f.original === '*Unknown');
+      if (unk) node.config.select_unknown = unk.keep;
       this.render(node);
       this.canvas.onWorkflowChange();
     });
@@ -2564,20 +2826,23 @@ class ConfigPanel {
     const tbody = container.querySelector('#cfg-select-tbody');
     tbody.querySelectorAll('tr').forEach(tr => {
       const idx = parseInt(tr.dataset.idx);
-      tr.querySelector('.field-keep').addEventListener('change', (e) => {
+      tr.querySelector('.field-keep')?.addEventListener('change', (e) => {
         fields[idx].keep = e.target.checked;
+        if (fields[idx].original === '*Unknown') {
+          node.config.select_unknown = e.target.checked;
+        }
         this.canvas.onWorkflowChange();
       });
-      tr.querySelector('.field-rename').addEventListener('input', (e) => {
+      tr.querySelector('.field-rename')?.addEventListener('input', (e) => {
         fields[idx].rename = e.target.value;
         this.canvas.onWorkflowChange();
       });
-      tr.querySelector('.field-type').addEventListener('change', (e) => {
+      tr.querySelector('.field-type')?.addEventListener('change', (e) => {
         fields[idx].type = e.target.value;
         this.canvas.onWorkflowChange();
       });
       tr.querySelector('.btn-row-up')?.addEventListener('click', () => {
-        if (idx > 0) {
+        if (idx > 0 && fields[idx].original !== '*Unknown') {
           const temp = fields[idx];
           fields[idx] = fields[idx - 1];
           fields[idx - 1] = temp;
@@ -2586,7 +2851,7 @@ class ConfigPanel {
         }
       });
       tr.querySelector('.btn-row-down')?.addEventListener('click', () => {
-        if (idx < fields.length - 1) {
+        if (idx < fields.length - 2 && fields[idx].original !== '*Unknown') {
           const temp = fields[idx];
           fields[idx] = fields[idx + 1];
           fields[idx + 1] = temp;
@@ -2866,14 +3131,16 @@ class ConfigPanel {
             const showBetween = op === 'between';
             const showCase = isTextOp(op);
             const ignoreCaseChecked = c.ignore_case !== false;
+            const isColMissing = c.column && colMeta.length > 0 && !colMeta.some(col => col.name === c.column);
 
             return `
-              <div class="flt-cond-row" data-idx="${i}">
+              <div class="flt-cond-row ${isColMissing ? 'flt-cond-missing field-missing-row' : ''}" data-idx="${i}">
                 <div class="flt-cond-top-line">
                   <select class="form-control cond-col" style="flex: 2;">
+                    ${isColMissing ? `<option value="${this.escapeHtml(c.column)}" selected>⚠️ ${this.escapeHtml(c.column)} (Missing)</option>` : ''}
                     ${colMeta.length > 0 
-                      ? colMeta.map(col => `<option value="${col.name}" ${c.column === col.name ? 'selected' : ''}>${getColIcon(col.type)} ${col.name}</option>`).join('')
-                      : `<option value="${c.column}">${c.column || 'Select column'}</option>`}
+                      ? colMeta.map(col => `<option value="${col.name}" ${(!isColMissing && c.column === col.name) ? 'selected' : ''}>${getColIcon(col.type)} ${col.name}</option>`).join('')
+                      : (!isColMissing ? `<option value="${c.column}">${c.column || 'Select column'}</option>` : '')}
                   </select>
                   <select class="form-control cond-op" style="flex: 2;">
                     <optgroup label="Comparison & Ranges">
@@ -4869,6 +5136,41 @@ class ConfigPanel {
 
         colsListEl.appendChild(row);
       });
+
+      const missingSelected = cfg.selected_fields.filter(c => upstreamCols.length > 0 && !upstreamCols.includes(c));
+      missingSelected.forEach(c => {
+        const row = document.createElement('label');
+        row.className = 'field-missing-row';
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        row.style.fontSize = '11px';
+        row.style.marginBottom = '4px';
+        row.style.cursor = 'pointer';
+        row.style.opacity = '0.65';
+        row.style.color = '#ef4444';
+
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <input type="checkbox" class="mff-col-chk" value="${this.escapeHtml(c)}" checked>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><s>${this.escapeHtml(c)}</s> <i style="font-size: 10px; color: var(--text-muted);">(Missing)</i></span>
+          </div>
+          <span class="badge-missing" style="font-size: 9px;">Missing</span>
+        `;
+
+        row.querySelector('.mff-col-chk').addEventListener('change', (e) => {
+          if (e.target.checked) {
+            if (!cfg.selected_fields.includes(c)) cfg.selected_fields.push(c);
+          } else {
+            cfg.selected_fields = cfg.selected_fields.filter(x => x !== c);
+          }
+          countEl.textContent = `(${cfg.selected_fields.length} selected)`;
+          updatePreview();
+          this.canvas.onWorkflowChange();
+        });
+
+        colsListEl.appendChild(row);
+      });
     };
 
     const insertAtCursor = (text) => {
@@ -5023,20 +5325,24 @@ class ConfigPanel {
       </label>
 
       <div id="cfg-sort-rules-list">
-        ${sortBy.map((s, i) => `
-          <div class="form-row sort-rule-row" data-idx="${i}" style="margin-bottom: 8px;">
-            <select class="form-control sort-col" style="flex: 2;">
-              ${upstreamCols.length > 0 
-                ? upstreamCols.map(col => `<option value="${col}" ${s.column === col ? 'selected' : ''}>${col}</option>`).join('')
-                : `<option value="${s.column}">${s.column || 'Select column'}</option>`}
-            </select>
-            <select class="form-control sort-asc" style="flex: 1.5;">
-              <option value="true" ${s.ascending !== false ? 'selected' : ''}>Ascending (A-Z, 0-9)</option>
-              <option value="false" ${s.ascending === false ? 'selected' : ''}>Descending (Z-A, 9-0)</option>
-            </select>
-            <button class="btn-icon btn-remove-sort" style="color: var(--color-error);">&times;</button>
-          </div>
-        `).join('')}
+        ${sortBy.map((s, i) => {
+          const isMissing = s.column && upstreamCols.length > 0 && !upstreamCols.includes(s.column);
+          return `
+            <div class="form-row sort-rule-row ${isMissing ? 'sort-rule-missing field-missing-row' : ''}" data-idx="${i}" style="margin-bottom: 8px;">
+              <select class="form-control sort-col" style="flex: 2;">
+                ${isMissing ? `<option value="${this.escapeHtml(s.column)}" selected>⚠️ ${this.escapeHtml(s.column)} (Missing)</option>` : ''}
+                ${upstreamCols.length > 0 
+                  ? upstreamCols.map(col => `<option value="${col}" ${(!isMissing && s.column === col) ? 'selected' : ''}>${col}</option>`).join('')
+                  : (!isMissing ? `<option value="${s.column}">${s.column || 'Select column'}</option>` : '')}
+              </select>
+              <select class="form-control sort-asc" style="flex: 1.5;">
+                <option value="true" ${s.ascending !== false ? 'selected' : ''}>Ascending (A-Z, 0-9)</option>
+                <option value="false" ${s.ascending === false ? 'selected' : ''}>Descending (Z-A, 9-0)</option>
+              </select>
+              <button class="btn-icon btn-remove-sort" style="color: var(--color-error);">&times;</button>
+            </div>
+          `;
+        }).join('')}
       </div>
 
       <button id="btn-add-sort" class="btn btn-secondary btn-sm" style="margin-top: 6px;">
@@ -5141,6 +5447,13 @@ class ConfigPanel {
               Connect an input tool to view available fields. All incoming fields will be cleansed by default.
             </div>
           `}
+          ${(selectedCols.filter(c => upstreamCols && upstreamCols.length > 0 && !upstreamCols.includes(c))).map(c => `
+            <label class="clean-field-row form-check field-missing-row" data-field="${this.escapeHtml(c)}" style="display: flex; align-items: center; gap: 6px; padding: 4px 6px; margin-bottom: 2px; border-radius: 4px; cursor: pointer; font-size: 11px; opacity: 0.65; color: #ef4444;">
+              <input type="checkbox" class="clean-col-chk" value="${this.escapeHtml(c)}" checked style="margin: 0;">
+              <span class="clean-field-label" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><s>${this.escapeHtml(c)}</s> <i style="font-size: 10px; color: var(--text-muted);">(Missing)</i></span>
+              <span class="badge-missing" style="font-size: 9px;">Missing</span>
+            </label>
+          `).join('')}
         </div>
       </div>
 
@@ -5372,6 +5685,7 @@ class ConfigPanel {
   renderUniqueConfig(container, node, upstreamCols) {
     const cfg = node.config || {};
     const selectedCols = cfg.columns || [];
+    const missingSelected = selectedCols.filter(col => upstreamCols.length > 0 && !upstreamCols.includes(col));
 
     container.innerHTML = `
       <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">
@@ -5386,10 +5700,16 @@ class ConfigPanel {
       <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 8px; background: var(--bg-main);">
         ${upstreamCols.length > 0 ? upstreamCols.map(col => `
           <label class="form-check" style="margin-bottom: 6px;">
-            <input type="checkbox" class="unique-col-chk" value="${col}" ${selectedCols.includes(col) ? 'checked' : ''}>
-            <span>${col}</span>
+            <input type="checkbox" class="unique-col-chk" value="${this.escapeHtml(col)}" ${selectedCols.includes(col) ? 'checked' : ''}>
+            <span>${this.escapeHtml(col)}</span>
           </label>
-        `).join('') : '<span class="form-hint">Connect input to see column list.</span>'}
+        `).join('') : (missingSelected.length === 0 ? '<span class="form-hint">Connect input to see column list.</span>' : '')}
+        ${missingSelected.map(col => `
+          <label class="form-check field-missing-row" style="margin-bottom: 6px; opacity: 0.65; color: #ef4444;">
+            <input type="checkbox" class="unique-col-chk" value="${this.escapeHtml(col)}" checked>
+            <span><s>${this.escapeHtml(col)}</s> <i style="font-size: 10px; color: var(--text-muted);">(Missing)</i></span>
+          </label>
+        `).join('')}
       </div>
 
       <div style="margin-top: 16px; padding: 10px; background: var(--bg-main); border-radius: 6px; border: 1px solid var(--border-subtle); font-size: 11px;">
@@ -5642,9 +5962,10 @@ class ConfigPanel {
               const isXnpv = currentAction === 'XNPV';
               const isXirr = currentAction === 'XIRR';
               const isMirr = currentAction === 'MIRR';
+              const isFieldMissing = a.field && upstreamCols.length > 0 && !upstreamCols.includes(a.field);
 
               return `
-                <div class="sum-act-card" data-idx="${i}">
+                <div class="sum-act-card ${isFieldMissing ? 'sum-act-missing field-missing-row' : ''}" data-idx="${i}">
                   <!-- Primary Action Row -->
                   <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                     <!-- Reorder Up/Down -->
@@ -5655,9 +5976,10 @@ class ConfigPanel {
 
                     <!-- Field Select -->
                     <select class="form-control sum-field" style="flex: 2; font-size: 11px; padding: 3px 6px;">
+                      ${isFieldMissing ? `<option value="${this.escapeHtml(a.field)}" selected>⚠️ ${this.escapeHtml(a.field)} (Missing)</option>` : ''}
                       ${availableCols.length > 0 
-                        ? availableCols.map(col => `<option value="${col}" ${a.field === col ? 'selected' : ''}>${col}</option>`).join('')
-                        : `<option value="${a.field}">${a.field || 'Select field'}</option>`}
+                        ? availableCols.map(col => `<option value="${col}" ${(!isFieldMissing && a.field === col) ? 'selected' : ''}>${col}</option>`).join('')
+                        : (!isFieldMissing ? `<option value="${a.field}">${a.field || 'Select field'}</option>` : '')}
                     </select>
 
                     <!-- Action Select with Optgroups -->
@@ -6043,75 +6365,87 @@ class ConfigPanel {
     if (!cfg.select_fields) cfg.select_fields = [];
     const existingFieldMap = new Map();
     cfg.select_fields.forEach(sf => {
-      if (sf && sf.field) existingFieldMap.set(sf.field, sf);
+      if (sf && (sf.field || sf.original)) {
+        const key = `${sf.source || 'L'}:${sf.original || sf.field}`;
+        existingFieldMap.set(key, sf);
+        existingFieldMap.set(sf.field, sf);
+      }
     });
 
+    let unknownSf = cfg.select_fields.find(sf => (sf.field || sf.original) === '*Unknown');
+    if (!unknownSf) {
+      unknownSf = {
+        field: '*Unknown',
+        original: '*Unknown',
+        source: 'Dynamic',
+        selected: cfg.select_unknown !== false,
+        rename: '*Unknown',
+        type: 'none',
+        isUnknown: true
+      };
+    } else {
+      unknownSf.isUnknown = true;
+      if (unknownSf.selected === undefined && cfg.select_unknown !== undefined) {
+        unknownSf.selected = cfg.select_unknown !== false;
+      }
+    }
+
     if (leftCols.length > 0 || rightCols.length > 0) {
-      const newSelectFields = [];
-      // 1. Left columns
+      const reconciled = [];
+      const seen = new Set();
+
+      // 1. Preserve existing configured fields, marking isMissing if not in upstream
+      cfg.select_fields.forEach(prev => {
+        const orig = prev.original || prev.field;
+        if (!orig || orig === '*Unknown') return;
+        const isRight = prev.source === 'R';
+        const cols = isRight ? rightCols : leftCols;
+        prev.isMissing = (cols.length > 0 && !cols.includes(orig));
+        reconciled.push(prev);
+        seen.add(`${prev.source || (isRight ? 'R' : 'L')}:${orig}`);
+      });
+
+      // 2. Add any newly added Left columns
       leftCols.forEach(c => {
-        if (existingFieldMap.has(c)) {
-          const prev = existingFieldMap.get(c);
-          newSelectFields.push({
+        const key = `L:${c}`;
+        if (!seen.has(key)) {
+          reconciled.push({
             field: c,
             source: 'L',
             original: c,
-            selected: prev.selected !== false,
-            rename: prev.rename !== undefined ? prev.rename : c,
-            type: prev.type || 'none'
-          });
-        } else {
-          newSelectFields.push({
-            field: c,
-            source: 'L',
-            original: c,
-            selected: true,
+            selected: unknownSf.selected !== false,
             rename: c,
-            type: 'none'
+            type: 'none',
+            isMissing: false
           });
+          seen.add(key);
         }
       });
 
-      // 2. Right columns (colliding names prefixed with Right_)
+      // 3. Add any newly added Right columns
       rightCols.forEach(c => {
-        const outName = leftCols.includes(c) ? `Right_${c}` : c;
-        if (existingFieldMap.has(outName)) {
-          const prev = existingFieldMap.get(outName);
-          newSelectFields.push({
+        const key = `R:${c}`;
+        if (!seen.has(key)) {
+          const outName = leftCols.includes(c) ? `Right_${c}` : c;
+          reconciled.push({
             field: outName,
             source: 'R',
             original: c,
-            selected: prev.selected !== false,
-            rename: prev.rename !== undefined ? prev.rename : outName,
-            type: prev.type || 'none'
-          });
-        } else {
-          // By default in Alteryx, duplicate join keys from Right are often deselected or kept prefixed
-          newSelectFields.push({
-            field: outName,
-            source: 'R',
-            original: c,
-            selected: true,
+            selected: unknownSf.selected !== false,
             rename: outName,
-            type: 'none'
+            type: 'none',
+            isMissing: false
           });
+          seen.add(key);
         }
       });
 
-      // If user had customized reordering, preserve order of existing fields
-      if (cfg.select_fields.length > 0) {
-        const orderedFields = [];
-        cfg.select_fields.forEach(prev => {
-          const foundIdx = newSelectFields.findIndex(n => n.field === prev.field);
-          if (foundIdx !== -1) {
-            orderedFields.push(newSelectFields[foundIdx]);
-            newSelectFields.splice(foundIdx, 1);
-          }
-        });
-        // Append any newly discovered fields to the end
-        cfg.select_fields = [...orderedFields, ...newSelectFields];
-      } else {
-        cfg.select_fields = newSelectFields;
+      // 4. Place *Unknown at the bottom
+      reconciled.push(unknownSf);
+      cfg.select_fields = reconciled;
+    } else {
+      if (!cfg.select_fields.some(sf => (sf.field || sf.original) === '*Unknown')) {
+        cfg.select_fields.push(unknownSf);
       }
     }
 
@@ -6207,6 +6541,9 @@ class ConfigPanel {
         <button id="btn-join-deselect-all-right" class="btn btn-secondary btn-sm" title="Deselect all columns from Right table" style="font-size: 10px; padding: 2px 6px; border-left: 2px solid #a855f7;">- All Right (R)</button>
         <button id="btn-join-deselect-right-keys" class="btn btn-secondary btn-sm" title="Uncheck duplicate Right join keys" style="font-size: 10px; padding: 2px 6px;">Deselect Right Keys</button>
         <button id="btn-join-reset-renames" class="btn btn-secondary btn-sm" title="Reset all custom column names" style="font-size: 10px; padding: 2px 6px;">Reset Names</button>
+        ${cfg.select_fields.some(sf => sf.isMissing) ? `
+          <button id="btn-join-forget-missing" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" title="Remove columns missing from upstream">Forget Missing</button>
+        ` : ''}
       </div>
 
       <div class="join-select-wrap">
@@ -6223,9 +6560,72 @@ class ConfigPanel {
           </thead>
           <tbody id="cfg-join-select-tbody">
             ${cfg.select_fields.map((sf, i) => {
+              if (sf.field === '*Unknown' || sf.original === '*Unknown') {
+                return `
+                  <tr class="join-field-unknown" style="border-top: 2px dashed var(--border-subtle); background: rgba(56, 189, 248, 0.04);" data-sf-idx="${i}">
+                    <td style="text-align: center;">
+                      <input type="checkbox" class="sf-keep" ${sf.selected !== false ? 'checked' : ''} title="Select Unknown: Check to output new / dynamic columns arriving from upstream">
+                    </td>
+                    <td style="text-align: center; color: var(--text-muted); font-size: 10px; font-style: italic;">
+                      Dynamic
+                    </td>
+                    <td style="text-align: center;">
+                      <span class="join-source-pill" style="background: rgba(56, 189, 248, 0.2); color: var(--color-primary); font-weight: bold;">*</span>
+                    </td>
+                    <td style="font-weight: 600; color: var(--color-primary);">
+                      *Unknown <span class="badge-unknown" style="margin-left: 4px;">Dynamic Fields</span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control sf-rename" style="padding: 2px 6px; font-size: 11px; font-style: italic; opacity: 0.6; width: 100%;" value="[Dynamic]" disabled>
+                    </td>
+                    <td style="font-size: 11px; color: var(--text-muted); font-style: italic; padding-left: 4px;">
+                      [Auto-detect]
+                    </td>
+                  </tr>
+                `;
+              }
+
               const isRight = sf.source === 'R';
               const metaKey = isRight ? `R_${sf.original || sf.field.replace(/^Right_/, '')}` : `L_${sf.field}`;
               const typeDesc = metaMap[metaKey];
+
+              if (sf.isMissing) {
+                return `
+                  <tr class="join-field-missing field-missing-row" style="opacity: 0.6; font-style: italic; background: rgba(239, 68, 68, 0.04);" data-sf-idx="${i}">
+                    <td style="text-align: center;">
+                      <input type="checkbox" class="sf-keep" ${sf.selected !== false ? 'checked' : ''}>
+                    </td>
+                    <td style="text-align: center; white-space: nowrap;">
+                      <span class="drag-grip" title="Click and drag to reorder">⋮⋮</span>
+                      <button class="join-reorder-btn sf-move-up" data-idx="${i}" title="Move Up" ${i === 0 ? 'disabled' : ''}>▲</button>
+                      <button class="join-reorder-btn sf-move-down" data-idx="${i}" title="Move Down" ${i >= cfg.select_fields.length - 2 ? 'disabled' : ''}>▼</button>
+                    </td>
+                    <td style="text-align: center;">
+                      <span class="join-source-pill source-${isRight ? 'r' : 'l'}">${isRight ? 'R' : 'L'}</span>
+                    </td>
+                    <td style="font-weight: 500; word-break: break-word;">
+                      <span style="text-decoration: line-through; color: var(--text-muted);">${this.escapeHtml(sf.field)}</span>
+                      <span class="badge-missing" style="margin-left: 4px;">⚠️ Missing</span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control sf-rename" style="padding: 2px 6px; font-size: 11px; width: 100%;" value="${this.escapeHtml(sf.rename || sf.field)}">
+                    </td>
+                    <td>
+                      <select class="form-control sf-type" style="padding: 2px 4px; font-size: 11px; width: 100%;">
+                        <option value="none" ${(!sf.type || sf.type === 'none') ? 'selected' : ''}>Current</option>
+                        <option value="string" ${sf.type === 'string' ? 'selected' : ''}>String</option>
+                        <option value="int64" ${sf.type === 'int64' ? 'selected' : ''}>Int64</option>
+                        <option value="int32" ${sf.type === 'int32' ? 'selected' : ''}>Int32</option>
+                        <option value="double" ${sf.type === 'double' || sf.type === 'float' ? 'selected' : ''}>Double</option>
+                        <option value="date" ${sf.type === 'date' ? 'selected' : ''}>Date</option>
+                        <option value="datetime" ${sf.type === 'datetime' ? 'selected' : ''}>DateTime</option>
+                        <option value="bool" ${sf.type === 'bool' ? 'selected' : ''}>Bool</option>
+                      </select>
+                    </td>
+                  </tr>
+                `;
+              }
+
               return `
                 <tr data-sf-idx="${i}">
                   <td style="text-align: center;">
@@ -6234,7 +6634,7 @@ class ConfigPanel {
                   <td style="text-align: center; white-space: nowrap;">
                     <span class="drag-grip" title="Click and drag to reorder">⋮⋮</span>
                     <button class="join-reorder-btn sf-move-up" data-idx="${i}" title="Move Up" ${i === 0 ? 'disabled' : ''}>▲</button>
-                    <button class="join-reorder-btn sf-move-down" data-idx="${i}" title="Move Down" ${i === cfg.select_fields.length - 1 ? 'disabled' : ''}>▼</button>
+                    <button class="join-reorder-btn sf-move-down" data-idx="${i}" title="Move Down" ${i >= cfg.select_fields.length - 2 ? 'disabled' : ''}>▼</button>
                   </td>
                   <td style="text-align: center;">
                     <span class="join-source-pill source-${isRight ? 'r' : 'l'}">${isRight ? 'R' : 'L'}</span>
@@ -6350,20 +6750,23 @@ class ConfigPanel {
     // Event Bindings: Embedded Select Grid
     container.querySelectorAll('[data-sf-idx]').forEach(tr => {
       const idx = parseInt(tr.dataset.sfIdx);
-      tr.querySelector('.sf-keep').addEventListener('change', (e) => {
+      tr.querySelector('.sf-keep')?.addEventListener('change', (e) => {
         node.config.select_fields[idx].selected = e.target.checked;
+        if (node.config.select_fields[idx].field === '*Unknown' || node.config.select_fields[idx].original === '*Unknown') {
+          node.config.select_unknown = e.target.checked;
+        }
         this.canvas.onWorkflowChange();
       });
-      tr.querySelector('.sf-rename').addEventListener('input', (e) => {
+      tr.querySelector('.sf-rename')?.addEventListener('input', (e) => {
         node.config.select_fields[idx].rename = e.target.value;
         this.canvas.onWorkflowChange();
       });
-      tr.querySelector('.sf-type').addEventListener('change', (e) => {
+      tr.querySelector('.sf-type')?.addEventListener('change', (e) => {
         node.config.select_fields[idx].type = e.target.value;
         this.canvas.onWorkflowChange();
       });
       tr.querySelector('.sf-move-up')?.addEventListener('click', () => {
-        if (idx > 0) {
+        if (idx > 0 && node.config.select_fields[idx].field !== '*Unknown') {
           const item = node.config.select_fields.splice(idx, 1)[0];
           node.config.select_fields.splice(idx - 1, 0, item);
           this.render(node);
@@ -6371,7 +6774,7 @@ class ConfigPanel {
         }
       });
       tr.querySelector('.sf-move-down')?.addEventListener('click', () => {
-        if (idx < node.config.select_fields.length - 1) {
+        if (idx < node.config.select_fields.length - 2 && node.config.select_fields[idx].field !== '*Unknown') {
           const item = node.config.select_fields.splice(idx, 1)[0];
           node.config.select_fields.splice(idx + 1, 0, item);
           this.render(node);
@@ -6388,14 +6791,23 @@ class ConfigPanel {
     });
 
     // Bulk action toolbar bindings
+    container.querySelector('#btn-join-forget-missing')?.addEventListener('click', () => {
+      node.config.select_fields = node.config.select_fields.filter(f => !f.isMissing);
+      this.render(node);
+      this.canvas.onWorkflowChange();
+      if (window.showToast) window.showToast('info', 'Columns Purged', 'Removed missing fields from Join select configuration.');
+    });
+
     container.querySelector('#btn-join-select-all')?.addEventListener('click', () => {
       node.config.select_fields.forEach(f => f.selected = true);
+      node.config.select_unknown = true;
       this.render(node);
       this.canvas.onWorkflowChange();
     });
 
     container.querySelector('#btn-join-deselect-all')?.addEventListener('click', () => {
       node.config.select_fields.forEach(f => f.selected = false);
+      node.config.select_unknown = false;
       this.render(node);
       this.canvas.onWorkflowChange();
     });
@@ -6542,60 +6954,70 @@ class ConfigPanel {
     }
 
     // Synchronize embedded select_fields
-    const existingFieldMap = new Map();
-    cfg.select_fields.forEach(sf => {
-      if (sf && sf.field) existingFieldMap.set(sf.field, sf);
-    });
+    let unknownSf = cfg.select_fields.find(sf => (sf.field || sf.original) === '*Unknown');
+    if (!unknownSf) {
+      unknownSf = {
+        field: '*Unknown',
+        original: '*Unknown',
+        source: 'Dynamic',
+        selected: cfg.select_unknown !== false,
+        rename: '*Unknown',
+        type: 'none',
+        isUnknown: true
+      };
+    } else {
+      unknownSf.isUnknown = true;
+      if (unknownSf.selected === undefined && cfg.select_unknown !== undefined) {
+        unknownSf.selected = cfg.select_unknown !== false;
+      }
+    }
 
     const hasAnyCols = upstreamInputs.some(u => u.columns && u.columns.length > 0);
     if (hasAnyCols) {
-      const newSelectFields = [];
-      const seenColNames = new Set();
+      const reconciled = [];
+      const seen = new Set();
+      const inputMap = new Map();
+      upstreamInputs.forEach(u => inputMap.set(u.index, new Set(u.columns || [])));
 
+      // 1. Preserve existing fields (marking isMissing if input has columns and col missing)
+      cfg.select_fields.forEach(prev => {
+        const orig = prev.original || prev.field;
+        if (!orig || orig === '*Unknown') return;
+        const inCols = inputMap.get(prev.source);
+        prev.isMissing = (inCols && inCols.size > 0 && !inCols.has(orig));
+        reconciled.push(prev);
+        seen.add(`${prev.source}:${orig}`);
+      });
+
+      // 2. Add newly discovered columns
       upstreamInputs.forEach(u => {
         (u.columns || []).forEach(c => {
-          let outName = c;
-          if (seenColNames.has(c)) {
-            outName = `Input${u.index}_${c}`;
-          }
-          seenColNames.add(outName);
-
-          if (existingFieldMap.has(outName)) {
-            const prev = existingFieldMap.get(outName);
-            newSelectFields.push({
+          const key = `${u.index}:${c}`;
+          if (!seen.has(key)) {
+            let outName = c;
+            if (reconciled.some(r => r.field === outName)) {
+              outName = `Input${u.index}_${c}`;
+            }
+            reconciled.push({
               field: outName,
               source: u.index,
               original: c,
-              selected: prev.selected !== false,
-              rename: prev.rename !== undefined ? prev.rename : outName,
-              type: prev.type || 'none'
-            });
-          } else {
-            newSelectFields.push({
-              field: outName,
-              source: u.index,
-              original: c,
-              selected: true,
+              selected: unknownSf.selected !== false,
               rename: outName,
-              type: 'none'
+              type: 'none',
+              isMissing: false
             });
+            seen.add(key);
           }
         });
       });
 
-      // Preserve existing ordering if customized
-      if (cfg.select_fields.length > 0) {
-        const ordered = [];
-        cfg.select_fields.forEach(prev => {
-          const foundIdx = newSelectFields.findIndex(n => n.field === prev.field);
-          if (foundIdx !== -1) {
-            ordered.push(newSelectFields[foundIdx]);
-            newSelectFields.splice(foundIdx, 1);
-          }
-        });
-        cfg.select_fields = [...ordered, ...newSelectFields];
-      } else {
-        cfg.select_fields = newSelectFields;
+      // 3. Put *Unknown at the bottom
+      reconciled.push(unknownSf);
+      cfg.select_fields = reconciled;
+    } else {
+      if (!cfg.select_fields.some(sf => (sf.field || sf.original) === '*Unknown')) {
+        cfg.select_fields.push(unknownSf);
       }
     }
 
@@ -6747,11 +7169,14 @@ class ConfigPanel {
         </span>
       </div>
 
-      <div class="join-toolbar">
+      <div class="join-toolbar" style="gap: 4px; display: flex; flex-wrap: wrap;">
         <button id="btn-multi-join-select-all" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 7px;">Select All</button>
         <button id="btn-multi-join-deselect-all" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 7px;">Deselect All</button>
         <button id="btn-multi-join-deselect-dup-keys" class="btn btn-secondary btn-sm" title="Uncheck duplicate join keys from later inputs" style="font-size: 10px; padding: 2px 7px;">Deselect Duplicate Keys</button>
         <button id="btn-multi-join-reset-renames" class="btn btn-secondary btn-sm" title="Reset all custom column names" style="font-size: 10px; padding: 2px 7px;">Reset Names</button>
+        ${cfg.select_fields.some(sf => sf.isMissing) ? `
+          <button id="btn-multi-join-forget-missing" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 7px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" title="Remove columns missing from upstream">Forget Missing</button>
+        ` : ''}
       </div>
 
       <div class="join-select-wrap">
@@ -6768,10 +7193,73 @@ class ConfigPanel {
           </thead>
           <tbody id="cfg-multi-join-select-tbody">
             ${cfg.select_fields.map((sf, i) => {
+              if (sf.field === '*Unknown' || sf.original === '*Unknown') {
+                return `
+                  <tr class="join-field-unknown" style="border-top: 2px dashed var(--border-subtle); background: rgba(56, 189, 248, 0.04);" data-sf-idx="${i}">
+                    <td style="text-align: center;">
+                      <input type="checkbox" class="sf-keep" ${sf.selected !== false ? 'checked' : ''} title="Select Unknown: Check to output new / dynamic columns arriving from upstream">
+                    </td>
+                    <td style="text-align: center; color: var(--text-muted); font-size: 10px; font-style: italic;">
+                      Dynamic
+                    </td>
+                    <td style="text-align: center;">
+                      <span class="join-source-pill" style="background: rgba(56, 189, 248, 0.2); color: var(--color-primary); font-weight: bold;">*</span>
+                    </td>
+                    <td style="font-weight: 600; color: var(--color-primary);">
+                      *Unknown <span class="badge-unknown" style="margin-left: 4px;">Dynamic Fields</span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control sf-rename" style="padding: 2px 6px; font-size: 11px; font-style: italic; opacity: 0.6; width: 100%;" value="[Dynamic]" disabled>
+                    </td>
+                    <td style="font-size: 11px; color: var(--text-muted); font-style: italic; padding-left: 4px;">
+                      [Auto-detect]
+                    </td>
+                  </tr>
+                `;
+              }
+
               const srcIdx = sf.source || 1;
               const colorIdx = ((srcIdx - 1) % 6) + 1;
               const metaKey = `${srcIdx}_${sf.original || sf.field}`;
               const typeDesc = metaMap[metaKey];
+
+              if (sf.isMissing) {
+                return `
+                  <tr class="join-field-missing field-missing-row" style="opacity: 0.6; font-style: italic; background: rgba(239, 68, 68, 0.04);" data-sf-idx="${i}">
+                    <td style="text-align: center;">
+                      <input type="checkbox" class="sf-keep" ${sf.selected !== false ? 'checked' : ''}>
+                    </td>
+                    <td style="text-align: center; white-space: nowrap;">
+                      <span class="drag-grip" title="Click and drag to reorder">⋮⋮</span>
+                      <button class="join-reorder-btn sf-move-up" data-idx="${i}" title="Move Up" ${i === 0 ? 'disabled' : ''}>▲</button>
+                      <button class="join-reorder-btn sf-move-down" data-idx="${i}" title="Move Down" ${i >= cfg.select_fields.length - 2 ? 'disabled' : ''}>▼</button>
+                    </td>
+                    <td style="text-align: center;">
+                      <span class="join-source-pill source-input-${colorIdx}">#${srcIdx}</span>
+                    </td>
+                    <td style="font-weight: 500; word-break: break-word;">
+                      <span style="text-decoration: line-through; color: var(--text-muted);">${this.escapeHtml(sf.field)}</span>
+                      <span class="badge-missing" style="margin-left: 4px;">⚠️ Missing</span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control sf-rename" style="padding: 2px 6px; font-size: 11px; width: 100%;" value="${this.escapeHtml(sf.rename || sf.field)}">
+                    </td>
+                    <td>
+                      <select class="form-control sf-type" style="padding: 2px 4px; font-size: 11px; width: 100%;">
+                        <option value="none" ${(!sf.type || sf.type === 'none') ? 'selected' : ''}>Current</option>
+                        <option value="string" ${sf.type === 'string' ? 'selected' : ''}>String</option>
+                        <option value="int64" ${sf.type === 'int64' ? 'selected' : ''}>Int64</option>
+                        <option value="int32" ${sf.type === 'int32' ? 'selected' : ''}>Int32</option>
+                        <option value="double" ${sf.type === 'double' || sf.type === 'float' ? 'selected' : ''}>Double</option>
+                        <option value="date" ${sf.type === 'date' ? 'selected' : ''}>Date</option>
+                        <option value="datetime" ${sf.type === 'datetime' ? 'selected' : ''}>DateTime</option>
+                        <option value="bool" ${sf.type === 'bool' ? 'selected' : ''}>Bool</option>
+                      </select>
+                    </td>
+                  </tr>
+                `;
+              }
+
               return `
                 <tr data-sf-idx="${i}">
                   <td style="text-align: center;">
@@ -6780,7 +7268,7 @@ class ConfigPanel {
                   <td style="text-align: center; white-space: nowrap;">
                     <span class="drag-grip" title="Click and drag to reorder">⋮⋮</span>
                     <button class="join-reorder-btn sf-move-up" data-idx="${i}" title="Move Up" ${i === 0 ? 'disabled' : ''}>▲</button>
-                    <button class="join-reorder-btn sf-move-down" data-idx="${i}" title="Move Down" ${i === cfg.select_fields.length - 1 ? 'disabled' : ''}>▼</button>
+                    <button class="join-reorder-btn sf-move-down" data-idx="${i}" title="Move Down" ${i >= cfg.select_fields.length - 2 ? 'disabled' : ''}>▼</button>
                   </td>
                   <td style="text-align: center;">
                     <span class="join-source-pill source-input-${colorIdx}">#${srcIdx}</span>
@@ -6932,6 +7420,9 @@ class ConfigPanel {
       const idx = parseInt(tr.dataset.sfIdx);
       tr.querySelector('.sf-keep')?.addEventListener('change', (e) => {
         node.config.select_fields[idx].selected = e.target.checked;
+        if (node.config.select_fields[idx].field === '*Unknown' || node.config.select_fields[idx].original === '*Unknown') {
+          node.config.select_unknown = e.target.checked;
+        }
         this.canvas.onWorkflowChange();
       });
       tr.querySelector('.sf-rename')?.addEventListener('input', (e) => {
@@ -6943,7 +7434,7 @@ class ConfigPanel {
         this.canvas.onWorkflowChange();
       });
       tr.querySelector('.sf-move-up')?.addEventListener('click', () => {
-        if (idx > 0) {
+        if (idx > 0 && node.config.select_fields[idx].field !== '*Unknown') {
           const item = node.config.select_fields.splice(idx, 1)[0];
           node.config.select_fields.splice(idx - 1, 0, item);
           this.render(node);
@@ -6951,7 +7442,7 @@ class ConfigPanel {
         }
       });
       tr.querySelector('.sf-move-down')?.addEventListener('click', () => {
-        if (idx < node.config.select_fields.length - 1) {
+        if (idx < node.config.select_fields.length - 2 && node.config.select_fields[idx].field !== '*Unknown') {
           const item = node.config.select_fields.splice(idx, 1)[0];
           node.config.select_fields.splice(idx + 1, 0, item);
           this.render(node);
@@ -6968,14 +7459,23 @@ class ConfigPanel {
     });
 
     // Select Toolbar Actions
+    container.querySelector('#btn-multi-join-forget-missing')?.addEventListener('click', () => {
+      node.config.select_fields = node.config.select_fields.filter(f => !f.isMissing);
+      this.render(node);
+      this.canvas.onWorkflowChange();
+      if (window.showToast) window.showToast('info', 'Columns Purged', 'Removed missing fields from Join Multiple select configuration.');
+    });
+
     container.querySelector('#btn-multi-join-select-all')?.addEventListener('click', () => {
       node.config.select_fields.forEach(f => f.selected = true);
+      node.config.select_unknown = true;
       this.render(node);
       this.canvas.onWorkflowChange();
     });
 
     container.querySelector('#btn-multi-join-deselect-all')?.addEventListener('click', () => {
       node.config.select_fields.forEach(f => f.selected = false);
+      node.config.select_unknown = false;
       this.render(node);
       this.canvas.onWorkflowChange();
     });
@@ -7800,40 +8300,81 @@ class ConfigPanel {
     const sourceCols = this.getUpstreamColumns(node.id, 'S');
 
     // Auto-populate or reconcile select_fields with upstream columns
-    if (targetCols.length > 0 || sourceCols.length > 0) {
-      if (!selectFields || selectFields.length === 0) {
-        selectFields = [];
-        targetCols.forEach(c => selectFields.push({ field: c, source: 'T', selected: true, rename: c }));
-        sourceCols.forEach(c => {
-          const outName = targetCols.includes(c) ? `${sourcePrefix}${c}` : c;
-          selectFields.push({ field: outName, source: 'S', selected: true, rename: outName });
-        });
-        node.config.select_fields = selectFields;
-      } else {
-        const existingMap = new Map();
-        selectFields.forEach(sf => {
-          if (sf && sf.field) existingMap.set(`${sf.source || 'T'}:${sf.field}`, sf);
-        });
+    let unknownSf = selectFields.find(sf => (sf.field || sf.original) === '*Unknown');
+    if (!unknownSf) {
+      unknownSf = {
+        field: '*Unknown',
+        original: '*Unknown',
+        source: 'Dynamic',
+        selected: cfg.select_unknown !== false,
+        rename: '*Unknown',
+        type: 'none',
+        isUnknown: true
+      };
+    } else {
+      unknownSf.isUnknown = true;
+      if (unknownSf.selected === undefined && cfg.select_unknown !== undefined) {
+        unknownSf.selected = cfg.select_unknown !== false;
+      }
+    }
 
-        const reconciled = [];
-        targetCols.forEach(c => {
-          const key = `T:${c}`;
-          if (existingMap.has(key)) {
-            reconciled.push(existingMap.get(key));
-          } else {
-            reconciled.push({ field: c, source: 'T', selected: true, rename: c });
-          }
-        });
-        sourceCols.forEach(c => {
-          const outName = targetCols.includes(c) ? `${sourcePrefix}${c}` : c;
-          const key = `S:${outName}`;
-          if (existingMap.has(key)) {
-            reconciled.push(existingMap.get(key));
-          } else {
-            reconciled.push({ field: outName, source: 'S', selected: true, rename: outName });
-          }
-        });
-        selectFields = reconciled;
+    if (targetCols.length > 0 || sourceCols.length > 0) {
+      const reconciled = [];
+      const seen = new Set();
+      const targetSet = new Set(targetCols);
+      const sourceSet = new Set(sourceCols);
+
+      // 1. Preserve existing fields (marking isMissing if target/source has columns and missing)
+      selectFields.forEach(prev => {
+        const orig = prev.original || prev.field;
+        if (!orig || orig === '*Unknown') return;
+        const isSource = prev.source === 'S';
+        const cols = isSource ? sourceSet : targetSet;
+        prev.isMissing = (cols.size > 0 && !cols.has(orig));
+        reconciled.push(prev);
+        seen.add(`${prev.source || (isSource ? 'S' : 'T')}:${orig}`);
+      });
+
+      // 2. Add Target columns
+      targetCols.forEach(c => {
+        const key = `T:${c}`;
+        if (!seen.has(key)) {
+          reconciled.push({
+            field: c,
+            source: 'T',
+            original: c,
+            selected: unknownSf.selected !== false,
+            rename: c,
+            isMissing: false
+          });
+          seen.add(key);
+        }
+      });
+
+      // 3. Add Source columns
+      sourceCols.forEach(c => {
+        const key = `S:${c}`;
+        if (!seen.has(key)) {
+          const outName = targetSet.has(c) ? `${sourcePrefix}${c}` : c;
+          reconciled.push({
+            field: outName,
+            source: 'S',
+            original: c,
+            selected: unknownSf.selected !== false,
+            rename: outName,
+            isMissing: false
+          });
+          seen.add(key);
+        }
+      });
+
+      // 4. Put *Unknown at the bottom
+      reconciled.push(unknownSf);
+      selectFields = reconciled;
+      node.config.select_fields = selectFields;
+    } else {
+      if (!selectFields.some(sf => (sf.field || sf.original) === '*Unknown')) {
+        selectFields.push(unknownSf);
         node.config.select_fields = selectFields;
       }
     }
@@ -7855,7 +8396,12 @@ class ConfigPanel {
         <div class="form-hint">Prefix added to Source columns that share a name with Target columns.</div>
       </div>
 
-      <div class="cfg-section-title" style="margin-top: 14px;">Select &amp; Rename Output Columns</div>
+      <div class="cfg-section-title" style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <span>Select &amp; Rename Output Columns</span>
+        ${selectFields.some(sf => sf.isMissing) ? `
+          <button id="btn-af-forget-missing" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" title="Remove columns missing from upstream">Forget Missing</button>
+        ` : ''}
+      </div>
       ${selectFields.length > 0 ? `
         <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px;">
           <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
@@ -7868,22 +8414,65 @@ class ConfigPanel {
               </tr>
             </thead>
             <tbody>
-              ${selectFields.map((sf, i) => `
-                <tr style="border-top: 1px solid var(--border-subtle);" data-sf-idx="${i}">
-                  <td style="padding: 4px; text-align: center;">
-                    <input type="checkbox" class="af-keep" ${sf.selected !== false ? 'checked' : ''}>
-                  </td>
-                  <td style="padding: 4px 6px;">
-                    <span style="font-weight: 700; color: ${sf.source === 'T' ? 'var(--color-primary)' : 'var(--cat-join)'};">
-                      ${sf.source || 'T'}
-                    </span>
-                  </td>
-                  <td style="padding: 4px 6px; font-family: var(--font-mono);">${sf.field}</td>
-                  <td style="padding: 4px 6px;">
-                    <input type="text" class="form-control form-control-sm af-rename" value="${sf.rename || sf.field}" style="font-size: 11px; padding: 2px 6px;">
-                  </td>
-                </tr>
-              `).join('')}
+              ${selectFields.map((sf, i) => {
+                if (sf.field === '*Unknown' || sf.original === '*Unknown') {
+                  return `
+                    <tr class="join-field-unknown" style="border-top: 2px dashed var(--border-subtle); background: rgba(56, 189, 248, 0.04);" data-sf-idx="${i}">
+                      <td style="padding: 4px; text-align: center;">
+                        <input type="checkbox" class="af-keep" ${sf.selected !== false ? 'checked' : ''} title="Select Unknown: Check to output new / dynamic columns">
+                      </td>
+                      <td style="padding: 4px 6px;">
+                        <span style="font-weight: 700; color: var(--color-primary);">*</span>
+                      </td>
+                      <td style="padding: 4px 6px; font-weight: 600; color: var(--color-primary);">
+                        *Unknown <span class="badge-unknown" style="margin-left: 4px;">Dynamic Fields</span>
+                      </td>
+                      <td style="padding: 4px 6px; font-style: italic; color: var(--text-muted); font-size: 11px;">
+                        [Dynamic]
+                      </td>
+                    </tr>
+                  `;
+                }
+
+                if (sf.isMissing) {
+                  return `
+                    <tr class="field-missing-row" style="border-top: 1px solid var(--border-subtle); opacity: 0.6; font-style: italic; background: rgba(239, 68, 68, 0.04);" data-sf-idx="${i}">
+                      <td style="padding: 4px; text-align: center;">
+                        <input type="checkbox" class="af-keep" ${sf.selected !== false ? 'checked' : ''}>
+                      </td>
+                      <td style="padding: 4px 6px;">
+                        <span style="font-weight: 700; color: ${sf.source === 'T' ? 'var(--color-primary)' : 'var(--cat-join)'};">
+                          ${sf.source || 'T'}
+                        </span>
+                      </td>
+                      <td style="padding: 4px 6px; font-family: var(--font-mono);">
+                        <span style="text-decoration: line-through; color: var(--text-muted);">${this.escapeHtml(sf.field)}</span>
+                        <span class="badge-missing" style="margin-left: 4px;">⚠️ Missing</span>
+                      </td>
+                      <td style="padding: 4px 6px;">
+                        <input type="text" class="form-control form-control-sm af-rename" value="${this.escapeHtml(sf.rename || sf.field)}" style="font-size: 11px; padding: 2px 6px;">
+                      </td>
+                    </tr>
+                  `;
+                }
+
+                return `
+                  <tr style="border-top: 1px solid var(--border-subtle);" data-sf-idx="${i}">
+                    <td style="padding: 4px; text-align: center;">
+                      <input type="checkbox" class="af-keep" ${sf.selected !== false ? 'checked' : ''}>
+                    </td>
+                    <td style="padding: 4px 6px;">
+                      <span style="font-weight: 700; color: ${sf.source === 'T' ? 'var(--color-primary)' : 'var(--cat-join)'};">
+                        ${sf.source || 'T'}
+                      </span>
+                    </td>
+                    <td style="padding: 4px 6px; font-family: var(--font-mono);">${this.escapeHtml(sf.field)}</td>
+                    <td style="padding: 4px 6px;">
+                      <input type="text" class="form-control form-control-sm af-rename" value="${this.escapeHtml(sf.rename || sf.field)}" style="font-size: 11px; padding: 2px 6px;">
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -7894,14 +8483,21 @@ class ConfigPanel {
       `}
     `;
 
-    container.querySelector('#cfg-af-mode').addEventListener('change', (e) => {
+    container.querySelector('#cfg-af-mode')?.addEventListener('change', (e) => {
       node.config.cartesian_mode = e.target.value;
       this.canvas.onWorkflowChange();
     });
 
-    container.querySelector('#cfg-af-prefix').addEventListener('input', (e) => {
+    container.querySelector('#cfg-af-prefix')?.addEventListener('input', (e) => {
       node.config.source_prefix = e.target.value;
       this.canvas.onWorkflowChange();
+    });
+
+    container.querySelector('#btn-af-forget-missing')?.addEventListener('click', () => {
+      node.config.select_fields = node.config.select_fields.filter(f => !f.isMissing);
+      this.render(node);
+      this.canvas.onWorkflowChange();
+      if (window.showToast) window.showToast('info', 'Columns Purged', 'Removed missing fields from Append Fields configuration.');
     });
 
     container.querySelectorAll('.af-keep').forEach(chk => {
@@ -7910,6 +8506,9 @@ class ConfigPanel {
         const idx = parseInt(row.dataset.sfIdx, 10);
         if (node.config.select_fields && node.config.select_fields[idx]) {
           node.config.select_fields[idx].selected = e.target.checked;
+          if (node.config.select_fields[idx].field === '*Unknown' || node.config.select_fields[idx].original === '*Unknown') {
+            node.config.select_unknown = e.target.checked;
+          }
           this.canvas.onWorkflowChange();
         }
       });
@@ -8400,12 +8999,15 @@ class ConfigPanel {
         </div>
         <div class="form-hint" style="margin-bottom: 6px; font-size: 10.5px;">Fields that remain as rows and duplicate for each transposed field.</div>
         <div id="transpose-key-list" style="max-height: 160px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; background: var(--bg-main);">
-          ${allCols.length > 0 ? allCols.map(col => `
-            <label class="form-check" style="margin-bottom: 4px; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
-              <input type="checkbox" class="transpose-key-chk" value="${this.escapeHtml(col)}" ${keyCols.includes(col) ? 'checked' : ''}>
-              <span>${this.escapeHtml(col)}</span>
-            </label>
-          `).join('') : '<div class="form-hint" style="padding: 6px; text-align: center;">Connect input to view available fields.</div>'}
+          ${allCols.length > 0 ? allCols.map(col => {
+            const isMissing = upstreamCols.length > 0 && !upstreamCols.includes(col);
+            return `
+              <label class="form-check ${isMissing ? 'field-missing-row' : ''}" style="margin-bottom: 4px; font-size: 11.5px; display: flex; align-items: center; gap: 6px; ${isMissing ? 'opacity: 0.65; color: #ef4444;' : ''}">
+                <input type="checkbox" class="transpose-key-chk" value="${this.escapeHtml(col)}" ${keyCols.includes(col) ? 'checked' : ''}>
+                <span>${isMissing ? `<s>${this.escapeHtml(col)}</s> <i style="font-size: 10px; color: var(--text-muted);">(Missing)</i>` : this.escapeHtml(col)}</span>
+              </label>
+            `;
+          }).join('') : '<div class="form-hint" style="padding: 6px; text-align: center;">Connect input to view available fields.</div>'}
         </div>
       </div>
 
@@ -8420,12 +9022,15 @@ class ConfigPanel {
         </div>
         <div class="form-hint" style="margin-bottom: 6px; font-size: 10.5px;">Fields whose names become Name and cell values become Value. (If none selected, all non-key fields are transposed).</div>
         <div id="transpose-data-list" style="max-height: 160px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; background: var(--bg-main);">
-          ${allCols.length > 0 ? allCols.map(col => `
-            <label class="form-check" style="margin-bottom: 4px; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
-              <input type="checkbox" class="transpose-data-chk" value="${this.escapeHtml(col)}" ${dataCols.includes(col) ? 'checked' : ''}>
-              <span>${this.escapeHtml(col)}</span>
-            </label>
-          `).join('') : '<div class="form-hint" style="padding: 6px; text-align: center;">Connect input to view available fields.</div>'}
+          ${allCols.length > 0 ? allCols.map(col => {
+            const isMissing = upstreamCols.length > 0 && !upstreamCols.includes(col);
+            return `
+              <label class="form-check ${isMissing ? 'field-missing-row' : ''}" style="margin-bottom: 4px; font-size: 11.5px; display: flex; align-items: center; gap: 6px; ${isMissing ? 'opacity: 0.65; color: #ef4444;' : ''}">
+                <input type="checkbox" class="transpose-data-chk" value="${this.escapeHtml(col)}" ${dataCols.includes(col) ? 'checked' : ''}>
+                <span>${isMissing ? `<s>${this.escapeHtml(col)}</s> <i style="font-size: 10px; color: var(--text-muted);">(Missing)</i>` : this.escapeHtml(col)}</span>
+              </label>
+            `;
+          }).join('') : '<div class="form-hint" style="padding: 6px; text-align: center;">Connect input to view available fields.</div>'}
         </div>
       </div>
 
@@ -8542,12 +9147,15 @@ class ConfigPanel {
           </div>
         </div>
         <div id="crosstab-group-list" style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; background: var(--bg-main);">
-          ${allCols.length > 0 ? allCols.map(col => `
-            <label class="form-check" style="margin-bottom: 4px; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
-              <input type="checkbox" class="crosstab-group-chk" value="${this.escapeHtml(col)}" ${groupCols.includes(col) ? 'checked' : ''}>
-              <span>${this.escapeHtml(col)}</span>
-            </label>
-          `).join('') : '<div class="form-hint" style="padding: 6px; text-align: center;">Connect input to view available fields.</div>'}
+          ${allCols.length > 0 ? allCols.map(col => {
+            const isMissing = upstreamCols.length > 0 && !upstreamCols.includes(col);
+            return `
+              <label class="form-check ${isMissing ? 'field-missing-row' : ''}" style="margin-bottom: 4px; font-size: 11.5px; display: flex; align-items: center; gap: 6px; ${isMissing ? 'opacity: 0.65; color: #ef4444;' : ''}">
+                <input type="checkbox" class="crosstab-group-chk" value="${this.escapeHtml(col)}" ${groupCols.includes(col) ? 'checked' : ''}>
+                <span>${isMissing ? `<s>${this.escapeHtml(col)}</s> <i style="font-size: 10px; color: var(--text-muted);">(Missing)</i>` : this.escapeHtml(col)}</span>
+              </label>
+            `;
+          }).join('') : '<div class="form-hint" style="padding: 6px; text-align: center;">Connect input to view available fields.</div>'}
         </div>
       </div>
 
@@ -8556,9 +9164,12 @@ class ConfigPanel {
         <label style="font-weight: 600; font-size: 12px; margin-bottom: 4px;">2. New Column Headers (Categorical):</label>
         <select class="form-control form-control-sm" id="cfg-crosstab-header-field">
           <option value="">-- Select Header Field --</option>
-          ${allCols.map(col => `
-            <option value="${this.escapeHtml(col)}" ${headerField === col ? 'selected' : ''}>${this.escapeHtml(col)}</option>
-          `).join('')}
+          ${allCols.map(col => {
+            const isMissing = upstreamCols.length > 0 && !upstreamCols.includes(col);
+            return `
+              <option value="${this.escapeHtml(col)}" ${headerField === col ? 'selected' : ''}>${isMissing ? `⚠️ ${this.escapeHtml(col)} (Missing)` : this.escapeHtml(col)}</option>
+            `;
+          }).join('')}
         </select>
       </div>
 
@@ -8567,9 +9178,12 @@ class ConfigPanel {
         <label style="font-weight: 600; font-size: 12px; margin-bottom: 4px;">3. Values for New Columns (Metrics):</label>
         <select class="form-control form-control-sm" id="cfg-crosstab-value-field">
           <option value="">-- Select Value Field --</option>
-          ${allCols.map(col => `
-            <option value="${this.escapeHtml(col)}" ${valueField === col ? 'selected' : ''}>${this.escapeHtml(col)}</option>
-          `).join('')}
+          ${allCols.map(col => {
+            const isMissing = upstreamCols.length > 0 && !upstreamCols.includes(col);
+            return `
+              <option value="${this.escapeHtml(col)}" ${valueField === col ? 'selected' : ''}>${isMissing ? `⚠️ ${this.escapeHtml(col)} (Missing)` : this.escapeHtml(col)}</option>
+            `;
+          }).join('')}
         </select>
       </div>
 

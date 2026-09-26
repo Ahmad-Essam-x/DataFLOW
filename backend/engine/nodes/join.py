@@ -155,51 +155,81 @@ class JoinNode(BaseNode):
         # 4. Embedded Select on Joined (J) Output
         select_fields = self.config.get("select_fields")
         if select_fields and isinstance(select_fields, list):
+            unknown_item = next(
+                (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown")),
+                None
+            )
+            if unknown_item is not None:
+                select_unknown = unknown_item.get("selected", True) if "selected" in unknown_item else unknown_item.get("keep", True)
+            elif "select_unknown" in self.config:
+                select_unknown = bool(self.config["select_unknown"])
+            else:
+                select_unknown = False
+
             keep_cols = []
             rename_map = {}
             type_map = {}
+            processed_fields = set()
 
             for sf in select_fields:
-                f_name = sf.get("field")
-                if not f_name or f_name not in j_df.columns:
+                f_name = sf.get("field") or sf.get("original")
+                if not f_name:
                     continue
 
+                if f_name == "*Unknown":
+                    if select_unknown:
+                        for col in j_df.columns:
+                            if col not in processed_fields:
+                                keep_cols.append(col)
+                                processed_fields.add(col)
+                    continue
+
+                if f_name not in j_df.columns:
+                    continue
+
+                processed_fields.add(f_name)
                 # Check if field is selected/included
-                if sf.get("selected", True):
+                is_selected = sf.get("selected", True) if "selected" in sf else sf.get("keep", True)
+                if is_selected:
                     keep_cols.append(f_name)
                     new_name = sf.get("rename")
                     if new_name and new_name.strip():
                         rename_map[f_name] = new_name.strip()
                     target_type = sf.get("type")
-                    if target_type:
+                    if target_type and target_type != "none":
                         type_map[f_name] = target_type
 
-            if keep_cols:
-                # Reorder and filter columns to match select_fields sequence
-                j_df = j_df[keep_cols].copy()
+            if select_unknown and unknown_item is None:
+                for col in j_df.columns:
+                    if col not in processed_fields:
+                        keep_cols.append(col)
+                        processed_fields.add(col)
 
-                # Apply data type casting if configured
-                for col, dt in type_map.items():
-                    if col not in j_df.columns:
-                        continue
-                    dt_low = str(dt).lower().strip()
-                    try:
-                        if dt_low in ("int", "integer", "int64", "int32"):
-                            j_df[col] = pd.to_numeric(j_df[col], errors="coerce").astype("Int64")
-                        elif dt_low in ("float", "double", "numeric"):
-                            j_df[col] = pd.to_numeric(j_df[col], errors="coerce")
-                        elif dt_low in ("bool", "boolean"):
-                            j_df[col] = j_df[col].astype(str).str.lower().isin(["true", "1", "t", "yes"])
-                        elif dt_low in ("date", "datetime"):
-                            j_df[col] = pd.to_datetime(j_df[col], errors="coerce")
-                        elif dt_low in ("str", "string"):
-                            j_df[col] = j_df[col].astype(str)
-                    except Exception:
-                        pass
+            # Reorder and filter columns to match select_fields sequence
+            j_df = j_df[[c for c in keep_cols if c in j_df.columns]].copy()
 
-                # Apply renames
-                if rename_map:
-                    j_df = j_df.rename(columns=rename_map)
+            # Apply data type casting if configured
+            for col, dt in type_map.items():
+                if col not in j_df.columns:
+                    continue
+                dt_low = str(dt).lower().strip()
+                try:
+                    if dt_low in ("int", "integer", "int64", "int32"):
+                        j_df[col] = pd.to_numeric(j_df[col], errors="coerce").astype("Int64")
+                    elif dt_low in ("float", "double", "numeric"):
+                        j_df[col] = pd.to_numeric(j_df[col], errors="coerce")
+                    elif dt_low in ("bool", "boolean"):
+                        j_df[col] = j_df[col].astype(str).str.lower().isin(["true", "1", "t", "yes"])
+                    elif dt_low in ("date", "datetime"):
+                        j_df[col] = pd.to_datetime(j_df[col], errors="coerce")
+                    elif dt_low in ("str", "string"):
+                        j_df[col] = j_df[col].astype(str)
+                except Exception:
+                    pass
+
+            # Apply renames
+            if rename_map:
+                j_df = j_df.rename(columns=rename_map)
 
         return {"J": sanitize_dataframe(j_df), "L": sanitize_dataframe(l_df), "R": sanitize_dataframe(r_df)}
 
@@ -461,21 +491,52 @@ class AppendFieldsNode(BaseNode):
         # Select & Rename fields if configured
         select_fields = self.config.get("select_fields", [])
         if select_fields and isinstance(select_fields, list):
+            unknown_item = next(
+                (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown")),
+                None
+            )
+            if unknown_item is not None:
+                select_unknown = unknown_item.get("selected", True) if "selected" in unknown_item else unknown_item.get("keep", True)
+            elif "select_unknown" in self.config:
+                select_unknown = bool(self.config["select_unknown"])
+            else:
+                select_unknown = False
+
             kept_cols = []
             rename_out = {}
+            processed_fields = set()
+
             for item in select_fields:
                 if not isinstance(item, dict):
                     continue
-                f_name = item.get("field")
-                selected = item.get("selected", True)
+                f_name = item.get("field") or item.get("original")
+                if not f_name:
+                    continue
+                if f_name == "*Unknown":
+                    if select_unknown:
+                        for col in merged_df.columns:
+                            if col not in processed_fields:
+                                kept_cols.append(col)
+                                processed_fields.add(col)
+                    continue
+                if f_name not in merged_df.columns:
+                    continue
+                processed_fields.add(f_name)
+
+                selected = item.get("selected", True) if "selected" in item else item.get("keep", True)
                 rename = item.get("rename")
-                if selected and f_name in merged_df.columns:
+                if selected:
                     kept_cols.append(f_name)
                     if rename and rename != f_name:
                         rename_out[f_name] = rename
 
-            if kept_cols:
-                merged_df = merged_df[kept_cols]
+            if select_unknown and unknown_item is None:
+                for col in merged_df.columns:
+                    if col not in processed_fields:
+                        kept_cols.append(col)
+                        processed_fields.add(col)
+
+            merged_df = merged_df[[c for c in kept_cols if c in merged_df.columns]]
             if rename_out:
                 merged_df = merged_df.rename(columns=rename_out)
 
@@ -677,18 +738,43 @@ class JoinMultipleNode(BaseNode):
         # 3. Embedded Select processing (keep, rename, reorder, type casting)
         select_fields = self.config.get("select_fields", [])
         if select_fields and isinstance(select_fields, list):
+            unknown_item = next(
+                (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown")),
+                None
+            )
+            if unknown_item is not None:
+                select_unknown = unknown_item.get("selected", True) if "selected" in unknown_item else unknown_item.get("keep", True)
+            elif "select_unknown" in self.config:
+                select_unknown = bool(self.config["select_unknown"])
+            else:
+                select_unknown = False
+
             keep_cols = []
             rename_map = {}
             type_map = {}
+            processed_fields = set()
 
             for sf in select_fields:
                 if not isinstance(sf, dict):
                     continue
-                f_name = sf.get("field")
-                if not f_name or f_name not in merged_df.columns:
+                f_name = sf.get("field") or sf.get("original")
+                if not f_name:
                     continue
 
-                if sf.get("selected", True):
+                if f_name == "*Unknown":
+                    if select_unknown:
+                        for col in merged_df.columns:
+                            if col not in processed_fields:
+                                keep_cols.append(col)
+                                processed_fields.add(col)
+                    continue
+
+                if f_name not in merged_df.columns:
+                    continue
+                processed_fields.add(f_name)
+
+                selected = sf.get("selected", True) if "selected" in sf else sf.get("keep", True)
+                if selected:
                     keep_cols.append(f_name)
                     new_name = sf.get("rename")
                     if new_name and new_name.strip():
@@ -697,33 +783,38 @@ class JoinMultipleNode(BaseNode):
                     if target_type and target_type != "none":
                         type_map[f_name] = target_type
 
-            if keep_cols:
-                merged_df = merged_df[keep_cols].copy()
+            if select_unknown and unknown_item is None:
+                for col in merged_df.columns:
+                    if col not in processed_fields:
+                        keep_cols.append(col)
+                        processed_fields.add(col)
 
-                for col, dt in type_map.items():
-                    if col not in merged_df.columns:
-                        continue
-                    dt_low = str(dt).lower().strip()
-                    try:
-                        if dt_low in ("int", "integer", "int64", "int32"):
-                            merged_df[col] = pd.to_numeric(merged_df[col], errors="coerce").astype("Int64")
-                        elif dt_low in ("float", "double", "numeric"):
-                            merged_df[col] = pd.to_numeric(merged_df[col], errors="coerce")
-                        elif dt_low in ("bool", "boolean"):
-                            merged_df[col] = merged_df[col].astype(str).str.lower().isin(["true", "1", "t", "yes"])
-                        elif dt_low in ("date", "datetime"):
-                            merged_df[col] = pd.to_datetime(merged_df[col], errors="coerce")
-                        elif dt_low in ("str", "string"):
-                            merged_df[col] = merged_df[col].astype(str)
-                    except Exception:
-                        pass
+            merged_df = merged_df[[c for c in keep_cols if c in merged_df.columns]].copy()
 
-                if rename_map:
-                    # Update column_sources map for renamed columns
-                    for old_col, new_col in rename_map.items():
-                        if old_col in column_sources:
-                            column_sources[new_col] = column_sources.pop(old_col)
-                    merged_df = merged_df.rename(columns=rename_map)
+            for col, dt in type_map.items():
+                if col not in merged_df.columns:
+                    continue
+                dt_low = str(dt).lower().strip()
+                try:
+                    if dt_low in ("int", "integer", "int64", "int32"):
+                        merged_df[col] = pd.to_numeric(merged_df[col], errors="coerce").astype("Int64")
+                    elif dt_low in ("float", "double", "numeric"):
+                        merged_df[col] = pd.to_numeric(merged_df[col], errors="coerce")
+                    elif dt_low in ("bool", "boolean"):
+                        merged_df[col] = merged_df[col].astype(str).str.lower().isin(["true", "1", "t", "yes"])
+                    elif dt_low in ("date", "datetime"):
+                        merged_df[col] = pd.to_datetime(merged_df[col], errors="coerce")
+                    elif dt_low in ("str", "string"):
+                        merged_df[col] = merged_df[col].astype(str)
+                except Exception:
+                    pass
+
+            if rename_map:
+                # Update column_sources map for renamed columns
+                for old_col, new_col in rename_map.items():
+                    if old_col in column_sources:
+                        column_sources[new_col] = column_sources.pop(old_col)
+                merged_df = merged_df.rename(columns=rename_map)
 
         sanitized = sanitize_dataframe(merged_df)
         sanitized.attrs["column_sources"] = column_sources
