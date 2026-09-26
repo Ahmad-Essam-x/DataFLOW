@@ -282,40 +282,66 @@ class MenuBar {
   }
 
   // --------------------------------------------------------------------
-  // Recent Workflows History
   // --------------------------------------------------------------------
-  addRecentWorkflow(name, path = null, wfData = null) {
+  // Recent Workflows History (Metadata-Only with Backend Persistence)
+  // --------------------------------------------------------------------
+  async addRecentWorkflow(name, path = null, wfData = null) {
     if (!name || typeof name !== 'string') return;
     try {
-      if (path && typeof path === 'object' && wfData === null) {
-        wfData = path;
-        path = null;
-      }
-      let recent = JSON.parse(localStorage.getItem('dataflow_recent_workflows') || '[]');
       const cleanPath = (typeof path === 'string' && path) ? path : `workflows/${name.replace(/\s+/g, '_').toLowerCase()}.json`;
-      // Remove duplicate if already in list
-      recent = recent.filter(r => r.name.toLowerCase() !== name.toLowerCase());
-      recent.unshift({
-        name: name,
+      const nodeCount = wfData && Array.isArray(wfData.nodes) ? wfData.nodes.length : 0;
+      const entry = {
+        name: name.trim(),
         path: cleanPath,
         timestamp: Date.now(),
-        data: wfData
-      });
-      // Keep strictly the last 5 items
-      recent = recent.slice(0, 5);
+        node_count: nodeCount
+      };
+
+      // 1. Update localStorage
+      let recent = JSON.parse(localStorage.getItem('dataflow_recent_workflows') || '[]');
+      recent = recent.filter(r => r.name.toLowerCase() !== entry.name.toLowerCase());
+      recent.unshift(entry);
+      recent = recent.slice(0, 10);
       localStorage.setItem('dataflow_recent_workflows', JSON.stringify(recent));
+
+      // 2. Synchronize to backend storage
+      try {
+        await fetch('/api/workflow/recent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entry)
+        });
+      } catch (_) {}
+
       this.renderRecentWorkflows();
     } catch (e) {
       console.warn('Could not save recent workflow:', e);
     }
   }
 
-  renderRecentWorkflows() {
+  async renderRecentWorkflows() {
     const list = document.getElementById('menu-recent-list');
     if (!list) return;
 
     try {
-      const recent = JSON.parse(localStorage.getItem('dataflow_recent_workflows') || '[]');
+      let recent = [];
+      // Try fetching from server first
+      try {
+        const res = await fetch('/api/workflow/recent');
+        if (res.ok) {
+          const srvData = await res.json();
+          if (srvData.success && Array.isArray(srvData.recent_workflows)) {
+            recent = srvData.recent_workflows;
+            localStorage.setItem('dataflow_recent_workflows', JSON.stringify(recent));
+          }
+        }
+      } catch (_) {}
+
+      // Fallback to localStorage if server empty
+      if (!recent || recent.length === 0) {
+        recent = JSON.parse(localStorage.getItem('dataflow_recent_workflows') || '[]');
+      }
+
       if (recent.length === 0) {
         list.innerHTML = `<div class="menu-empty-note">No recent workflows</div>`;
         return;
@@ -324,16 +350,20 @@ class MenuBar {
       let html = recent.map((r, idx) => {
         const timeAgo = this.formatTimeAgo(r.timestamp);
         const pathDisplay = r.path || 'Local Workflow';
+        const isMissing = r.exists === false;
+        const missingBadge = isMissing ? `<span style="font-size: 9px; color: #ef4444; margin-left: 4px; padding: 1px 4px; background: rgba(239, 68, 68, 0.12); border-radius: 4px;">Missing</span>` : '';
+        const nodeNote = r.node_count ? ` • ${r.node_count} tools` : '';
+
         return `
-          <button class="menubar-action btn-recent-item" data-idx="${idx}" title="${this.escapeHtml(r.name)} (${this.escapeHtml(pathDisplay)})">
+          <button class="menubar-action btn-recent-item ${isMissing ? 'is-missing' : ''}" data-idx="${idx}" title="${this.escapeHtml(r.name)} (${this.escapeHtml(pathDisplay)})">
             <span class="action-icon">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
             </span>
-            <div class="recent-info-wrap">
-              <span class="recent-name">${this.escapeHtml(r.name)}</span>
-              <span class="recent-path">${this.escapeHtml(pathDisplay)}</span>
+            <div class="recent-info-wrap" style="flex: 1; text-align: left; overflow: hidden;">
+              <span class="recent-name" style="display: flex; align-items: center;">${this.escapeHtml(r.name)}${missingBadge}</span>
+              <span class="recent-path" style="font-size: 10px; color: var(--text-muted);">${this.escapeHtml(pathDisplay)}${nodeNote}</span>
             </div>
-            <span class="recent-time">${timeAgo}</span>
+            <span class="recent-time" style="font-size: 10px; color: var(--text-muted); margin-left: 8px;">${timeAgo}</span>
           </button>
         `;
       }).join('');
@@ -364,9 +394,12 @@ class MenuBar {
 
       const clearBtn = document.getElementById('btn-clear-recent-workflows');
       if (clearBtn) {
-        clearBtn.addEventListener('click', (e) => {
+        clearBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           localStorage.removeItem('dataflow_recent_workflows');
+          try {
+            await fetch('/api/workflow/recent', { method: 'DELETE' });
+          } catch (_) {}
           this.renderRecentWorkflows();
           this.closeAllMenus();
           if (window.showToast) window.showToast('info', 'Recent List Cleared', 'Cleared recent workflows history.');
@@ -380,47 +413,54 @@ class MenuBar {
   async loadRecentItem(item) {
     if (!item) return;
 
-    // Refresh position to top
-    this.addRecentWorkflow(item.name, item.path, item.data);
+    let loadedWfData = null;
+    const filename = item.path ? item.path.split('/').pop().split('\\').pop() : `${item.name.replace(/\s+/g, '_').toLowerCase()}.json`;
 
-    if (item.data && window.appCanvas) {
-      if (typeof window.handleWorkflowLoaded === 'function') {
-        window.handleWorkflowLoaded(item.data, item.name);
-      } else {
-        window.appCanvas.loadWorkflow(item.data);
-        const nameInput = document.getElementById('workflow-name-input');
-        if (nameInput) nameInput.value = item.name;
-        if (window.appResultsPanel) window.appResultsPanel.clear();
-        if (window.showToast) window.showToast('success', 'Workflow Loaded', `Opened '${item.name}'.`);
+    // 1. Try fetching fresh from disk via server
+    try {
+      let res = await fetch(`/api/workflow/${encodeURIComponent(filename)}`);
+      if (!res.ok) {
+        res = await fetch(`/api/sample-workflow/${encodeURIComponent(filename)}`);
+      }
+      if (res.ok) {
+        loadedWfData = await res.json();
+      }
+    } catch (err) {
+      console.warn('Failed to fetch recent workflow from server:', err);
+    }
+
+    if (!loadedWfData) {
+      if (window.showToast) {
+        window.showToast('error', 'Workflow Not Found', `Could not find '${item.name}' on disk.`);
       }
       return;
     }
 
-    // Try loading via path from server
-    if (item.path) {
-      try {
-        const filename = item.path.split('/').pop().split('\\').pop();
-        let res = await fetch(`/api/workflow/${encodeURIComponent(filename)}`);
-        if (!res.ok) {
-          res = await fetch(`/api/sample-workflow/${encodeURIComponent(filename)}`);
-        }
-        if (res.ok) {
-          const wfData = await res.json();
-          if (typeof window.handleWorkflowLoaded === 'function') {
-            window.handleWorkflowLoaded(wfData, item.name);
-          } else if (window.appCanvas) {
-            window.appCanvas.loadWorkflow(wfData);
-          }
-          if (window.showToast) window.showToast('success', 'Workflow Loaded', `Opened '${item.name}'.`);
-          return;
-        }
-      } catch (err) {
-        console.warn('Failed to fetch recent workflow file:', err);
+    // 2. Smart Tab Placement:
+    // If active tab has unsaved changes or existing tools, open in a new tab!
+    const activeCanvas = window.appCanvas;
+    const activeTab = window.appTabManager ? window.appTabManager.activeTab : null;
+    const isCurrentDirty = (activeTab && activeTab.isDirty) || !!window._activeTabIsDirty;
+    const hasTools = activeCanvas && activeCanvas.nodes && activeCanvas.nodes.length > 0;
+
+    if (window.appTabManager && (isCurrentDirty || hasTools)) {
+      window.appTabManager.createTab(loadedWfData, item.name);
+      if (window.showToast) {
+        window.showToast('success', 'Opened in New Tab', `Opened '${item.name}' in a new tab.`);
+      }
+    } else {
+      if (typeof window.handleWorkflowLoaded === 'function') {
+        window.handleWorkflowLoaded(loadedWfData, item.name);
+      } else if (activeCanvas) {
+        activeCanvas.loadWorkflow(loadedWfData);
+      }
+      if (window.showToast) {
+        window.showToast('success', 'Workflow Loaded', `Opened '${item.name}'.`);
       }
     }
 
-    // Fallback: reload with ?open query parameter
-    window.location.href = `/?open=${encodeURIComponent(item.name)}`;
+    // Refresh position to top
+    this.addRecentWorkflow(item.name, item.path, loadedWfData);
   }
 
   formatTimeAgo(ts) {

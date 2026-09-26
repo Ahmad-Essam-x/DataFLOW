@@ -3,6 +3,7 @@ Comprehensive test suite for Workflow Lifecycle, Revision Backups,
 Package Bundling (.zip / .yxzp), Security Sandboxing, and Crash Recovery Autosave.
 """
 import os
+import sys
 import io
 import json
 import zipfile
@@ -10,6 +11,7 @@ import shutil
 import unittest
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.app import app, WORKFLOWS_DIR, DATA_DIR, BASE_DIR
 from backend.engine.workflow_manager import WorkflowManager
 from backend.engine.security import SecurityError
@@ -314,6 +316,188 @@ class TestWorkflowLifecycle(unittest.TestCase):
         )
         self.assertFalse(get_res2.get_json()["available"])
 
+    def test_available_recoveries_discovery_and_clear_all(self):
+        """Tests scanning and discovering all orphaned recovery sessions regardless of session ID."""
+        session_a = "test_session_recovery_a"
+        session_b = "test_session_recovery_b"
+
+        wf_a = {"name": "Crash Flow Alpha", "nodes": [{"id": "n1", "type": "input_data"}], "connections": []}
+        wf_b = {"name": "Crash Flow Beta", "nodes": [{"id": "n1", "type": "input_data"}, {"id": "n2", "type": "filter"}], "connections": []}
+
+        # 1. Post two separate autosaves
+        self.client.post("/api/workflow/autosave", json=wf_a, headers={"X-Session-ID": session_a})
+        self.client.post("/api/workflow/autosave", json=wf_b, headers={"X-Session-ID": session_b})
+
+        # 2. Query available recoveries
+        res = self.client.get("/api/workflow/recovery/available")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data["success"])
+        self.assertGreaterEqual(data["count"], 2)
+
+        names = [r["workflow_name"] for r in data["recoveries"]]
+        self.assertIn("Crash Flow Alpha", names)
+        self.assertIn("Crash Flow Beta", names)
+
+        # 3. Clear all recoveries
+        del_all = self.client.post("/api/workflow/recovery/clear-all")
+        self.assertEqual(del_all.status_code, 200)
+        self.assertTrue(del_all.get_json()["success"])
+
+        # 4. Verify clean
+        res_after = self.client.get("/api/workflow/recovery/available")
+        self.assertEqual(res_after.get_json()["count"], 0)
+
+    def test_commit_checkpoint_and_version_metadata(self):
+        """Tests creating a named checkpoint commit with custom note, author, and semantic tag."""
+        wf = {
+            "name": self.test_wf_name,
+            "nodes": [
+                {"id": "n1", "type": "input_data", "config": {"file_path": "data.csv"}},
+                {"id": "n2", "type": "filter", "config": {"expression": "[Amount] > 100"}}
+            ],
+            "connections": [{"id": "c1", "source": "n1", "target": "n2"}]
+        }
+
+        # Commit checkpoint
+        commit_res = self.client.post(
+            f"/api/workflow/{self.test_wf_file}/commit",
+            json={
+                "workflow": wf,
+                "message": "Production release: added amount threshold filter",
+                "author": "Alice Engineer",
+                "tag": "v1.2.0"
+            }
+        )
+        self.assertEqual(commit_res.status_code, 200)
+        commit_data = commit_res.get_json()
+        self.assertTrue(commit_data["success"])
+        backup_file = commit_data["backup_file"]
+
+        # Fetch revisions list and verify commit metadata
+        rev_res = self.client.get(f"/api/workflow/{self.test_wf_file}/revisions")
+        self.assertEqual(rev_res.status_code, 200)
+        revisions = rev_res.get_json()["revisions"]
+        self.assertGreaterEqual(len(revisions), 1)
+
+        target_rev = next((r for r in revisions if r["backup_file"] == backup_file), None)
+        self.assertIsNotNone(target_rev)
+        self.assertEqual(target_rev["commit_message"], "Production release: added amount threshold filter")
+        self.assertEqual(target_rev["author"], "Alice Engineer")
+        self.assertEqual(target_rev["tag"], "v1.2.0")
+
+        # Fetch revision full content
+        content_res = self.client.get(f"/api/workflow/revision/{backup_file}")
+        self.assertEqual(content_res.status_code, 200)
+        content_data = content_res.get_json()
+        self.assertTrue(content_data["success"])
+        self.assertEqual(len(content_data["workflow"]["nodes"]), 2)
+
+    def test_workflow_diff_engine(self):
+        """Tests computing structural differences (added, removed, modified tools and wires)."""
+        base_wf = {
+            "name": "Base Flow",
+            "nodes": [
+                {"id": "node_1", "type": "input_data", "name": "Input", "config": {"file_path": "a.csv"}},
+                {"id": "node_2", "type": "filter", "name": "Filter Old", "config": {"expression": "x > 1"}},
+                {"id": "node_3", "type": "select", "name": "Select", "config": {}}
+            ],
+            "connections": [
+                {"id": "c1", "source": "node_1", "source_port": "O", "target": "node_2", "target_port": "I"},
+                {"id": "c2", "source": "node_2", "source_port": "O", "target": "node_3", "target_port": "I"}
+            ]
+        }
+
+        # Target workflow: removed node_3, modified node_2 config & name, added node_4
+        target_wf = {
+            "name": "Target Flow",
+            "nodes": [
+                {"id": "node_1", "type": "input_data", "name": "Input", "config": {"file_path": "a.csv"}},
+                {"id": "node_2", "type": "filter", "name": "Filter New", "config": {"expression": "x > 100"}},
+                {"id": "node_4", "type": "summarize", "name": "Summarize Total", "config": {}}
+            ],
+            "connections": [
+                {"id": "c1", "source": "node_1", "source_port": "O", "target": "node_2", "target_port": "I"},
+                {"id": "c3", "source": "node_2", "source_port": "O", "target": "node_4", "target_port": "I"}
+            ]
+        }
+
+        diff_res = self.client.post("/api/workflow/diff", json={
+            "base_workflow": base_wf,
+            "target_workflow": target_wf
+        })
+        self.assertEqual(diff_res.status_code, 200)
+        diff_data = diff_res.get_json()
+        self.assertTrue(diff_data["success"])
+        diff = diff_data["diff"]
+
+        summary = diff["summary"]
+        self.assertFalse(summary["is_identical"])
+        self.assertEqual(summary["added_nodes_count"], 1)
+        self.assertEqual(summary["removed_nodes_count"], 1)
+        self.assertEqual(summary["modified_nodes_count"], 1)
+
+        self.assertEqual(diff["added_nodes"][0]["id"], "node_4")
+        self.assertEqual(diff["removed_nodes"][0]["id"], "node_3")
+        self.assertEqual(diff["modified_nodes"][0]["id"], "node_2")
+
+    def test_recent_workflows_api_and_persistence(self):
+        """Tests storing, retrieving, deduplicating, and clearing recent workflow history."""
+        # 1. Clear existing recent list
+        self.client.delete("/api/workflow/recent")
+
+        # 2. Add recent entries
+        entry1 = {"name": "Customer Segmentation", "path": "workflows/customer_segmentation.json", "node_count": 5}
+        entry2 = {"name": "Sales Forecast", "path": "workflows/sales_forecast.json", "node_count": 8}
+
+        res1 = self.client.post("/api/workflow/recent", json=entry1)
+        self.assertEqual(res1.status_code, 200)
+        res2 = self.client.post("/api/workflow/recent", json=entry2)
+        self.assertEqual(res2.status_code, 200)
+
+        # 3. Retrieve list
+        get_res = self.client.get("/api/workflow/recent")
+        self.assertEqual(get_res.status_code, 200)
+        recents = get_res.get_json()["recent_workflows"]
+        self.assertGreaterEqual(len(recents), 2)
+        self.assertEqual(recents[0]["name"], "Sales Forecast")  # Most recently added is first
+
+        # 4. Clear list
+        del_res = self.client.delete("/api/workflow/recent")
+        self.assertEqual(del_res.status_code, 200)
+        self.assertTrue(del_res.get_json()["cleared"])
+
+        # 5. Verify empty
+        get_empty = self.client.get("/api/workflow/recent")
+        self.assertEqual(len(get_empty.get_json()["recent_workflows"]), 0)
+
+    def test_dirty_state_tracking_for_exit_guard(self):
+        """Verifies that workflow dirty state can be synchronized to the backend for non-blocking exit interception."""
+        # 1. Initially set clean
+        res1 = self.client.post("/api/app/dirty-state", json={"is_dirty": False, "dirty_tabs_count": 0})
+        self.assertEqual(res1.status_code, 200)
+        self.assertFalse(res1.get_json()["dirty_state"]["is_dirty"])
+
+        # 2. Query state
+        get_res = self.client.get("/api/app/dirty-state")
+        self.assertEqual(get_res.status_code, 200)
+        self.assertFalse(get_res.get_json()["dirty_state"]["is_dirty"])
+
+        # 3. Mark dirty with 2 tabs
+        res2 = self.client.post("/api/app/dirty-state", json={"is_dirty": True, "dirty_tabs_count": 2})
+        self.assertEqual(res2.status_code, 200)
+        self.assertTrue(res2.get_json()["dirty_state"]["is_dirty"])
+        self.assertEqual(res2.get_json()["dirty_state"]["dirty_tabs_count"], 2)
+
+        # 4. Verify reflected in global state
+        from backend.app import _app_dirty_state
+        self.assertTrue(_app_dirty_state["is_dirty"])
+        self.assertEqual(_app_dirty_state["dirty_tabs_count"], 2)
+
+        # Cleanup
+        self.client.post("/api/app/dirty-state", json={"is_dirty": False, "dirty_tabs_count": 0})
+
 
 if __name__ == "__main__":
     unittest.main()
+

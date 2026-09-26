@@ -659,6 +659,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dirtyBadge = document.getElementById('workflow-dirty-badge');
   const baseDocumentTitle = 'Antigravity DataFlow';
 
+  let _dirtySyncTimer = null;
+  function syncDirtyStateToServer() {
+    clearTimeout(_dirtySyncTimer);
+    _dirtySyncTimer = setTimeout(() => {
+      let isDirty = false;
+      let dirtyCount = 0;
+      if (window.appTabManager && window.appTabManager.tabs) {
+        window.appTabManager.tabs.forEach(t => {
+          if (t.isDirty && t.canvas && t.canvas.nodes && t.canvas.nodes.length > 0) {
+            isDirty = true;
+            dirtyCount++;
+          }
+        });
+      } else if (isWorkflowDirty && getActiveCanvas() && getActiveCanvas().nodes && getActiveCanvas().nodes.length > 0) {
+        isDirty = true;
+        dirtyCount = 1;
+      }
+
+      fetch('/api/app/dirty-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_dirty: isDirty, dirty_tabs_count: dirtyCount })
+      }).catch(() => {});
+    }, 120);
+  }
+  window.syncDirtyStateToServer = syncDirtyStateToServer;
+
   function markWorkflowDirty() {
     isWorkflowDirty = true;
     if (dirtyBadge) {
@@ -672,6 +699,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.title = `* ${wfName} - ${baseDocumentTitle}`;
     // Sync active tab pill
     if (window.appTabManager) window.appTabManager.markActiveDirty();
+    // Schedule continuous debounced autosave (3.5s idle)
+    if (typeof scheduleDebouncedAutosave === 'function') {
+      scheduleDebouncedAutosave();
+    }
+    syncDirtyStateToServer();
   }
   window.markWorkflowDirty = markWorkflowDirty;
 
@@ -688,6 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.title = `${wfName} - ${baseDocumentTitle}`;
     // Sync active tab pill
     if (window.appTabManager) window.appTabManager.markActiveClean();
+    syncDirtyStateToServer();
   }
   window.markWorkflowClean = markWorkflowClean;
 
@@ -1233,90 +1266,235 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modal = document.getElementById('modal-workflow-revisions');
     if (!modal) return;
     const listContainer = document.getElementById('revisions-list-container');
+    const diffContainer = document.getElementById('revision-diff-container');
     const nameInput = document.getElementById('workflow-name-input');
     const wfName = (nameInput ? nameInput.value.trim() : '') || 'workflow';
     const filename = `${wfName.replace(/[\s\W]+/g, '_').toLowerCase()}.json`;
+
+    if (diffContainer) {
+      diffContainer.style.display = 'none';
+      diffContainer.innerHTML = '';
+    }
 
     if (listContainer) {
       listContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading version history...</div>`;
     }
     modal.style.display = 'flex';
 
-    try {
-      const res = await fetch(`/api/workflow/${encodeURIComponent(filename)}/revisions`);
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to load revisions');
+    // Wire up Checkpoint Commit Button
+    const saveCheckpointBtn = document.getElementById('btn-save-checkpoint');
+    const msgInput = document.getElementById('input-checkpoint-msg');
+    const tagInput = document.getElementById('input-checkpoint-tag');
+    if (saveCheckpointBtn) {
+      saveCheckpointBtn.onclick = async () => {
+        const msg = (msgInput ? msgInput.value.trim() : '') || 'Manual Checkpoint';
+        const tag = (tagInput ? tagInput.value.trim() : '');
+        const activeCanvas = getActiveCanvas();
+        if (!activeCanvas) return;
+        const curWf = activeCanvas.getWorkflowData();
+        curWf.name = wfName;
 
-      if (!listContainer) return;
+        try {
+          saveCheckpointBtn.disabled = true;
+          const res = await fetch(`/api/workflow/${encodeURIComponent(filename)}/commit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              workflow: curWf,
+              message: msg,
+              author: 'User',
+              tag: tag || null
+            })
+          });
+          const resJson = await res.json();
+          if (!resJson.success) throw new Error(resJson.error || 'Failed to save checkpoint');
 
-      if (!data.revisions || data.revisions.length === 0) {
-        listContainer.innerHTML = `
-          <div style="padding: 30px 16px; text-align: center; color: var(--text-muted);">
-            <div style="font-size: 24px; margin-bottom: 8px;">📂</div>
-            <div style="font-weight: 500;">No revision history yet</div>
-            <div style="font-size: 11px; margin-top: 4px;">Backups are automatically saved whenever you save changes to an existing workflow.</div>
-          </div>
-        `;
-        return;
-      }
+          if (msgInput) msgInput.value = '';
+          if (tagInput) tagInput.value = '';
+          if (window.showToast) window.showToast('success', 'Checkpoint Saved', `Created version '${msg}' (${resJson.saved_at}).`);
+          await loadRevisionsList();
+        } catch (err) {
+          if (window.showToast) window.showToast('error', 'Checkpoint Error', err.message);
+        } finally {
+          saveCheckpointBtn.disabled = false;
+        }
+      };
+    }
 
-      listContainer.innerHTML = '';
-      data.revisions.forEach(rev => {
-        const card = document.createElement('div');
-        card.className = 'revision-card';
-        card.style.padding = '10px 12px';
-        card.style.borderRadius = '6px';
-        card.style.border = '1px solid var(--border-subtle)';
-        card.style.background = 'var(--bg-hover)';
-        card.style.display = 'flex';
-        card.style.justifyContent = 'space-between';
-        card.style.alignItems = 'center';
+    async function loadRevisionsList() {
+      try {
+        const res = await fetch(`/api/workflow/${encodeURIComponent(filename)}/revisions`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to load revisions');
 
-        const sizeKb = (rev.size_bytes / 1024).toFixed(1);
-        card.innerHTML = `
-          <div>
-            <div style="font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-              <span>🕒 ${rev.timestamp}</span>
-              <span style="font-weight: normal; color: var(--text-muted); font-size: 10.5px;">(${sizeKb} KB)</span>
+        if (!listContainer) return;
+
+        if (!data.revisions || data.revisions.length === 0) {
+          listContainer.innerHTML = `
+            <div style="padding: 30px 16px; text-align: center; color: var(--text-muted);">
+              <div style="font-size: 24px; margin-bottom: 8px;">📂</div>
+              <div style="font-weight: 500;">No revision history yet</div>
+              <div style="font-size: 11px; margin-top: 4px;">Backups are automatically saved on workflow save, and you can create manual checkpoints anytime above.</div>
             </div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 3px;">
-              Backup: <code>${rev.backup_file}</code>
+          `;
+          return;
+        }
+
+        listContainer.innerHTML = '';
+        data.revisions.forEach(rev => {
+          const card = document.createElement('div');
+          card.className = 'revision-card';
+          card.style.padding = '10px 14px';
+          card.style.borderRadius = '6px';
+          card.style.border = '1px solid var(--border-subtle)';
+          card.style.background = 'var(--bg-hover)';
+          card.style.display = 'flex';
+          card.style.justifyContent = 'space-between';
+          card.style.alignItems = 'center';
+          card.style.gap = '12px';
+
+          const sizeKb = (rev.size_bytes / 1024).toFixed(1);
+          const tagBadge = rev.tag ? `<span style="font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(168, 85, 247, 0.2); color: #c084fc; font-weight: 600;">${rev.tag}</span>` : '';
+          const msgDisplay = rev.commit_message ? `<div style="font-size: 11.5px; font-weight: 500; color: var(--text-primary); margin-top: 2px;">💬 ${rev.commit_message}</div>` : '';
+
+          card.innerHTML = `
+            <div style="flex: 1; overflow: hidden;">
+              <div style="font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                <span>🕒 ${rev.timestamp}</span>
+                ${tagBadge}
+                <span style="font-weight: normal; color: var(--text-muted); font-size: 10.5px;">(${sizeKb} KB • ${rev.node_count || 0} tools)</span>
+              </div>
+              ${msgDisplay}
+              <div style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">
+                File: <code>${rev.backup_file}</code>
+              </div>
             </div>
-          </div>
-          <button class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 11px;" title="Revert workflow to this revision">
-            Restore This Version
-          </button>
-        `;
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button class="btn btn-secondary btn-sm btn-inspect-diff" style="padding: 4px 8px; font-size: 10.5px;" title="View visual diff comparing to current workflow">
+                Inspect Diff
+              </button>
+              <button class="btn btn-secondary btn-sm btn-restore-copy" style="padding: 4px 8px; font-size: 10.5px;" title="Open this revision in a new separate tab without modifying current workflow">
+                Open as Copy
+              </button>
+              <button class="btn btn-primary btn-sm btn-restore-ver" style="padding: 4px 10px; font-size: 10.5px;" title="Revert current workflow to this revision">
+                Restore
+              </button>
+            </div>
+          `;
 
-        const restoreBtn = card.querySelector('button');
-        restoreBtn.addEventListener('click', async () => {
-          if (!confirm(`Revert to revision from ${rev.timestamp}? Current unsaved edits will be replaced.`)) {
-            return;
-          }
-          try {
-            const revRes = await fetch(`/api/workflow/${encodeURIComponent(filename)}/revert`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ backup_file: rev.backup_file })
-            });
-            const revJson = await revRes.json();
-            if (!revJson.success) throw new Error(revJson.error || 'Failed to restore revision');
+          // 1. Inspect Diff
+          const diffBtn = card.querySelector('.btn-inspect-diff');
+          diffBtn.addEventListener('click', async () => {
+            if (!diffContainer) return;
+            diffContainer.style.display = 'block';
+            diffContainer.innerHTML = `<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px;">Computing DAG diff...</div>`;
+            try {
+              const activeC = getActiveCanvas();
+              const baseWf = activeC ? activeC.getWorkflowData() : {};
+              const dRes = await fetch('/api/workflow/diff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  base_workflow: baseWf,
+                  backup_file: rev.backup_file
+                })
+              });
+              const dJson = await dRes.json();
+              if (!dJson.success) throw new Error(dJson.error || 'Failed to compute diff');
 
-            handleWorkflowLoaded(revJson.workflow, wfName);
-            modal.style.display = 'none';
-            window.showToast('success', 'Revision Restored', `Workflow reverted to snapshot from ${rev.timestamp}.`);
-          } catch (e) {
-            window.showToast('error', 'Restore Failed', e.message);
-          }
+              const diff = dJson.diff;
+              const s = diff.summary || {};
+              let diffHtml = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px; font-weight: 600;">
+                  <span>Diff: Current Canvas vs. Snapshot (${rev.timestamp})</span>
+                  <button class="btn btn-secondary btn-sm" id="btn-close-diff" style="padding: 2px 6px; font-size: 10px;">✕ Close Diff</button>
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 8px; font-size: 11px;">
+                  <span style="color: #22c55e;">+${s.added_nodes_count} Added</span>
+                  <span style="color: #ef4444;">-${s.removed_nodes_count} Removed</span>
+                  <span style="color: #f59e0b;">~${s.modified_nodes_count} Modified</span>
+                  <span style="color: var(--text-muted);">${s.added_connections_count} wires added, ${s.removed_connections_count} wires removed</span>
+                </div>
+              `;
+
+              if (s.is_identical) {
+                diffHtml += `<div style="color: #22c55e; font-size: 11px; padding: 6px 0;">✓ This snapshot is identical to your current canvas.</div>`;
+              } else {
+                diffHtml += `<div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">`;
+                (diff.added_nodes || []).forEach(n => {
+                  diffHtml += `<div style="color: #22c55e;">+ Added tool: <strong>${n.name}</strong> (${n.type})</div>`;
+                });
+                (diff.removed_nodes || []).forEach(n => {
+                  diffHtml += `<div style="color: #ef4444;">- Removed tool: <strong>${n.name}</strong> (${n.type})</div>`;
+                });
+                (diff.modified_nodes || []).forEach(n => {
+                  diffHtml += `<div style="color: #f59e0b;">~ Modified tool: <strong>${n.name}</strong>: ${n.changes.join('; ')}</div>`;
+                });
+                diffHtml += `</div>`;
+              }
+
+              diffContainer.innerHTML = diffHtml;
+              const closeDiffBtn = diffContainer.querySelector('#btn-close-diff');
+              if (closeDiffBtn) closeDiffBtn.onclick = () => { diffContainer.style.display = 'none'; };
+            } catch (err) {
+              diffContainer.innerHTML = `<div style="color: var(--color-danger); font-size: 11px; padding: 8px;">Error generating diff: ${err.message}</div>`;
+            }
+          });
+
+          // 2. Open as Copy (New Tab)
+          const copyBtn = card.querySelector('.btn-restore-copy');
+          copyBtn.addEventListener('click', async () => {
+            try {
+              const revRes = await fetch(`/api/workflow/revision/${encodeURIComponent(rev.backup_file)}`);
+              const revJson = await revRes.json();
+              if (!revJson.success) throw new Error(revJson.error || 'Failed to fetch revision');
+
+              const branchName = `${wfName} (Rev ${rev.timestamp.replace(/[: ]/g, '-')})`;
+              if (window.appTabManager) {
+                window.appTabManager.createTab(revJson.workflow, branchName);
+              } else {
+                handleWorkflowLoaded(revJson.workflow, branchName);
+              }
+              modal.style.display = 'none';
+              if (window.showToast) window.showToast('success', 'Revision Opened', `Opened revision as a new workflow tab.`);
+            } catch (err) {
+              if (window.showToast) window.showToast('error', 'Open Failed', err.message);
+            }
+          });
+
+          // 3. Restore This Version
+          const restoreBtn = card.querySelector('.btn-restore-ver');
+          restoreBtn.addEventListener('click', async () => {
+            if (!confirm(`Revert to revision from ${rev.timestamp}?\n\nA safety snapshot of your current state will be created automatically before reverting.`)) {
+              return;
+            }
+            try {
+              const revRes = await fetch(`/api/workflow/${encodeURIComponent(filename)}/revert`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ backup_file: rev.backup_file })
+              });
+              const revJson = await revRes.json();
+              if (!revJson.success) throw new Error(revJson.error || 'Failed to restore revision');
+
+              handleWorkflowLoaded(revJson.workflow, wfName);
+              modal.style.display = 'none';
+              window.showToast('success', 'Revision Restored', `Workflow reverted to snapshot from ${rev.timestamp}.`);
+            } catch (e) {
+              window.showToast('error', 'Restore Failed', e.message);
+            }
+          });
+
+          listContainer.appendChild(card);
         });
-
-        listContainer.appendChild(card);
-      });
-    } catch (err) {
-      if (listContainer) {
-        listContainer.innerHTML = `<div style="padding: 16px; color: var(--color-danger); text-align: center;">Failed to load revisions: ${err.message}</div>`;
+      } catch (err) {
+        if (listContainer) {
+          listContainer.innerHTML = `<div style="padding: 16px; color: var(--color-danger); text-align: center;">Failed to load revisions: ${err.message}</div>`;
+        }
       }
     }
+
+    await loadRevisionsList();
   }
   window.openVersionHistoryModal = openVersionHistoryModal;
 
@@ -1378,96 +1556,254 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Auto-Save Background Timer (every 30s)
-  setInterval(async () => {
-    if (!isWorkflowDirty) return;
-    const activeCanvas = getActiveCanvas();
-    if (!activeCanvas || !activeCanvas.nodes || activeCanvas.nodes.length === 0) return;
+  // --------------------------------------------------------------------
+  // Continuous Multi-Tab Autosave Engine with Status Bar Feedback
+  // --------------------------------------------------------------------
+  let _autosaveDebounceTimer = null;
+  let _isAutosaving = false;
+
+  async function triggerAutosave() {
+    if (_isAutosaving) return;
+    const statusBadge = document.getElementById('autosave-status-badge');
+
+    // Collect all dirty tabs or active canvas
+    const tabsToSave = [];
+    if (window.appTabManager && window.appTabManager.tabs) {
+      window.appTabManager.tabs.forEach(tab => {
+        if (tab.isDirty && tab.canvas && tab.canvas.nodes && tab.canvas.nodes.length > 0) {
+          tabsToSave.push({
+            sessionId: tab.sessionId,
+            canvas: tab.canvas,
+            name: tab.name || 'Untitled Workflow',
+            tab: tab
+          });
+        }
+      });
+    } else if (isWorkflowDirty) {
+      const activeCanvas = getActiveCanvas();
+      if (activeCanvas && activeCanvas.nodes && activeCanvas.nodes.length > 0) {
+        const nameInput = document.getElementById('workflow-name-input');
+        tabsToSave.push({
+          sessionId: window.clientSessionId || 'default_session',
+          canvas: activeCanvas,
+          name: (nameInput ? nameInput.value.trim() : '') || 'Untitled Workflow',
+          tab: null
+        });
+      }
+    }
+
+    if (tabsToSave.length === 0) return;
+
+    _isAutosaving = true;
+    if (statusBadge) {
+      statusBadge.classList.add('is-saving');
+      statusBadge.textContent = '● Saving...';
+    }
 
     try {
-      const wfData = activeCanvas.getWorkflowData();
-      const nameInput = document.getElementById('workflow-name-input');
-      wfData.name = (nameInput ? nameInput.value.trim() : '') || 'Untitled Workflow';
+      for (const item of tabsToSave) {
+        const wfData = item.canvas.getWorkflowData();
+        wfData.name = item.name;
+        if (item.tab && item.tab.workflowFile && item.tab.workflowFile.path) {
+          if (!wfData.metadata) wfData.metadata = {};
+          wfData.metadata.saved_file = item.tab.workflowFile.path;
+        }
 
-      // Use active tab's session ID for isolated autosave
-      const sessionId = (window.appTabManager && window.appTabManager.activeTab)
-        ? window.appTabManager.activeTab.sessionId
-        : (window.clientSessionId || '');
+        await fetch('/api/workflow/autosave', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-ID': item.sessionId
+          },
+          body: JSON.stringify(wfData)
+        });
+      }
 
-      await fetch('/api/workflow/autosave', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId
-        },
-        body: JSON.stringify(wfData)
-      });
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (statusBadge) {
+        statusBadge.textContent = `● Autosaved ${timeStr}`;
+        statusBadge.title = `Autosave active. Last protected at ${timeStr}.`;
+      }
     } catch (_) {
       // Non-intrusive background failure
+    } finally {
+      _isAutosaving = false;
+      if (statusBadge) {
+        statusBadge.classList.remove('is-saving');
+      }
     }
-  }, 30000);
+  }
+  window.triggerAutosave = triggerAutosave;
 
-  // Crash Recovery Inspection on App Startup
+  function scheduleDebouncedAutosave() {
+    clearTimeout(_autosaveDebounceTimer);
+    _autosaveDebounceTimer = setTimeout(triggerAutosave, 3500);
+  }
+  window.scheduleDebouncedAutosave = scheduleDebouncedAutosave;
+
+  // Periodic Safety Heartbeat Autosave (every 30s)
+  setInterval(triggerAutosave, 30000);
+
+  // Crash Recovery Inspection on App Startup (Multi-Workflow Aware)
   async function checkAutoSaveRecovery() {
     try {
-      const res = await fetch('/api/workflow/autosave', {
-        headers: { 'X-Session-ID': window.clientSessionId || '' }
-      });
+      const res = await fetch('/api/workflow/recovery/available');
       const data = await res.json();
-      if (data.success && data.available && data.workflow) {
-        const savedWf = data.workflow;
-        const modal = document.getElementById('modal-workflow-recovery');
-        const card = document.getElementById('recovery-details-card');
-        if (!modal || !card) return false;
+      if (!data.success || !data.recoveries || data.recoveries.length === 0) {
+        return false;
+      }
 
-        const nodeCount = (savedWf.nodes || []).length;
-        const connCount = (savedWf.connections || []).length;
-        const autosaveDate = savedWf.metadata && savedWf.metadata.updated_at
-          ? new Date(savedWf.metadata.updated_at).toLocaleString()
-          : 'Recent session';
+      const recoveries = data.recoveries;
+      const modal = document.getElementById('modal-workflow-recovery');
+      const card = document.getElementById('recovery-details-card');
+      if (!modal || !card) return false;
 
-        card.innerHTML = `
-          <div style="font-weight: 600; font-size: 13px; color: var(--color-primary); margin-bottom: 4px;">
-            ${savedWf.name || 'Untitled Workflow'}
-          </div>
-          <div style="color: var(--text-secondary); line-height: 1.6;">
-            <div>🕒 Last modified: <strong>${autosaveDate}</strong></div>
-            <div>🧩 Contains: <strong>${nodeCount} tools</strong>, <strong>${connCount} connections</strong></div>
+      let cardHtml = '';
+      recoveries.forEach((rec, idx) => {
+        cardHtml += `
+          <div style="padding: 10px 12px; border-radius: 5px; background: var(--bg-card); border: 1px solid var(--border-subtle); ${idx > 0 ? 'margin-top: 8px;' : ''}">
+            <div style="font-weight: 600; font-size: 13px; color: var(--color-primary); margin-bottom: 3px;">
+              ${rec.workflow_name || 'Untitled Workflow'}
+            </div>
+            <div style="color: var(--text-secondary); font-size: 11px; line-height: 1.5;">
+              <div>🕒 Last modified: <strong>${rec.saved_at || 'Recent session'}</strong></div>
+              <div>🧩 Contains: <strong>${rec.node_count || 0} tools</strong>, <strong>${rec.connection_count || 0} connections</strong></div>
+            </div>
           </div>
         `;
+      });
+      card.innerHTML = cardHtml;
 
-        modal.style.display = 'flex';
+      modal.style.display = 'flex';
 
-        const applyBtn = document.getElementById('btn-apply-recovery');
-        const discardBtn = document.getElementById('btn-discard-recovery');
+      const applyBtn = document.getElementById('btn-apply-recovery');
+      const discardBtn = document.getElementById('btn-discard-recovery');
 
-        if (applyBtn) {
-          applyBtn.onclick = () => {
-            handleWorkflowLoaded(savedWf, savedWf.name || 'Recovered Workflow');
-            markWorkflowDirty();
-            modal.style.display = 'none';
-            window.showToast('warning', 'Session Recovered', 'Restored auto-saved workflow onto canvas. Save when ready.');
-          };
-        }
-
-        if (discardBtn) {
-          discardBtn.onclick = async () => {
-            try {
-              await fetch('/api/workflow/autosave', {
-                method: 'DELETE',
-                headers: { 'X-Session-ID': window.clientSessionId || '' }
-              });
-            } catch (_) {}
-            modal.style.display = 'none';
-            window.showToast('info', 'Auto-Save Discarded', 'Cleared previous auto-save snapshot.');
-          };
-        }
-        return true;
+      if (applyBtn) {
+        applyBtn.onclick = () => {
+          recoveries.forEach((rec, idx) => {
+            if (idx === 0) {
+              handleWorkflowLoaded(rec.workflow, rec.workflow_name || 'Recovered Workflow');
+              markWorkflowDirty();
+            } else if (window.appTabManager) {
+              const tab = window.appTabManager.createTab(rec.workflow, rec.workflow_name || `Recovered Workflow ${idx+1}`);
+              if (tab) tab.isDirty = true;
+            }
+          });
+          modal.style.display = 'none';
+          window.showToast('warning', 'Session Recovered', `Restored ${recoveries.length} auto-saved workflow(s). Save when ready.`);
+        };
       }
+
+      if (discardBtn) {
+        discardBtn.onclick = async () => {
+          try {
+            await fetch('/api/workflow/recovery/clear-all', { method: 'POST' });
+          } catch (_) {}
+          modal.style.display = 'none';
+          window.showToast('info', 'Auto-Save Discarded', 'Cleared emergency recovery snapshots.');
+        };
+      }
+      return true;
     } catch (_) {}
     return false;
   }
   window.checkAutoSaveRecovery = checkAutoSaveRecovery;
+
+  // --------------------------------------------------------------------
+  // Unified Unsaved Changes on Exit Handler
+  // --------------------------------------------------------------------
+  function showExitConfirmationDialog() {
+    const dirtyTabs = [];
+    if (window.appTabManager && window.appTabManager.tabs) {
+      window.appTabManager.tabs.forEach(t => {
+        if (t.isDirty && t.canvas && t.canvas.nodes && t.canvas.nodes.length > 0) {
+          dirtyTabs.push(t);
+        }
+      });
+    } else if (isWorkflowDirty && getActiveCanvas() && getActiveCanvas().nodes && getActiveCanvas().nodes.length > 0) {
+      const nameInput = document.getElementById('workflow-name-input');
+      dirtyTabs.push({
+        name: (nameInput ? nameInput.value.trim() : '') || 'Untitled Workflow',
+        canvas: getActiveCanvas(),
+        isDirty: true
+      });
+    }
+
+    if (dirtyTabs.length === 0) {
+      doCleanExit(true);
+      return;
+    }
+
+    const modal = document.getElementById('modal-unsaved-exit');
+    const listEl = document.getElementById('unsaved-exit-list');
+    if (!modal || !listEl) {
+      if (confirm('You have unsaved changes in your workflow. Exit anyway?')) {
+        doCleanExit(true);
+      }
+      return;
+    }
+
+    listEl.innerHTML = dirtyTabs.map(t => `
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 4px; background: var(--bg-hover); border: 1px solid var(--border-subtle); font-size: 11.5px;">
+        <span style="font-weight: 500; color: var(--text-primary);">● ${t.name || 'Untitled Workflow'}</span>
+        <span style="color: var(--text-muted); font-size: 10.5px;">${t.canvas.nodes.length} tools</span>
+      </div>
+    `).join('');
+
+    modal.style.display = 'flex';
+
+    const cancelBtn = document.getElementById('btn-exit-cancel');
+    const discardBtn = document.getElementById('btn-exit-discard');
+    const saveAllBtn = document.getElementById('btn-exit-save-all');
+
+    if (cancelBtn) {
+      cancelBtn.onclick = () => { modal.style.display = 'none'; };
+    }
+
+    if (discardBtn) {
+      discardBtn.onclick = async () => {
+        modal.style.display = 'none';
+        await doCleanExit(true);
+      };
+    }
+
+    if (saveAllBtn) {
+      saveAllBtn.onclick = async () => {
+        saveAllBtn.disabled = true;
+        saveAllBtn.textContent = 'Saving...';
+        try {
+          for (const t of dirtyTabs) {
+            const wfData = t.canvas.getWorkflowData();
+            await fetch('/api/save-workflow', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...wfData, name: t.name || 'Workflow' })
+            });
+            t.isDirty = false;
+          }
+        } catch (_) {}
+        modal.style.display = 'none';
+        await doCleanExit(true);
+      };
+    }
+  }
+
+  async function doCleanExit(clearAutosaves = false) {
+    if (window.showToast) window.showToast('info', 'Exiting', 'Antigravity DataFlow is closing...');
+    try {
+      await fetch('/api/app/exit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clear_autosave: clearAutosaves })
+      });
+    } catch (_) {}
+    setTimeout(() => {
+      try { window.close(); } catch (_) {}
+    }, 350);
+  }
+  window.showExitConfirmationDialog = showExitConfirmationDialog;
 
   // --------------------------------------------------------------------
   // Workflow-to-SQL Pushdown Modal Controller
@@ -1983,6 +2319,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           break;
         }
 
+        case 'file:exit':
+        case 'app:exit':
+          showExitConfirmationDialog();
+          break;
+
         // --- EDIT ---
         case 'edit:undo':
           if (window.appHistory) window.appHistory.undo();
@@ -2349,6 +2690,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'n' || e.key === 'N')) {
       e.preventDefault();
       app.executeCommand('file:new');
+      return;
+    }
+
+    // Ctrl + Q: Exit Application
+    if (isCtrlOrMeta && !e.shiftKey && !e.altKey && (e.key === 'q' || e.key === 'Q')) {
+      e.preventDefault();
+      app.executeCommand('file:exit');
       return;
     }
 

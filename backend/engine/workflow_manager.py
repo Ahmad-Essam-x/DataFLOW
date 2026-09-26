@@ -178,14 +178,16 @@ class WorkflowManager:
             clean_stem = os.path.splitext(target_filename)[0]
         else:
             raw_name = custom_filename or normalized.get("name", "untitled_workflow")
+            if raw_name.lower().endswith(".json"):
+                raw_name = raw_name[:-5]
+            elif raw_name.lower().endswith(".yxmd"):
+                raw_name = raw_name[:-5]
             cleaned_raw = re.sub(r'[^a-zA-Z0-9_\-]', '_', raw_name.lower())
             cleaned_raw = re.sub(r'_+', '_', cleaned_raw).strip('_')
             clean_stem = sanitize_file_basename(
                 cleaned_raw,
                 fallback="untitled_workflow"
             )
-            if clean_stem.endswith(".json"):
-                clean_stem = clean_stem[:-5]
             target_filename = f"{clean_stem}.json"
             target_path = os.path.join(self.workflows_dir, target_filename)
             validate_safe_path(target_path, [self.workflows_dir])
@@ -193,7 +195,7 @@ class WorkflowManager:
         # Create timestamped revision backup if target file already exists
         backup_created = None
         if os.path.isfile(target_path):
-            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             backup_filename = f"{clean_stem}_{timestamp_str}.json"
             backup_path = os.path.join(self.backups_dir, backup_filename)
             try:
@@ -288,19 +290,157 @@ class WorkflowManager:
                         size_bytes = os.path.getsize(full_p)
                         with open(full_p, "r", encoding="utf-8") as f:
                             data = json.load(f)
+                        commit_meta = data.get("_commit_meta", {})
                         revisions.append({
                             "backup_file": fn,
                             "workflow_name": data.get("name", stem),
-                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime)),
+                            "timestamp": commit_meta.get("iso_time") or time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime)),
                             "mtime": mtime,
                             "size_bytes": size_bytes,
                             "size_kb": round(size_bytes / 1024, 1),
                             "node_count": len(data.get("nodes", [])),
-                            "connection_count": len(data.get("connections", []))
+                            "connection_count": len(data.get("connections", [])),
+                            "commit_message": commit_meta.get("message") or "",
+                            "author": commit_meta.get("author") or "",
+                            "tag": commit_meta.get("tag") or ""
                         })
                     except Exception:
                         pass
         return revisions
+
+    def commit_checkpoint(
+        self,
+        filename: str,
+        wf_data: Dict[str, Any],
+        message: str,
+        author: str = "User",
+        tag: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Creates an explicit named version checkpoint with commit metadata."""
+        raw_stem = sanitize_file_basename(filename).replace(".json", "")
+        cleaned_stem = re.sub(r'[^a-zA-Z0-9_\-]', '_', raw_stem.lower())
+        clean_stem = re.sub(r'_+', '_', cleaned_stem).strip('_')
+
+        normalized, warnings = self.validate_and_normalize(wf_data)
+        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        backup_filename = f"{clean_stem}_{timestamp_str}.json"
+        backup_path = os.path.join(self.backups_dir, backup_filename)
+        validate_safe_path(backup_path, [self.backups_dir])
+
+        commit_meta = {
+            "message": message.strip() if message else "Manual checkpoint",
+            "author": author.strip() if author else "User",
+            "tag": tag.strip() if tag else None,
+            "timestamp": time.time(),
+            "iso_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        normalized["_commit_meta"] = commit_meta
+
+        with open(backup_path, "w", encoding="utf-8") as f:
+            json.dump(normalized, f, indent=2)
+
+        self._prune_old_backups(clean_stem, max_keep=25)
+
+        return {
+            "success": True,
+            "backup_file": backup_filename,
+            "filename": filename,
+            "commit_meta": commit_meta,
+            "workflow_name": normalized.get("name", clean_stem),
+            "node_count": len(normalized.get("nodes", [])),
+            "saved_at": commit_meta["iso_time"]
+        }
+
+    def get_revision_content(self, backup_filename: str) -> Dict[str, Any]:
+        """Loads and returns the content of a specific backup revision."""
+        safe_backup = sanitize_file_basename(backup_filename)
+        backup_path = os.path.join(self.backups_dir, safe_backup)
+        validate_safe_path(backup_path, [self.backups_dir])
+
+        if not os.path.isfile(backup_path):
+            raise FileNotFoundError(f"Revision backup '{safe_backup}' not found.")
+
+        with open(backup_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        normalized, warnings = self.validate_and_normalize(data)
+        return {
+            "success": True,
+            "backup_file": safe_backup,
+            "workflow": normalized,
+            "commit_meta": data.get("_commit_meta", {}),
+            "warnings": warnings
+        }
+
+    def compute_diff(self, base_wf: Dict[str, Any], target_wf: Dict[str, Any]) -> Dict[str, Any]:
+        """Computes structural DAG and configuration differences between two workflows."""
+        base_nodes = {n.get("id"): n for n in base_wf.get("nodes", []) if isinstance(n, dict)}
+        target_nodes = {n.get("id"): n for n in target_wf.get("nodes", []) if isinstance(n, dict)}
+
+        added_node_ids = sorted(list(set(target_nodes.keys()) - set(base_nodes.keys())))
+        removed_node_ids = sorted(list(set(base_nodes.keys()) - set(target_nodes.keys())))
+        common_node_ids = sorted(list(set(base_nodes.keys()) & set(target_nodes.keys())))
+
+        added_nodes = [
+            {"id": nid, "name": target_nodes[nid].get("name", nid), "type": target_nodes[nid].get("type", "unknown")}
+            for nid in added_node_ids
+        ]
+        removed_nodes = [
+            {"id": nid, "name": base_nodes[nid].get("name", nid), "type": base_nodes[nid].get("type", "unknown")}
+            for nid in removed_node_ids
+        ]
+
+        modified_nodes = []
+        for nid in common_node_ids:
+            bn = base_nodes[nid]
+            tn = target_nodes[nid]
+            changes = []
+            if bn.get("name") != tn.get("name"):
+                changes.append(f"Renamed: '{bn.get('name')}' → '{tn.get('name')}'")
+            if bn.get("type") != tn.get("type"):
+                changes.append(f"Type changed: '{bn.get('type')}' → '{tn.get('type')}'")
+            b_cfg = bn.get("config", {}) or {}
+            t_cfg = tn.get("config", {}) or {}
+            if b_cfg != t_cfg:
+                cfg_keys = sorted(list(set(b_cfg.keys()) | set(t_cfg.keys())))
+                changed_keys = [k for k in cfg_keys if b_cfg.get(k) != t_cfg.get(k)]
+                if changed_keys:
+                    changes.append(f"Config edited ({len(changed_keys)} field{'s' if len(changed_keys) > 1 else ''}): {', '.join(changed_keys[:4])}{'...' if len(changed_keys) > 4 else ''}")
+            if changes:
+                modified_nodes.append({
+                    "id": nid,
+                    "name": tn.get("name") or bn.get("name") or nid,
+                    "type": tn.get("type") or bn.get("type"),
+                    "changes": changes
+                })
+
+        base_conns = {
+            f"{c.get('source')}:{c.get('source_port', 'O')}->{c.get('target')}:{c.get('target_port', 'I')}"
+            for c in base_wf.get("connections", []) if isinstance(c, dict)
+        }
+        target_conns = {
+            f"{c.get('source')}:{c.get('source_port', 'O')}->{c.get('target')}:{c.get('target_port', 'I')}"
+            for c in target_wf.get("connections", []) if isinstance(c, dict)
+        }
+
+        added_conns = sorted(list(target_conns - base_conns))
+        removed_conns = sorted(list(base_conns - target_conns))
+
+        return {
+            "summary": {
+                "added_nodes_count": len(added_nodes),
+                "removed_nodes_count": len(removed_nodes),
+                "modified_nodes_count": len(modified_nodes),
+                "added_connections_count": len(added_conns),
+                "removed_connections_count": len(removed_conns),
+                "is_identical": not (added_nodes or removed_nodes or modified_nodes or added_conns or removed_conns)
+            },
+            "added_nodes": added_nodes,
+            "removed_nodes": removed_nodes,
+            "modified_nodes": modified_nodes,
+            "added_connections": added_conns,
+            "removed_connections": removed_conns
+        }
 
     def revert_revision(self, filename: str, backup_filename: str) -> Dict[str, Any]:
         """Restores a previous revision snapshot into the primary workflow file."""
@@ -578,3 +718,55 @@ class WorkflowManager:
             except Exception:
                 pass
         return False
+
+    def get_available_recoveries(self) -> List[Dict[str, Any]]:
+        """Scans autosave directory for all orphaned or recoverable sessions."""
+        recoveries = []
+        if not os.path.isdir(self.autosave_dir):
+            return recoveries
+
+        for fn in os.listdir(self.autosave_dir):
+            if fn.startswith("autosave_") and fn.endswith(".json"):
+                full_p = os.path.join(self.autosave_dir, fn)
+                if not os.path.isfile(full_p):
+                    continue
+                try:
+                    mtime = os.path.getmtime(full_p)
+                    size = os.path.getsize(full_p)
+                    with open(full_p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+
+                    meta = data.get("_autosave_meta", {})
+                    sid = meta.get("session_id") or fn.replace("autosave_", "").replace(".json", "")
+                    iso_time = meta.get("iso_time") or time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
+
+                    recoveries.append({
+                        "session_id": sid,
+                        "filename": fn,
+                        "workflow_name": data.get("name", "Untitled Workflow"),
+                        "node_count": len(data.get("nodes", [])),
+                        "connection_count": len(data.get("connections", [])),
+                        "size_bytes": size,
+                        "saved_at": iso_time,
+                        "mtime": mtime,
+                        "workflow": data
+                    })
+                except Exception:
+                    pass
+
+        recoveries.sort(key=lambda x: x.get("mtime", 0), reverse=True)
+        return recoveries
+
+    def clear_all_autosaves(self) -> int:
+        """Removes all autosave files on clean exit or explicit user discard."""
+        count = 0
+        if os.path.isdir(self.autosave_dir):
+            for fn in os.listdir(self.autosave_dir):
+                if fn.startswith("autosave_") and fn.endswith(".json"):
+                    try:
+                        os.remove(os.path.join(self.autosave_dir, fn))
+                        count += 1
+                    except Exception:
+                        pass
+        return count
+

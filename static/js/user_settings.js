@@ -45,6 +45,8 @@ class UserSettings {
       show_histograms:            false,
       node_tooltips_enabled:      true,
       wireless_tooltips_enabled:  true,
+      autosave_enabled:           true,
+      autosave_interval:          30,
     };
 
     // Seed from localStorage on construction (synchronous, zero-flicker).

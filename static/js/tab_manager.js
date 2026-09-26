@@ -384,6 +384,7 @@ class TabManager {
     if (nextTab) {
       this.activateTab(nextTab.id);
     }
+    if (typeof window.syncDirtyStateToServer === 'function') window.syncDirtyStateToServer();
   }
 
   // ── Tab Navigation ────────────────────────────────────────────
@@ -420,6 +421,7 @@ class TabManager {
       ctx.isDirty = true;
       window._activeTabIsDirty = true;
       this._updateTabPill(ctx.id);
+      if (typeof window.syncDirtyStateToServer === 'function') window.syncDirtyStateToServer();
     }
   }
 
@@ -430,6 +432,7 @@ class TabManager {
       ctx.isDirty = false;
       window._activeTabIsDirty = false;
       this._updateTabPill(ctx.id);
+      if (typeof window.syncDirtyStateToServer === 'function') window.syncDirtyStateToServer();
     }
   }
 

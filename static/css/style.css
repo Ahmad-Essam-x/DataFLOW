@@ -5540,6 +5540,30 @@ body.light-theme .formula-valid-badge.error {
   50% { opacity: 0.75; }
 }
 
+.autosave-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.2px;
+  transition: all 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.autosave-badge.is-saving {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.35);
+  animation: pulse-dirty 1s infinite ease-in-out;
+}
+
 /* Workflow Dependencies Table */
 .deps-table th, .deps-table td {
   padding: 8px 10px;

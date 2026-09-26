@@ -249,7 +249,33 @@ def main() -> int:
             confirm_close=False,
             zoomable=True
         )
-        logger.info("PyWebView window created. Starting GUI loop (gui=edgechromium)...")
+
+        def on_closing():
+            """Intercepts window close to guard unsaved workflows across all tabs without blocking WinForms message pump."""
+            try:
+                from backend.app import _app_dirty_state
+                if _app_dirty_state.get("is_dirty", False):
+                    logger.info("Intercepted window close: detected unsaved workflow changes. Prompting user...")
+                    def trigger_exit_dialog():
+                        try:
+                            window.evaluate_js(
+                                "if (window.app && typeof window.app.executeCommand === 'function') { "
+                                "  window.app.executeCommand('file:exit'); "
+                                "} else if (typeof showExitConfirmationDialog === 'function') { "
+                                "  showExitConfirmationDialog(); "
+                                "}"
+                            )
+                        except Exception as js_err:
+                            logger.warning(f"Error triggering exit dialog: {js_err}")
+
+                    threading.Timer(0.05, trigger_exit_dialog).start()
+                    return False
+            except Exception as e:
+                logger.warning(f"Error checking unsaved state during close: {e}")
+            return True
+
+        window.events.closing += on_closing
+        logger.info("PyWebView window created with dirty-state exit guard. Starting GUI loop (gui=edgechromium)...")
         # Blocks until window is closed by user
         webview.start(gui="edgechromium", debug=False)
         logger.info("PyWebView window closed by user.")

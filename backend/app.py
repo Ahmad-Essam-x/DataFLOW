@@ -15,6 +15,7 @@ import pandas as pd
 
 import sys
 import shutil
+import threading
 
 from backend.engine.node_registry import TOOL_METADATA, infer_alteryx_type, map_alteryx_to_category
 from backend.engine.executor import WorkflowExecutor
@@ -803,6 +804,65 @@ def save_user_settings():
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"error": f"Failed to save settings: {str(e)}"}), 500
+
+
+@app.route("/api/workflow/recent", methods=["GET", "POST", "DELETE"])
+def manage_recent_workflows():
+    """Manages the server-persisted list of recently accessed workflows."""
+    settings = {}
+    if os.path.exists(USER_SETTINGS_FILE):
+        try:
+            with open(USER_SETTINGS_FILE, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+        except Exception:
+            settings = {}
+
+    if request.method == "DELETE":
+        settings["recent_workflows"] = []
+        try:
+            with open(USER_SETTINGS_FILE, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2)
+            return jsonify({"success": True, "cleared": True})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        entry = data.get("recent") or data
+        if not entry or not isinstance(entry, dict) or not entry.get("name"):
+            return jsonify({"error": "Invalid recent workflow payload"}), 400
+
+        recent_list = settings.get("recent_workflows", [])
+        clean_name = str(entry["name"]).strip()
+        recent_list = [r for r in recent_list if r.get("name", "").lower() != clean_name.lower()]
+        recent_list.insert(0, {
+            "name": clean_name,
+            "path": entry.get("path"),
+            "timestamp": entry.get("timestamp") or int(time.time() * 1000),
+            "node_count": entry.get("node_count", 0)
+        })
+        settings["recent_workflows"] = recent_list[:12]
+        try:
+            with open(USER_SETTINGS_FILE, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2)
+            return jsonify({"success": True, "recent_workflows": settings["recent_workflows"]})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # GET: return list enriched with disk existence check
+    recent_list = settings.get("recent_workflows", [])
+    enriched = []
+    for r in recent_list:
+        p = r.get("path")
+        exists = False
+        if p:
+            cand1 = os.path.join(BASE_DIR, p)
+            cand2 = os.path.join(WORKFLOWS_DIR, os.path.basename(p))
+            cand3 = p if os.path.isabs(p) else None
+            exists = any(os.path.isfile(c) for c in [cand1, cand2, cand3] if c)
+        enriched.append({**r, "exists": exists})
+    return jsonify({"success": True, "recent_workflows": enriched})
+
 
 
 @app.route("/api/browse", methods=["GET"])
@@ -1703,6 +1763,117 @@ def handle_workflow_autosave():
     elif request.method == "DELETE":
         cleared = workflow_manager.clear_autosave(session_id)
         return jsonify({"success": True, "cleared": cleared})
+
+
+@app.route("/api/workflow/recovery/available", methods=["GET"])
+def get_available_workflow_recoveries():
+    """Returns all discoverable autosave recovery drafts for crash restoration."""
+    try:
+        recoveries = workflow_manager.get_available_recoveries()
+        return jsonify({"success": True, "recoveries": recoveries, "count": len(recoveries)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/workflow/recovery/clear-all", methods=["POST"])
+def clear_all_workflow_recoveries():
+    """Clears all autosave recovery snapshots on clean exit or explicit user discard."""
+    try:
+        cleared_count = workflow_manager.clear_all_autosaves()
+        return jsonify({"success": True, "cleared_count": cleared_count})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/workflow/<filename>/commit", methods=["POST"])
+def commit_workflow_checkpoint(filename):
+    """Creates a named version checkpoint with commit message and author metadata."""
+    data = request.get_json(silent=True) or {}
+    workflow_data = data.get("workflow") or data
+    message = data.get("message") or "Manual Checkpoint"
+    author = data.get("author") or "User"
+    tag = data.get("tag")
+
+    try:
+        result = workflow_manager.commit_checkpoint(
+            filename=filename,
+            wf_data=workflow_data,
+            message=message,
+            author=author,
+            tag=tag
+        )
+        return jsonify(result)
+    except SecurityError as se:
+        return jsonify({"success": False, "error": str(se)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to commit checkpoint: {str(e)}"}), 500
+
+
+@app.route("/api/workflow/revision/<backup_filename>", methods=["GET"])
+def get_workflow_revision_content(backup_filename):
+    """Retrieves full workflow JSON of a specific backup revision for diffing or branching."""
+    try:
+        result = workflow_manager.get_revision_content(backup_filename)
+        return jsonify(result)
+    except SecurityError as se:
+        return jsonify({"success": False, "error": str(se)}), 403
+    except FileNotFoundError as fe:
+        return jsonify({"success": False, "error": str(fe)}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/workflow/diff", methods=["POST"])
+def compute_workflow_diff():
+    """Compares current workflow against a target revision or another workflow."""
+    data = request.get_json(silent=True) or {}
+    base_wf = data.get("base_workflow") or {}
+    target_wf = data.get("target_workflow") or {}
+    backup_file = data.get("backup_file")
+
+    try:
+        if backup_file and not target_wf:
+            rev_res = workflow_manager.get_revision_content(backup_file)
+            target_wf = rev_res.get("workflow", {})
+
+        diff = workflow_manager.compute_diff(base_wf, target_wf)
+        return jsonify({"success": True, "diff": diff})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to compute diff: {str(e)}"}), 500
+
+
+@app.route("/api/app/exit", methods=["POST"])
+def exit_application():
+    """Signals application shutdown from desktop or web UI with optional autosave cleanup."""
+    data = request.get_json(silent=True) or {}
+    clear_autosave = data.get("clear_autosave", False)
+    if clear_autosave:
+        try:
+            workflow_manager.clear_all_autosaves()
+        except Exception:
+            pass
+
+    def _shutdown():
+        time.sleep(0.4)
+        os._exit(0)
+
+    threading.Thread(target=_shutdown, daemon=True).start()
+    return jsonify({"success": True, "message": "Antigravity DataFlow is shutting down."})
+
+
+_app_dirty_state = {"is_dirty": False, "dirty_tabs_count": 0}
+
+
+@app.route("/api/app/dirty-state", methods=["GET", "POST"])
+def app_dirty_state():
+    """Tracks dirty state of workflows across frontend tabs for non-blocking exit interception."""
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        _app_dirty_state["is_dirty"] = bool(data.get("is_dirty", False))
+        _app_dirty_state["dirty_tabs_count"] = int(data.get("dirty_tabs_count", 0))
+        return jsonify({"success": True, "dirty_state": _app_dirty_state})
+    return jsonify({"success": True, "dirty_state": _app_dirty_state})
+
 
 
 # ----------------------------------------------------------------------
