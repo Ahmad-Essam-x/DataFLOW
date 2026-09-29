@@ -204,10 +204,14 @@ class UserSettings {
     else if (raw === 'high-contrast') themeClass = 'theme-high-contrast';
     else                              themeClass = 'theme-dark';
 
-    document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast', 'light-theme');
     document.documentElement.classList.add(themeClass);
-    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast', 'light-theme');
     document.body.classList.add(themeClass);
+    if (themeClass === 'theme-light') {
+      document.documentElement.classList.add('light-theme');
+      document.body.classList.add('light-theme');
+    }
 
     const label   = document.getElementById('theme-toggle-label');
     const sunIcon = document.getElementById('theme-icon-sun');

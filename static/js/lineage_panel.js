@@ -195,7 +195,7 @@ class LineagePanel {
     if (bodyEl) {
       bodyEl.innerHTML = `
         <div class="lineage-loading">
-          <div style="width: 22px; height: 22px; border: 2.5px solid var(--border-subtle); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px;"></div>
+          <div style="width: 22px; height: 22px; border: 2.5px solid var(--border-subtle); border-top-color: var(--color-primary, #0284c7); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px;"></div>
           <span>${this._direction === 'upstream' ? 'Tracing upstream column origins across DAG...' : 'Analyzing downstream impact across workflow...'}</span>
         </div>
       `;

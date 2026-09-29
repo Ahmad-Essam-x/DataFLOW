@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.app import app, executor
 from backend.engine.executor import RunContext
-from backend.engine.lineage import compute_lineage
+from backend.engine.lineage import compute_lineage, compute_rich_lineage, compute_downstream_impact
 from backend.blueprints.dialogs import _run_dialog_safe
 
 
@@ -219,5 +219,288 @@ class TestArchitectureAndLineage(unittest.TestCase):
         self.assertTrue(res3.get_json().get("success"))
 
 
+    def test_lineage_summarize_new_columns_and_aggregations(self):
+        """Verify summarize tool creates accurate lineage for GroupBy, Sum, Count, and custom output names."""
+        workflow = {
+            "nodes": [
+                {
+                    "id": "in1",
+                    "name": "Transactions",
+                    "type": "input_data",
+                    "config": {"columns": ["Department", "Revenue", "EmployeeID"]}
+                },
+                {
+                    "id": "sum1",
+                    "name": "Dept Summary",
+                    "type": "summarize",
+                    "config": {
+                        "actions": [
+                            {"field": "Department", "action": "GroupBy", "output_name": "Department"},
+                            {"field": "Revenue", "action": "Sum"},  # auto-named Sum_Revenue
+                            {"field": "EmployeeID", "action": "Count", "output_name": "Headcount"},
+                            {"field": "EmployeeID", "action": "CountDistinct"}  # auto-named Distinct_EmployeeID
+                        ]
+                    }
+                },
+                {
+                    "id": "f1",
+                    "name": "KPIs",
+                    "type": "formula",
+                    "config": {
+                        "formulas": [
+                            {"output_field": "Rev_Per_Capita", "expression": "[Sum_Revenue] / [Headcount]"}
+                        ]
+                    }
+                }
+            ],
+            "connections": [
+                {"source": "in1", "target": "sum1"},
+                {"source": "sum1", "target": "f1"}
+            ]
+        }
+
+        rich = compute_rich_lineage(workflow)
+
+        # 1. Summarize node output columns
+        sum_cols = rich["sum1"]
+        self.assertIn("Department", sum_cols)
+        self.assertEqual(sum_cols["Department"]["category"], "passthrough")
+        self.assertEqual(sum_cols["Department"]["sources"], [("in1", "Department")])
+
+        self.assertIn("Sum_Revenue", sum_cols)
+        self.assertEqual(sum_cols["Sum_Revenue"]["category"], "calculated")
+        self.assertEqual(sum_cols["Sum_Revenue"]["sources"], [("in1", "Revenue")])
+        self.assertEqual(sum_cols["Sum_Revenue"]["hops"][-1]["action"], "Aggregate (Sum)")
+
+        self.assertIn("Headcount", sum_cols)
+        self.assertEqual(sum_cols["Headcount"]["category"], "calculated")
+        self.assertEqual(sum_cols["Headcount"]["sources"], [("in1", "EmployeeID")])
+        self.assertEqual(sum_cols["Headcount"]["hops"][-1]["action"], "Aggregate (Count)")
+
+        self.assertIn("Distinct_EmployeeID", sum_cols)
+        self.assertEqual(sum_cols["Distinct_EmployeeID"]["category"], "calculated")
+        self.assertEqual(sum_cols["Distinct_EmployeeID"]["sources"], [("in1", "EmployeeID")])
+
+        # 2. Downstream Formula referencing derived columns
+        f_cols = rich["f1"]
+        self.assertIn("Rev_Per_Capita", f_cols)
+        self.assertEqual(f_cols["Rev_Per_Capita"]["category"], "calculated")
+        # Sources must trace all the way back to root input node columns
+        src_set = set(f_cols["Rev_Per_Capita"]["sources"])
+        self.assertIn(("in1", "Revenue"), src_set)
+        self.assertIn(("in1", "EmployeeID"), src_set)
+
+    def test_lineage_formula_chained_and_multi_row(self):
+        """Verify formula tool chaining in single node and multi-row row offset stripping."""
+        workflow = {
+            "nodes": [
+                {
+                    "id": "src",
+                    "name": "Sales Data",
+                    "type": "input_data",
+                    "config": {"columns": ["Sales", "COGS"]}
+                },
+                {
+                    "id": "form1",
+                    "name": "Margin Calc",
+                    "type": "formula",
+                    "config": {
+                        "formulas": [
+                            {"output_field": "GrossProfit", "expression": "[Sales] - [COGS]"},
+                            {"output_field": "GrossMarginPct", "expression": "([GrossProfit] / [Sales]) * 100"}
+                        ]
+                    }
+                },
+                {
+                    "id": "mrow1",
+                    "name": "Running Sales",
+                    "type": "multi_row_formula",
+                    "config": {
+                        "output_field": "Running_Sales",
+                        "expression": "[Row-1:Running_Sales] + [Sales]"
+                    }
+                }
+            ],
+            "connections": [
+                {"source": "src", "target": "form1"},
+                {"source": "form1", "target": "mrow1"}
+            ]
+        }
+
+        rich = compute_rich_lineage(workflow)
+
+        # Chained formula check
+        form_cols = rich["form1"]
+        self.assertIn("GrossProfit", form_cols)
+        self.assertEqual(set(form_cols["GrossProfit"]["sources"]), {("src", "Sales"), ("src", "COGS")})
+
+        self.assertIn("GrossMarginPct", form_cols)
+        # GrossMarginPct references GrossProfit and Sales -> should trace to Sales and COGS
+        self.assertIn(("src", "Sales"), form_cols["GrossMarginPct"]["sources"])
+        self.assertIn(("src", "COGS"), form_cols["GrossMarginPct"]["sources"])
+
+        # Multi-row formula check
+        mrow_cols = rich["mrow1"]
+        self.assertIn("Running_Sales", mrow_cols)
+        self.assertIn(("src", "Sales"), mrow_cols["Running_Sales"]["sources"])
+
+    def test_downstream_impact_summarize_and_formula(self):
+        """Verify downstream impact tracks columns consumed by summarize aggregations and formulas."""
+        workflow = {
+            "nodes": [
+                {
+                    "id": "n1",
+                    "name": "Input",
+                    "type": "input_data",
+                    "config": {"columns": ["Category", "Amount"]}
+                },
+                {
+                    "id": "n2",
+                    "name": "Summarize",
+                    "type": "summarize",
+                    "config": {
+                        "actions": [
+                            {"field": "Category", "action": "GroupBy"},
+                            {"field": "Amount", "action": "Sum", "output_name": "Total_Amount"}
+                        ]
+                    }
+                }
+            ],
+            "connections": [
+                {"source": "n1", "target": "n2"}
+            ]
+        }
+
+        impact = compute_downstream_impact(workflow, "n1", "Amount")
+        self.assertIn("n2", impact["impacted_node_ids"])
+        amount_usages = impact["columns"].get("Amount", [])
+        self.assertTrue(any("Sum" in u["detail"] for u in amount_usages))
+
+
+    def test_lineage_transforms_multifield_recordid_datetime_split(self):
+        """Verify lineage for multi_field_formula, record_id, datetime, and text_to_columns."""
+        workflow = {
+            "nodes": [
+                {
+                    "id": "raw",
+                    "name": "Raw Data",
+                    "type": "input_data",
+                    "config": {"columns": ["DateStr", "FullName", "Price"]}
+                },
+                {
+                    "id": "rec",
+                    "name": "Add ID",
+                    "type": "record_id",
+                    "config": {"column_name": "RowID", "start_value": 100}
+                },
+                {
+                    "id": "dt",
+                    "name": "Parse Date",
+                    "type": "datetime",
+                    "config": {"field": "DateStr", "output_field": "ParsedDate", "mode": "parse"}
+                },
+                {
+                    "id": "split",
+                    "name": "Split Name",
+                    "type": "text_to_columns",
+                    "config": {"column": "FullName", "num_columns": 2, "split_type": "columns"}
+                },
+                {
+                    "id": "mfield",
+                    "name": "Clean Price",
+                    "type": "multi_field_formula",
+                    "config": {
+                        "selected_fields": ["Price"],
+                        "output_mode": "create_new",
+                        "output_prefix": "Clean_",
+                        "expression": "[_CurrentField_] * 1.1"
+                    }
+                }
+            ],
+            "connections": [
+                {"source": "raw", "target": "rec"},
+                {"source": "rec", "target": "dt"},
+                {"source": "dt", "target": "split"},
+                {"source": "split", "target": "mfield"}
+            ]
+        }
+
+        rich = compute_rich_lineage(workflow)
+
+        # 1. Record ID
+        self.assertIn("RowID", rich["rec"])
+        self.assertEqual(rich["rec"]["RowID"]["category"], "calculated")
+        self.assertEqual(rich["rec"]["RowID"]["sources"], [("rec", "RowID")])
+
+        # 2. DateTime
+        self.assertIn("ParsedDate", rich["dt"])
+        self.assertEqual(rich["dt"]["ParsedDate"]["sources"], [("raw", "DateStr")])
+
+        # 3. Text to columns
+        self.assertIn("FullName_1", rich["split"])
+        self.assertIn("FullName_2", rich["split"])
+        self.assertEqual(rich["split"]["FullName_1"]["sources"], [("raw", "FullName")])
+        self.assertEqual(rich["split"]["FullName_2"]["sources"], [("raw", "FullName")])
+
+        # 4. Multi-field formula
+        self.assertIn("Clean_Price", rich["mfield"])
+        self.assertEqual(rich["mfield"]["Clean_Price"]["sources"], [("raw", "Price")])
+
+    def test_lineage_union_and_join_collision(self):
+        """Verify union multi-input source aggregation and join collision renaming."""
+        workflow = {
+            "nodes": [
+                {
+                    "id": "left_in",
+                    "name": "Left Data",
+                    "type": "input_data",
+                    "config": {"columns": ["ID", "Name"]}
+                },
+                {
+                    "id": "right_in",
+                    "name": "Right Data",
+                    "type": "input_data",
+                    "config": {"columns": ["ID", "Name", "Score"]}
+                },
+                {
+                    "id": "j1",
+                    "name": "Join Tables",
+                    "type": "join",
+                    "config": {"join_keys": [{"left_key": "ID", "right_key": "ID"}]}
+                },
+                {
+                    "id": "u1",
+                    "name": "Union Tables",
+                    "type": "union",
+                    "config": {}
+                }
+            ],
+            "connections": [
+                {"source": "left_in", "target": "j1", "targetHandle": "L"},
+                {"source": "right_in", "target": "j1", "targetHandle": "R"},
+                {"source": "left_in", "target": "u1"},
+                {"source": "right_in", "target": "u1"}
+            ]
+        }
+
+        rich = compute_rich_lineage(workflow)
+
+        # Join: Name on right collides -> Right_Name
+        j_cols = rich["j1"]
+        self.assertIn("Name", j_cols)
+        self.assertIn("Right_Name", j_cols)
+        self.assertEqual(j_cols["Name"]["sources"], [("left_in", "Name")])
+        self.assertEqual(j_cols["Right_Name"]["sources"], [("right_in", "Name")])
+
+        # Union: ID receives data from both left_in and right_in
+        u_cols = rich["u1"]
+        self.assertIn("ID", u_cols)
+        u_sources = set(u_cols["ID"]["sources"])
+        self.assertIn(("left_in", "ID"), u_sources)
+        self.assertIn(("right_in", "ID"), u_sources)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
