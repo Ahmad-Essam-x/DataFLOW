@@ -35,7 +35,7 @@ The application will start the local server and automatically open your default 
 * **Filter**: Visual condition builder with AND/OR logic (`=, !=, >, <, >=, <=, contains, starts_with, ends_with, is_null, not_null, in`) or custom expressions. Features Alteryx-authentic dual output anchors:
   * `T` (True): Records matching the filter criteria.
   * `F` (False): Records not matching the filter criteria.
-* **Formula**: Compute new columns or update existing ones using math expressions (`+ - * /`), string functions (`UPPER`, `LOWER`, `TRIM`, `LENGTH`, `ROUND`), and conditionals (`IF(...)`).
+* **Formula**: Compute new columns or update existing ones using math expressions (`+ - * /`), string functions (`UPPER`, `LOWER`, `TRIM`, `LENGTH`, `CONTAINS`, `REGEX`), DateTime math, and conditionals (`IF...THEN...ELSEIF...ENDIF`). See the [Formula Tool Reference Guide](docs/FORMULA_REFERENCE.md).
 * **Sort**: Multi-column sorting in ascending or descending sequence.
 * **Data Clean**: Trim whitespace, normalize casing (UPPERCASE, lowercase, Title Case), remove empty rows, and impute null values (fill with constant, mean, or median).
 * **Unique**: Identify duplicate rows based on key columns with dual output anchors:
