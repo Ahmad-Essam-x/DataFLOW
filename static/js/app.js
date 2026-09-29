@@ -751,8 +751,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Save Workflow As with genuine Windows Explorer Navigator
   async function saveWorkflowAs() {
+    const curTab = window.appTabManager ? window.appTabManager.activeTab : null;
     const nameInput = document.getElementById('workflow-name-input');
-    const currentName = (nameInput ? nameInput.value.trim() : '') || 'my_workflow';
+    const currentName = (nameInput ? nameInput.value.trim() : '') || curTab?.name || 'my_workflow';
     const cleanStem = currentName.replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_').toLowerCase();
     const suggestedName = `${cleanStem}.json`;
     const wfData = getActiveCanvas().getWorkflowData();
@@ -781,33 +782,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!handle) return false;
 
+        const savedFilename = handle.name;
+        const cleanTitle = savedFilename.replace(/\.(json|yxmd)$/i, '').replace(/_/g, ' ');
+        wfData.name = cleanTitle;
+        if (nameInput) nameInput.value = cleanTitle;
+        if (window.appTabManager) window.appTabManager.syncActiveTabName(cleanTitle);
+
         const writable = await handle.createWritable();
         await writable.write(JSON.stringify(wfData, null, 2));
         await writable.close();
 
-        const savedFilename = handle.name;
-        const cleanTitle = savedFilename.replace(/\.(json|yxmd)$/i, '');
-        if (nameInput) nameInput.value = cleanTitle;
-        wfData.name = cleanTitle;
-
-        window.activeWorkflowFile = {
+        const fileInfo = {
           handle: handle,
           name: savedFilename,
           path: savedFilename
         };
+        window.activeWorkflowFile = fileInfo;
+        if (curTab) {
+          curTab.workflowFile = fileInfo;
+          curTab.name = cleanTitle;
+          curTab.isDirty = false;
+        }
 
         markWorkflowClean();
 
         // Sync with backend so engine and dependencies track it
+        let actualSavedPath = savedFilename;
         try {
-          await fetch('/api/save-workflow', {
+          const sRes = await fetch('/api/save-workflow', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'X-Session-ID': window.clientSessionId || ''
             },
-            body: JSON.stringify(wfData)
+            body: JSON.stringify({ ...wfData, target_filepath: savedFilename })
           });
+          const sJson = await sRes.json();
+          if (sJson && sJson.path) {
+            actualSavedPath = sJson.path;
+            fileInfo.path = sJson.path;
+          }
           await fetch('/api/workflow/autosave', {
             method: 'DELETE',
             headers: { 'X-Session-ID': window.clientSessionId || '' }
@@ -817,7 +831,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showToast('success', 'Workflow Saved', `Saved '${savedFilename}' via Windows Explorer.`);
         await refreshSavedWorkflows();
         if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
-          window.appMenuBar.addRecentWorkflow(cleanTitle, savedFilename, wfData);
+          window.appMenuBar.addRecentWorkflow(cleanTitle, actualSavedPath, wfData);
         }
         return true;
       } catch (err) {
@@ -843,13 +857,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return false;
       }
       if (json.success) {
-        const cleanTitle = json.name || json.filename.replace(/\.(json|yxmd)$/i, '');
+        const cleanTitle = (json.name || json.filename.replace(/\.(json|yxmd)$/i, '')).replace(/_/g, ' ');
+        wfData.name = cleanTitle;
         if (nameInput) nameInput.value = cleanTitle;
-        window.activeWorkflowFile = {
+        if (window.appTabManager) window.appTabManager.syncActiveTabName(cleanTitle);
+
+        const fileInfo = {
           handle: null,
           name: json.filename,
           path: json.path
         };
+        window.activeWorkflowFile = fileInfo;
+        if (curTab) {
+          curTab.workflowFile = fileInfo;
+          curTab.name = cleanTitle;
+          curTab.isDirty = false;
+        }
+
         markWorkflowClean();
         try {
           await fetch('/api/workflow/autosave', {
@@ -876,47 +900,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Save Workflow: updates active file if bound, otherwise opens Windows Explorer Save As
   async function saveWorkflow(customName = null) {
-    if (customName || (!window.activeWorkflowFile?.handle && !window.activeWorkflowFile?.path)) {
+    const curTab = window.appTabManager ? window.appTabManager.activeTab : null;
+    const fileInfo = (curTab && curTab.workflowFile) || window.activeWorkflowFile || {};
+
+    if (customName || (!fileInfo.handle && !fileInfo.path)) {
       return await saveWorkflowAs();
     }
 
     const nameInput = document.getElementById('workflow-name-input');
-    const wfName = (nameInput ? nameInput.value.trim() : '') || window.activeWorkflowFile.name || 'Workflow';
+    const wfName = (nameInput ? nameInput.value.trim() : '') || curTab?.name || fileInfo.name || 'Workflow';
     const wfData = getActiveCanvas().getWorkflowData();
     wfData.name = wfName;
 
-    // 1. Direct write to Windows Explorer file handle
-    if (window.activeWorkflowFile?.handle) {
+    // 1. Direct write to Windows Explorer file handle if present
+    let handleSaved = false;
+    if (fileInfo.handle) {
       try {
-        const writable = await window.activeWorkflowFile.handle.createWritable();
+        const writable = await fileInfo.handle.createWritable();
         await writable.write(JSON.stringify(wfData, null, 2));
         await writable.close();
-        markWorkflowClean();
-        try {
-          await fetch('/api/save-workflow', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Session-ID': window.clientSessionId || ''
-            },
-            body: JSON.stringify(wfData)
-          });
-          await fetch('/api/workflow/autosave', {
-            method: 'DELETE',
-            headers: { 'X-Session-ID': window.clientSessionId || '' }
-          });
-        } catch (_) {}
-        window.showToast('success', 'Workflow Saved', `Saved changes to '${window.activeWorkflowFile.name}'.`);
-        await refreshSavedWorkflows();
-        return true;
+        handleSaved = true;
       } catch (handleErr) {
-        console.warn('File handle write failed, redirecting to Windows Explorer Save As:', handleErr);
-        return await saveWorkflowAs();
+        console.warn('File handle write failed, falling back to server disk save:', handleErr);
       }
     }
 
-    // 2. Direct write to server disk path
-    if (window.activeWorkflowFile?.path) {
+    // 2. Direct write to server disk path (persists to backend, updates revisions and backups)
+    const targetPath = fileInfo.path || fileInfo.name;
+    if (handleSaved || targetPath) {
       try {
         const res = await fetch('/api/save-workflow', {
           method: 'POST',
@@ -924,10 +935,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             'Content-Type': 'application/json',
             'X-Session-ID': window.clientSessionId || ''
           },
-          body: JSON.stringify({ ...wfData, target_filepath: window.activeWorkflowFile.path })
+          body: JSON.stringify({ ...wfData, target_filepath: targetPath })
         });
         const json = await res.json();
         if (json.success) {
+          if (json.path) fileInfo.path = json.path;
+          if (json.filename) fileInfo.name = json.filename;
+          if (curTab) {
+            curTab.workflowFile = fileInfo;
+            curTab.isDirty = false;
+          }
+          window.activeWorkflowFile = fileInfo;
           markWorkflowClean();
           try {
             await fetch('/api/workflow/autosave', {
@@ -935,18 +953,127 @@ document.addEventListener('DOMContentLoaded', async () => {
               headers: { 'X-Session-ID': window.clientSessionId || '' }
             });
           } catch (_) {}
-          window.showToast('success', 'Workflow Saved', `Saved '${window.activeWorkflowFile.name}'.`);
+          window.showToast('success', 'Workflow Saved', `Saved changes to '${fileInfo.name}'.`);
           await refreshSavedWorkflows();
+          if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
+            window.appMenuBar.addRecentWorkflow(wfName, fileInfo.path || fileInfo.name, wfData);
+          }
           return true;
         }
       } catch (serverErr) {
-        console.warn('Server save failed, redirecting to Windows Explorer Save As:', serverErr);
+        console.warn('Server save failed, checking handle save:', serverErr);
       }
+    }
+
+    if (handleSaved) {
+      markWorkflowClean();
+      if (curTab) curTab.isDirty = false;
+      window.showToast('success', 'Workflow Saved', `Saved changes to '${fileInfo.name}'.`);
+      return true;
     }
 
     return await saveWorkflowAs();
   }
   window.saveWorkflow = saveWorkflow;
+
+  /**
+   * Unified workflow loader with smart multi-tab placement and file-identity tracking.
+   * If current canvas is clean and empty, reuses active tab; otherwise opens a fresh tab.
+   */
+  function openWorkflowData(wf, fileName, filePath = null, fileHandle = null) {
+    if (!wf) return null;
+
+    const genericNames = ['new workflow', 'untitled_workflow', 'untitled', 'workflow'];
+    const cleanFileStem = (fileName || filePath || '')
+      .split('/').pop().split('\\').pop()
+      .replace(/\.(json|yxmd|zip|yxzp)$/i, '')
+      .replace(/_/g, ' ')
+      .trim();
+
+    let displayName = wf.name && !genericNames.includes(String(wf.name).trim().toLowerCase())
+      ? wf.name
+      : (cleanFileStem || 'Workflow');
+
+    wf.name = displayName;
+
+    const actualFileName = fileName || (filePath ? filePath.split('/').pop().split('\\').pop() : (fileHandle ? fileHandle.name : `${displayName}.json`));
+    const actualFilePath = filePath || (wf._path || null);
+
+    const activeCanvas = getActiveCanvas();
+    const activeTab = window.appTabManager ? window.appTabManager.activeTab : null;
+    const isCurrentDirty = (activeTab && activeTab.isDirty) || !!window._activeTabIsDirty;
+    const hasTools = activeCanvas && activeCanvas.nodes && activeCanvas.nodes.length > 0;
+
+    let targetTab = null;
+
+    if (window.appTabManager && (isCurrentDirty || hasTools)) {
+      // Smart tab placement: If active canvas has tools or unsaved changes, open in a new tab
+      targetTab = window.appTabManager.createTab(wf, displayName, actualFilePath, fileHandle);
+    } else {
+      // Reuse current empty / clean tab
+      if (activeCanvas) {
+        activeCanvas.loadWorkflow(wf);
+      }
+      targetTab = activeTab;
+      if (targetTab) {
+        targetTab.name = displayName;
+        targetTab.workflowFile = {
+          handle: fileHandle || null,
+          name: actualFileName,
+          path: actualFilePath
+        };
+        targetTab.isDirty = false;
+        if (window.appTabManager) {
+          window.appTabManager._updateTabPill(targetTab.id);
+          window.appTabManager.syncActiveTabName(displayName);
+        }
+      }
+    }
+
+    const nameInput = document.getElementById('workflow-name-input');
+    if (nameInput) {
+      nameInput.value = displayName;
+    }
+    document.title = `${displayName} - Antigravity DataFlow`;
+
+    const boundFileInfo = {
+      handle: fileHandle || (targetTab && targetTab.workflowFile ? targetTab.workflowFile.handle : null),
+      name: actualFileName,
+      path: actualFilePath
+    };
+    window.activeWorkflowFile = boundFileInfo;
+    if (targetTab) {
+      targetTab.workflowFile = boundFileInfo;
+      targetTab.isDirty = false;
+    }
+
+    // Clear stale results and selections
+    window.appLastResult = null;
+    resultsPanel.clear();
+
+    const targetCanvas = (targetTab && targetTab.canvas) || activeCanvas;
+    if (targetCanvas && wf.nodes && wf.nodes.length > 0) {
+      targetCanvas.selectNode(wf.nodes[0].id);
+    } else {
+      configPanel.render(null);
+      resultsPanel.showNodeResults(null);
+    }
+
+    if (window.appHistory) {
+      window.appHistory.pushSnapshot(`Opened ${displayName}`);
+    }
+
+    markWorkflowClean();
+
+    const recentPath = actualFilePath || actualFileName;
+    if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
+      window.appMenuBar.addRecentWorkflow(displayName, recentPath, wf);
+    }
+
+    window.showToast('success', 'Workflow Loaded', `Opened '${displayName}'.`);
+    return targetTab;
+  }
+  window.openWorkflowData = openWorkflowData;
 
   // Open / Load Workflow using Windows Explorer Navigator
   async function openWorkflowFileDialog() {
@@ -982,14 +1109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           const text = await file.text();
           const wf = JSON.parse(text);
-          const cleanTitle = fileName.replace(/\.(json|yxmd)$/i, '');
-          handleWorkflowLoaded(wf, cleanTitle);
-          window.activeWorkflowFile = { handle: handle, name: fileName, path: fileName };
-          markWorkflowClean();
-          window.showToast('success', 'Workflow Loaded', `Loaded '${fileName}' via Windows Explorer.`);
-          if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
-            window.appMenuBar.addRecentWorkflow(cleanTitle, fileName, wf);
-          }
+          openWorkflowData(wf, fileName, null, handle);
         }
         return true;
       } catch (err) {
@@ -1009,14 +1129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const json = await res.json();
       if (json.cancelled) return false;
       if (json.success && json.workflow) {
-        const cleanTitle = json.name || json.filename.replace(/\.(json|yxmd|zip|yxzp)$/i, '');
-        handleWorkflowLoaded(json.workflow, cleanTitle);
-        window.activeWorkflowFile = { handle: null, name: json.filename, path: json.path };
-        markWorkflowClean();
-        window.showToast('success', 'Workflow Loaded', `Loaded '${json.filename}' via Windows Explorer.`);
-        if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
-          window.appMenuBar.addRecentWorkflow(cleanTitle, json.path, json.workflow);
-        }
+        openWorkflowData(json.workflow, json.filename, json.path, null);
         return true;
       }
     } catch (dialogErr) {
@@ -1108,44 +1221,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.importWorkflowPackage = importWorkflowPackage;
 
   function handleWorkflowLoaded(wf, defaultName = 'Workflow') {
-    const currentCanvas = getActiveCanvas();
-    currentCanvas.loadWorkflow(wf);
-    const nameInput = document.getElementById('workflow-name-input');
-    if (nameInput) {
-      nameInput.value = wf.name || defaultName;
-    }
-    // Clear stale results from previous workflow
-    window.appLastResult = null;
-    resultsPanel.clear();
-
-    if (wf.nodes && wf.nodes.length > 0) {
-      currentCanvas.selectNode(wf.nodes[0].id);
-    } else {
-      configPanel.render(null);
-      resultsPanel.showNodeResults(null);
-    }
-
-    if (window.appHistory) {
-      window.appHistory.pushSnapshot(`Opened ${wf.name || defaultName}`);
-    }
-    const wfName = wf.name || defaultName;
-    const wfPath = wf.path || `workflows/${wfName.replace(/\s+/g, '_').toLowerCase()}.json`;
-    if (wf.path) {
-      window.activeWorkflowFile = {
-        handle: window.activeWorkflowFile?.name === wfName ? window.activeWorkflowFile.handle : null,
-        name: wfName,
-        path: wf.path
-      };
-    }
-    if (window.appMenuBar && typeof window.appMenuBar.addRecentWorkflow === 'function') {
-      window.appMenuBar.addRecentWorkflow(wfName, wfPath, wf);
-    }
-    // Sync tab pill name
-    if (window.appTabManager) {
-      window.appTabManager.syncActiveTabName(wfName);
-    }
-    markWorkflowClean();
-    window.showToast('success', 'Workflow Loaded', `Opened '${wfName}'.`);
+    const filePath = (wf && (wf._path || wf.path)) ? (wf._path || wf.path) : null;
+    const fileName = (wf && wf._filename) ? wf._filename : (defaultName.endsWith('.json') ? defaultName : `${defaultName}.json`);
+    return openWorkflowData(wf, fileName, filePath, null);
   }
   window.handleWorkflowLoaded = handleWorkflowLoaded;
 
@@ -1157,7 +1235,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (!res.ok) throw new Error(`Could not fetch workflow file (${res.status})`);
       const data = await res.json();
-      handleWorkflowLoaded(data, filename.replace(/\.json$/i, ''));
+      const filePath = data._path || `workflows/${filename}`;
+      const name = data._filename || filename;
+      openWorkflowData(data, name, filePath, null);
     } catch (err) {
       console.error('Failed to load workflow:', err);
       window.showToast('error', 'Load Failed', `Could not load workflow: ${err.message}`);
@@ -2174,9 +2254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       reader.onload = (ev) => {
         try {
           const wf = JSON.parse(ev.target.result);
-          handleWorkflowLoaded(wf, file.name.replace(/\.(json|yxmd)$/i, ''));
-          window.activeWorkflowFile = { handle: null, name: file.name, path: file.name };
-          markWorkflowClean();
+          openWorkflowData(wf, file.name, `workflows/${file.name}`, null);
         } catch (err) {
           window.showToast('error', 'Invalid File', 'Could not parse workflow JSON file.');
         }
@@ -2856,7 +2934,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const res = await fetch(`/api/sample-workflow/${filename}`);
       const data = await res.json();
-      handleWorkflowLoaded(data, data.name || filename);
+      const filePath = data._path || `workflows/${filename}`;
+      const name = data._filename || filename;
+      openWorkflowData(data, name, filePath, null);
       runWorkflow();
     } catch (err) {
       console.error('Failed to load sample workflow:', err);
@@ -2876,6 +2956,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     palette.setTools(toolsData.tools);
     canvas.setToolsRegistry(toolsData.tools);
     configPanel.setSampleDatasets(samplesData.datasets || []);
+
+    // Global toolRegistry cache for instant lookup across all tabs and components
+    window.toolRegistry = {};
+    (toolsData.tools || []).forEach(t => {
+      window.toolRegistry[t.type] = t;
+    });
+    window.toolsData = toolsData.tools;
+
     // Store tools + datasets on TabManager so new tabs inherit them
     if (window.appTabManager) {
       window.appTabManager._toolsData = toolsData.tools;
@@ -2894,7 +2982,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (initRes.ok) {
         const initData = await initRes.json();
         if (initData.workflow) {
-          handleWorkflowLoaded(initData.workflow, initData.name || 'Workflow');
+          openWorkflowData(initData.workflow, initData.name || 'Workflow', initData.path, null);
           initialLoaded = true;
           runWorkflow();
         }

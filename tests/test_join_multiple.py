@@ -368,3 +368,54 @@ def test_join_multiple_executor_pipeline_integration():
     for col in data["columns"]:
         if col["name"] in sources:
             assert col["source"] == sources[col["name"]]
+
+
+def test_join_multiple_selection_by_specific_input_source():
+    """Verify selecting a column from input 2 with same name as input 1 yields input 2's data."""
+    df1 = pd.DataFrame({"id": [1], "platform": ["Platform_Input1"]})
+    df2 = pd.DataFrame({"id": [1], "platform": ["Platform_Input2"]})
+
+    # Select platform from input 2, drop platform from input 1
+    sf = [
+        {"field": "platform", "source": 2, "original": "platform", "selected": True, "rename": "platform"},
+        {"field": "platform", "source": 1, "original": "platform", "selected": False, "rename": "platform"}
+    ]
+    node = JoinMultipleNode("jm_select_source", {
+        "join_mode": "specific_fields",
+        "join_all_only": True,
+        "join_keys": [{"1": "id", "2": "id"}],
+        "select_fields": sf
+    })
+    res = node.execute({"I": [df1, df2]}, {})["J"]
+
+    assert "platform" in res.columns
+    assert res.iloc[0]["platform"] == "Platform_Input2"
+    assert res.attrs.get("column_sources", {}).get("platform") == 2
+
+
+def test_join_multiple_prevent_numeric_suffix_platform_2():
+    """Verify that when duplicate column names exist in select_fields, Input{idx}_ prefix is used, NEVER _2."""
+    df1 = pd.DataFrame({"id": [1], "platform": ["Val1"]})
+    df2 = pd.DataFrame({"id": [1], "platform": ["Val2"]})
+
+    # Both selected and named 'platform'
+    sf = [
+        {"field": "platform", "source": 1, "original": "platform", "selected": True, "rename": "platform"},
+        {"field": "Input2_platform", "source": 2, "original": "platform", "selected": True, "rename": "platform"}
+    ]
+    node = JoinMultipleNode("jm_dedup", {
+        "join_mode": "specific_fields",
+        "join_all_only": True,
+        "join_keys": [{"1": "id", "2": "id"}],
+        "select_fields": sf
+    })
+    res = node.execute({"I": [df1, df2]}, {})["J"]
+
+    assert "platform_2" not in res.columns
+    assert "platform" in res.columns
+    assert "Input2_platform" in res.columns
+    assert res.iloc[0]["platform"] == "Val1"
+    assert res.iloc[0]["Input2_platform"] == "Val2"
+    assert res.attrs.get("column_sources", {}).get("platform") == 1
+    assert res.attrs.get("column_sources", {}).get("Input2_platform") == 2
+

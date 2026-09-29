@@ -1,0 +1,394 @@
+{
+  "name": "spotify analytics",
+  "description": "",
+  "metadata": {
+    "saved_file": "C:/Users/Ahmed Gad/Documents/antigravity/quick-noether/workflows/spotify analytics.json",
+    "created_at": "2026-09-30T02:23:08",
+    "updated_at": "2026-09-30T02:23:08",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": ""
+  },
+  "viewport": {
+    "zoom": 1.22,
+    "panX": -14.329001536098076,
+    "panY": -450.50943977590964
+  },
+  "nodes": [
+    {
+      "id": "node_1790588478945_385",
+      "type": "input_data",
+      "name": "spotify_history.csv",
+      "x": 208,
+      "y": 432,
+      "config": {
+        "file_path": "81779747_spotify_history.csv",
+        "original_file_name": "spotify_history.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true,
+        "start_row": 1,
+        "columns": [
+          "spotify_track_uri",
+          "ts",
+          "platform",
+          "ms_played",
+          "track_name",
+          "artist_name",
+          "album_name",
+          "reason_start",
+          "reason_end",
+          "shuffle",
+          "skipped"
+        ],
+        "row_count": 149860,
+        "preview_columns": [
+          "spotify_track_uri",
+          "ts",
+          "platform",
+          "ms_played",
+          "track_name",
+          "artist_name",
+          "album_name",
+          "reason_start",
+          "reason_end",
+          "shuffle",
+          "skipped"
+        ],
+        "column_meta": [
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "spotify_track_uri",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "DateTime",
+            "dtype": "DateTime",
+            "name": "ts",
+            "type": "datetime"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "platform",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "Int64",
+            "dtype": "Int64",
+            "name": "ms_played",
+            "type": "numeric"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "track_name",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "artist_name",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "album_name",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "reason_start",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "reason_end",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "Bool",
+            "dtype": "Bool",
+            "name": "shuffle",
+            "type": "boolean"
+          },
+          {
+            "alteryx_type": "Bool",
+            "dtype": "Bool",
+            "name": "skipped",
+            "type": "boolean"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790588516905_531",
+      "type": "formula",
+      "name": "Formula",
+      "x": 416,
+      "y": 432,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "ms_played",
+            "expression": "[ms_played]/1000/60/60",
+            "type": "float"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790723818197_215",
+      "type": "select",
+      "name": "Select",
+      "x": 576,
+      "y": 432,
+      "config": {
+        "fields": [
+          {
+            "original": "spotify_track_uri",
+            "keep": true,
+            "rename": "spotify_track_uri",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "ts",
+            "keep": true,
+            "rename": "ts",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "platform",
+            "keep": true,
+            "rename": "platform",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "ms_played",
+            "keep": true,
+            "rename": "Hrs played",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "track_name",
+            "keep": true,
+            "rename": "track_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "artist_name",
+            "keep": true,
+            "rename": "artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "album_name",
+            "keep": true,
+            "rename": "album_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "reason_start",
+            "keep": true,
+            "rename": "reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "reason_end",
+            "keep": true,
+            "rename": "reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "shuffle",
+            "keep": true,
+            "rename": "shuffle",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "skipped",
+            "keep": true,
+            "rename": "skipped",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "original": "*Unknown",
+            "keep": false,
+            "rename": "*Unknown",
+            "type": "none",
+            "isUnknown": true
+          }
+        ],
+        "select_unknown": false
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790723940348_926",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 720,
+      "y": 384,
+      "config": {
+        "actions": [
+          {
+            "field": "artist_name",
+            "action": "GroupBy",
+            "output_name": "artist_name"
+          },
+          {
+            "field": "reason_end",
+            "action": "GroupBy",
+            "output_name": "reason_end"
+          },
+          {
+            "field": "reason_end",
+            "action": "Count",
+            "output_name": "Count_reason_end"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790723998551_700",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 736,
+      "y": 656,
+      "config": {
+        "actions": [
+          {
+            "field": "platform",
+            "action": "GroupBy",
+            "output_name": "platform"
+          },
+          {
+            "field": "artist_name",
+            "action": "GroupBy",
+            "output_name": "artist_name"
+          },
+          {
+            "field": "reason_start",
+            "action": "GroupBy",
+            "output_name": "reason_start"
+          },
+          {
+            "field": "reason_start",
+            "action": "Count",
+            "output_name": "Count_reason_start"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790724076907_407",
+      "type": "filter",
+      "name": "Filter_reason_end_Only",
+      "x": 944,
+      "y": 400,
+      "config": {
+        "conditions": [
+          {
+            "column": "reason_end",
+            "operator": "==",
+            "value": "fwdbtn"
+          }
+        ],
+        "mode": "basic",
+        "logical_op": "AND"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790724102979_934",
+      "type": "sort",
+      "name": "Sort",
+      "x": 1104,
+      "y": 400,
+      "config": {
+        "sort_by": [
+          {
+            "column": "Count_reason_end",
+            "ascending": false
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_1790588519408_332",
+      "source": "node_1790588478945_385",
+      "sourceHandle": "O",
+      "target": "node_1790588516905_531",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790723818198_760",
+      "source": "node_1790588516905_531",
+      "sourceHandle": "O",
+      "target": "node_1790723818197_215",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790723941814_442",
+      "source": "node_1790723818197_215",
+      "sourceHandle": "O",
+      "target": "node_1790723940348_926",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790724003374_172",
+      "source": "node_1790723818197_215",
+      "sourceHandle": "O",
+      "target": "node_1790723998551_700",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790724076910_254",
+      "source": "node_1790723940348_926",
+      "sourceHandle": "O",
+      "target": "node_1790724076907_407",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790724104180_418",
+      "source": "node_1790724076907_407",
+      "sourceHandle": "T",
+      "target": "node_1790724102979_934",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [],
+  "cached_node_ids": [],
+  "auto_cache_upstream": false,
+  "target_filepath": "C:/Users/Ahmed Gad/Documents/antigravity/quick-noether/workflows/spotify analytics.json"
+}

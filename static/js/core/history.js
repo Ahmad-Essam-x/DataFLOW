@@ -9,35 +9,10 @@ class HistoryManager {
     this.undoStack = [];
     this.redoStack = [];
     this.isApplying = false;
-
-    this.initShortcuts();
   }
 
   setCanvas(canvas) {
     this.canvas = canvas;
-  }
-
-  initShortcuts() {
-    window.addEventListener('keydown', (e) => {
-      // Don't trigger undo/redo while typing in text inputs or textareas
-      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-      if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable) {
-        return;
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        if (e.shiftKey) {
-          e.preventDefault();
-          this.redo();
-        } else {
-          e.preventDefault();
-          this.undo();
-        }
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        this.redo();
-      }
-    });
   }
 
   pushSnapshot(description = 'Action') {
@@ -120,3 +95,31 @@ class HistoryManager {
 }
 
 window.appHistory = new HistoryManager(null);
+
+// ── Single Global Undo/Redo Shortcut Listener (Tab-Aware) ──
+// Operates exclusively on whichever TabContext's HistoryManager is active in window.appHistory
+window.addEventListener('keydown', (e) => {
+  const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+  if (activeTag === 'input' || activeTag === 'textarea' || (document.activeElement && document.activeElement.isContentEditable)) {
+    return;
+  }
+
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    if (e.shiftKey) {
+      e.preventDefault();
+      if (window.appHistory && typeof window.appHistory.redo === 'function') {
+        window.appHistory.redo();
+      }
+    } else {
+      e.preventDefault();
+      if (window.appHistory && typeof window.appHistory.undo === 'function') {
+        window.appHistory.undo();
+      }
+    }
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+    e.preventDefault();
+    if (window.appHistory && typeof window.appHistory.redo === 'function') {
+      window.appHistory.redo();
+    }
+  }
+});

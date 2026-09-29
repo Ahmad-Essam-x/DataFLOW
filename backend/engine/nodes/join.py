@@ -32,8 +32,27 @@ class JoinNode(BaseNode):
             right_df = pd.DataFrame(right_df)
 
         join_mode = self.config.get("join_mode", "keys")
+        right_rename_map = {}
+        occupied = set(left_df.columns)
+        for col in right_df.columns:
+            if col in occupied:
+                cand = f"Right_{col}"
+                while cand in occupied:
+                    cand = f"Right_{cand}"
+                right_rename_map[col] = cand
+                occupied.add(cand)
+            else:
+                occupied.add(col)
+
+        # Base column source mapping
+        base_col_sources = {}
+        for c in left_df.columns:
+            base_col_sources[c] = "L"
+        for c in right_df.columns:
+            target_name = right_rename_map.get(c, c)
+            base_col_sources[target_name] = "R"
+
         if join_mode == "record_position":
-            right_rename_map = {c: f"Right_{c}" for c in right_df.columns if c in left_df.columns}
             right_renamed = right_df.rename(columns=right_rename_map)
             min_len = min(len(left_df), len(right_df))
             left_pos = left_df.iloc[:min_len].reset_index(drop=True)
@@ -115,11 +134,6 @@ class JoinNode(BaseNode):
                 temp_left_keys.append(temp_lk)
                 temp_right_keys.append(temp_rk)
 
-            # In Alteryx, colliding Right columns are prefixed with "Right_"
-            right_rename_map = {}
-            for col in right_df.columns:
-                if col in left_df.columns:
-                    right_rename_map[col] = f"Right_{col}"
             right_copy = right_copy.rename(columns=right_rename_map)
 
             # Suffix matching
@@ -154,6 +168,8 @@ class JoinNode(BaseNode):
 
         # 4. Embedded Select on Joined (J) Output
         select_fields = self.config.get("select_fields")
+        output_col_sources = {}
+
         if select_fields and isinstance(select_fields, list):
             unknown_item = next(
                 (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown")),
@@ -166,51 +182,116 @@ class JoinNode(BaseNode):
             else:
                 select_unknown = False
 
-            keep_cols = []
-            rename_map = {}
-            type_map = {}
-            processed_fields = set()
+            available_cols = list(j_df.columns)
+            kept_items = []
 
             for sf in select_fields:
                 f_name = sf.get("field") or sf.get("original")
                 if not f_name:
                     continue
 
-                if f_name == "*Unknown":
+                if f_name == "*Unknown" or sf.get("original") == "*Unknown":
                     if select_unknown:
-                        for col in j_df.columns:
-                            if col not in processed_fields:
-                                keep_cols.append(col)
-                                processed_fields.add(col)
+                        for col in list(available_cols):
+                            kept_items.append({
+                                "col": col,
+                                "target_name": col,
+                                "source": base_col_sources.get(col, "L"),
+                                "type": None
+                            })
+                            available_cols.remove(col)
                     continue
 
-                if f_name not in j_df.columns:
+                sf_source = sf.get("source")
+                sf_orig = sf.get("original")
+
+                # Match this select_field to its exact physical column in j_df
+                matched_col = None
+
+                if sf_source == "R":
+                    # Look among Right columns first
+                    if f_name in available_cols and base_col_sources.get(f_name) == "R":
+                        matched_col = f_name
+                    elif sf_orig and right_rename_map.get(sf_orig) in available_cols:
+                        matched_col = right_rename_map.get(sf_orig)
+                    elif sf_orig and f"Right_{sf_orig}" in available_cols:
+                        matched_col = f"Right_{sf_orig}"
+                    elif sf_orig in available_cols and base_col_sources.get(sf_orig) == "R":
+                        matched_col = sf_orig
+                    elif f"Right_{f_name}" in available_cols and base_col_sources.get(f"Right_{f_name}") == "R":
+                        matched_col = f"Right_{f_name}"
+                    elif f_name in available_cols and base_col_sources.get(f_name) == "R":
+                        matched_col = f_name
+
+                elif sf_source == "L":
+                    # Look among Left columns
+                    if sf_orig in available_cols and base_col_sources.get(sf_orig) == "L":
+                        matched_col = sf_orig
+                    elif f_name in available_cols and base_col_sources.get(f_name) == "L":
+                        matched_col = f_name
+                    elif f_name.startswith("Right_") and f_name[6:] in available_cols and base_col_sources.get(f_name[6:]) == "L":
+                        matched_col = f_name[6:]
+
+                else:
+                    # Unspecified source (fallback)
+                    if f_name.startswith("Right_") and f_name in available_cols:
+                        matched_col = f_name
+                    elif f_name in available_cols:
+                        matched_col = f_name
+                    elif sf_orig and sf_orig in available_cols:
+                        matched_col = sf_orig
+
+                if matched_col is None:
                     continue
 
-                processed_fields.add(f_name)
-                # Check if field is selected/included
+                available_cols.remove(matched_col)
+
                 is_selected = sf.get("selected", True) if "selected" in sf else sf.get("keep", True)
-                if is_selected:
-                    keep_cols.append(f_name)
-                    new_name = sf.get("rename")
-                    if new_name and new_name.strip():
-                        rename_map[f_name] = new_name.strip()
-                    target_type = sf.get("type")
-                    if target_type and target_type != "none":
-                        type_map[f_name] = target_type
+                if not is_selected:
+                    continue
+
+                target_name = (sf.get("rename") or "").strip()
+                if not target_name:
+                    target_name = f_name if (f_name and f_name != "*Unknown") else matched_col
+
+                col_source = sf_source or base_col_sources.get(matched_col, "L")
+                kept_items.append({
+                    "col": matched_col,
+                    "target_name": target_name,
+                    "source": col_source,
+                    "type": sf.get("type")
+                })
 
             if select_unknown and unknown_item is None:
-                for col in j_df.columns:
-                    if col not in processed_fields:
-                        keep_cols.append(col)
-                        processed_fields.add(col)
+                for col in list(available_cols):
+                    kept_items.append({
+                        "col": col,
+                        "target_name": col,
+                        "source": base_col_sources.get(col, "L"),
+                        "type": None
+                    })
+                    available_cols.remove(col)
 
-            # Reorder and filter columns to match select_fields sequence
-            j_df = j_df[[c for c in keep_cols if c in j_df.columns]].copy()
+            # Deduplicate target column names strictly with Alteryx "Right_" prefix, never "_2"
+            seen_out_names = set()
+            for it in kept_items:
+                t_name = it["target_name"]
+                if t_name in seen_out_names:
+                    cand = f"Right_{t_name.replace('Right_', '')}"
+                    while cand in seen_out_names:
+                        cand = f"Right_{cand}"
+                    t_name = cand
+                seen_out_names.add(t_name)
+                it["final_name"] = t_name
+                output_col_sources[t_name] = it["source"]
 
-            # Apply data type casting if configured
-            for col, dt in type_map.items():
-                if col not in j_df.columns:
+            ordered_cols = [it["col"] for it in kept_items]
+            j_df = j_df[ordered_cols].copy()
+
+            for it in kept_items:
+                col = it["col"]
+                dt = it["type"]
+                if not dt or dt == "none":
                     continue
                 dt_low = str(dt).lower().strip()
                 try:
@@ -227,11 +308,23 @@ class JoinNode(BaseNode):
                 except Exception:
                     pass
 
-            # Apply renames
+            rename_map = {it["col"]: it["final_name"] for it in kept_items if it["col"] != it["final_name"]}
             if rename_map:
                 j_df = j_df.rename(columns=rename_map)
 
-        return {"J": sanitize_dataframe(j_df), "L": sanitize_dataframe(l_df), "R": sanitize_dataframe(r_df)}
+        else:
+            output_col_sources = {c: base_col_sources.get(c, "L") for c in j_df.columns}
+
+        sanitized_j = sanitize_dataframe(j_df)
+        sanitized_j.attrs["column_sources"] = output_col_sources
+
+        sanitized_l = sanitize_dataframe(l_df)
+        sanitized_l.attrs["column_sources"] = {c: "L" for c in sanitized_l.columns}
+
+        sanitized_r = sanitize_dataframe(r_df)
+        sanitized_r.attrs["column_sources"] = {c: "R" for c in sanitized_r.columns}
+
+        return {"J": sanitized_j, "L": sanitized_l, "R": sanitized_r}
 
 
 # ----------------------------------------------------------------------
@@ -737,6 +830,8 @@ class JoinMultipleNode(BaseNode):
 
         # 3. Embedded Select processing (keep, rename, reorder, type casting)
         select_fields = self.config.get("select_fields", [])
+        output_column_sources = {}
+
         if select_fields and isinstance(select_fields, list):
             unknown_item = next(
                 (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown")),
@@ -749,10 +844,8 @@ class JoinMultipleNode(BaseNode):
             else:
                 select_unknown = False
 
-            keep_cols = []
-            rename_map = {}
-            type_map = {}
-            processed_fields = set()
+            available_cols = list(merged_df.columns)
+            kept_items = []
 
             for sf in select_fields:
                 if not isinstance(sf, dict):
@@ -761,38 +854,109 @@ class JoinMultipleNode(BaseNode):
                 if not f_name:
                     continue
 
-                if f_name == "*Unknown":
+                if f_name == "*Unknown" or sf.get("original") == "*Unknown":
                     if select_unknown:
-                        for col in merged_df.columns:
-                            if col not in processed_fields:
-                                keep_cols.append(col)
-                                processed_fields.add(col)
+                        for col in list(available_cols):
+                            kept_items.append({
+                                "col": col,
+                                "target_name": col,
+                                "source": column_sources.get(col, 1),
+                                "type": None
+                            })
+                            available_cols.remove(col)
                     continue
 
-                if f_name not in merged_df.columns:
+                sf_source = None
+                if sf.get("source") is not None:
+                    try:
+                        sf_source = int(sf.get("source"))
+                    except Exception:
+                        sf_source = None
+
+                sf_orig = sf.get("original")
+
+                # Match this select field to its exact physical column in merged_df
+                matched_col = None
+
+                if sf_source is not None:
+                    # 1. Exact field name if present and from sf_source
+                    if f_name in available_cols and column_sources.get(f_name) == sf_source:
+                        matched_col = f_name
+                    # 2. Input{source}_{orig}
+                    elif sf_orig and f"Input{sf_source}_{sf_orig}" in available_cols:
+                        matched_col = f"Input{sf_source}_{sf_orig}"
+                    # 3. #{source}_{orig}
+                    elif sf_orig and f"#{sf_source}_{sf_orig}" in available_cols:
+                        matched_col = f"#{sf_source}_{sf_orig}"
+                    # 4. Input{source}_{f_name}
+                    elif f"Input{sf_source}_{f_name}" in available_cols:
+                        matched_col = f"Input{sf_source}_{f_name}"
+                    # 5. sf_orig if present and from sf_source
+                    elif sf_orig and sf_orig in available_cols and column_sources.get(sf_orig) == sf_source:
+                        matched_col = sf_orig
+                    # 6. Fallback if f_name in available_cols and from sf_source
+                    elif f_name in available_cols and column_sources.get(f_name) == sf_source:
+                        matched_col = f_name
+
+                else:
+                    if f_name in available_cols:
+                        matched_col = f_name
+                    elif sf_orig and sf_orig in available_cols:
+                        matched_col = sf_orig
+
+                if matched_col is None:
                     continue
-                processed_fields.add(f_name)
+
+                available_cols.remove(matched_col)
 
                 selected = sf.get("selected", True) if "selected" in sf else sf.get("keep", True)
-                if selected:
-                    keep_cols.append(f_name)
-                    new_name = sf.get("rename")
-                    if new_name and new_name.strip():
-                        rename_map[f_name] = new_name.strip()
-                    target_type = sf.get("type")
-                    if target_type and target_type != "none":
-                        type_map[f_name] = target_type
+                if not selected:
+                    continue
+
+                target_name = (sf.get("rename") or "").strip()
+                if not target_name:
+                    target_name = f_name if (f_name and f_name != "*Unknown") else matched_col
+
+                col_source = sf_source or column_sources.get(matched_col, 1)
+                kept_items.append({
+                    "col": matched_col,
+                    "target_name": target_name,
+                    "source": col_source,
+                    "type": sf.get("type")
+                })
 
             if select_unknown and unknown_item is None:
-                for col in merged_df.columns:
-                    if col not in processed_fields:
-                        keep_cols.append(col)
-                        processed_fields.add(col)
+                for col in list(available_cols):
+                    kept_items.append({
+                        "col": col,
+                        "target_name": col,
+                        "source": column_sources.get(col, 1),
+                        "type": None
+                    })
+                    available_cols.remove(col)
 
-            merged_df = merged_df[[c for c in keep_cols if c in merged_df.columns]].copy()
+            # Deduplicate target column names using Input{idx}_ prefix, NEVER _2
+            seen_out_names = set()
+            for it in kept_items:
+                t_name = it["target_name"]
+                if t_name in seen_out_names:
+                    src_idx = it["source"]
+                    prefix = f"Input{src_idx}_"
+                    cand = f"{prefix}{t_name.replace(prefix, '')}"
+                    while cand in seen_out_names:
+                        cand = f"{prefix}{cand}"
+                    t_name = cand
+                seen_out_names.add(t_name)
+                it["final_name"] = t_name
+                output_column_sources[t_name] = it["source"]
 
-            for col, dt in type_map.items():
-                if col not in merged_df.columns:
+            ordered_cols = [it["col"] for it in kept_items]
+            merged_df = merged_df[ordered_cols].copy()
+
+            for it in kept_items:
+                col = it["col"]
+                dt = it["type"]
+                if not dt or dt == "none":
                     continue
                 dt_low = str(dt).lower().strip()
                 try:
@@ -809,14 +973,14 @@ class JoinMultipleNode(BaseNode):
                 except Exception:
                     pass
 
+            rename_map = {it["col"]: it["final_name"] for it in kept_items if it["col"] != it["final_name"]}
             if rename_map:
-                # Update column_sources map for renamed columns
-                for old_col, new_col in rename_map.items():
-                    if old_col in column_sources:
-                        column_sources[new_col] = column_sources.pop(old_col)
                 merged_df = merged_df.rename(columns=rename_map)
 
+        else:
+            output_column_sources = {c: column_sources.get(c, 1) for c in merged_df.columns}
+
         sanitized = sanitize_dataframe(merged_df)
-        sanitized.attrs["column_sources"] = column_sources
+        sanitized.attrs["column_sources"] = output_column_sources
         return {"J": sanitized}
 

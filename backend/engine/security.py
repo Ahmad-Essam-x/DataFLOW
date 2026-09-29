@@ -35,7 +35,8 @@ def sanitize_file_basename(filename: str, fallback: str = "output") -> str:
 
     # Split name and extension
     name_part, ext_part = os.path.splitext(clean)
-    name_part = re.sub(r'[^a-zA-Z0-9_\-]', '', name_part).strip("_- ")
+    name_part = re.sub(r'[^a-zA-Z0-9_\- ]', '', name_part)
+    name_part = re.sub(r'\s+', ' ', name_part).strip("_- ")
     ext_part = re.sub(r'[^a-zA-Z0-9]', '', ext_part)
 
     if not name_part and not ext_part:

@@ -73,9 +73,11 @@ class TabManager {
    * ResultsPanel, and HistoryManager inside a fresh host div.
    * @param {object|null} workflowData — optional initial workflow to load
    * @param {string} name — display name for the tab
+   * @param {string|null} filePath — optional full file path on disk
+   * @param {object|null} fileHandle — optional Chromium FileSystemFileHandle
    * @returns {TabContext}
    */
-  createTab(workflowData = null, name = 'New Workflow') {
+  createTab(workflowData = null, name = 'New Workflow', filePath = null, fileHandle = null) {
     if (this.tabs.length >= this.maxTabs) {
       if (window.showToast) {
         window.showToast('warning', 'Tab Limit Reached', `Maximum of ${this.maxTabs} workflow tabs are open.`);
@@ -85,6 +87,21 @@ class TabManager {
 
     const id = ++this._tabIdCounter;
     const sessionId = 'tab_' + id + '_sess_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+
+    const genericNames = ['new workflow', 'untitled_workflow', 'untitled', 'workflow'];
+    let resolvedName = name;
+    if (workflowData && workflowData.name && !genericNames.includes(String(workflowData.name).trim().toLowerCase())) {
+      resolvedName = workflowData.name;
+    } else if (filePath) {
+      const base = filePath.split('/').pop().split('\\').pop().replace(/\.(json|yxmd|zip|yxzp)$/i, '');
+      resolvedName = base.replace(/_/g, ' ');
+    } else if (fileHandle && fileHandle.name) {
+      const base = fileHandle.name.replace(/\.(json|yxmd|zip|yxzp)$/i, '');
+      resolvedName = base.replace(/_/g, ' ');
+    }
+    resolvedName = (resolvedName && resolvedName.trim()) || 'New Workflow';
+
+    const filename = filePath ? filePath.split('/').pop().split('\\').pop() : (fileHandle ? fileHandle.name : null);
 
     // 1. Create isolated host div inside #canvas-container
     const canvasContainer = document.getElementById('canvas-container');
@@ -119,9 +136,16 @@ class TabManager {
     // Insert before the shared overlays (dropzone, hint, minimap)
     canvasContainer.insertBefore(hostEl, canvasContainer.firstChild);
 
-    // 2. Instantiate Canvas bound to this host
+    // Resolve tools registry for the new tab canvas
+    const toolsData = this._toolsData
+      || (window.toolRegistry ? Object.values(window.toolRegistry) : null)
+      || (window.toolsData ? window.toolsData : null)
+      || (window.appCanvas && Object.values(window.appCanvas.toolRegistry || {}));
+
+    // 2. Instantiate Canvas bound to this host with toolRegistry pre-hydrated
     const tabCanvas = new Canvas(hostEl, {
       tabId: id,
+      toolRegistry: toolsData,
       onSelectNode: (node) => {
         if (this.activeTabId !== id) return;
         window.appConfigPanel.render(node);
@@ -143,13 +167,17 @@ class TabManager {
       }
     });
 
+    if (toolsData && toolsData.length > 0) {
+      tabCanvas.setToolsRegistry(toolsData);
+    }
+
     // 3. Instantiate history for this tab
     const tabHistory = new HistoryManager(tabCanvas);
 
     // 4. Construct the TabContext
     const ctx = new TabContext({
       id,
-      name,
+      name: resolvedName,
       canvas: tabCanvas,
       configPanel: window.appConfigPanel,  // shared DOM element, re-rendered on switch
       resultsPanel: window.appResultsPanel, // shared DOM element, re-rendered on switch
@@ -158,23 +186,36 @@ class TabManager {
       hostEl
     });
 
+    if (this._sampleDatasets && window.appConfigPanel) {
+      window.appConfigPanel.setSampleDatasets(this._sampleDatasets);
+    }
+
+    ctx.workflowFile = {
+      handle: fileHandle || null,
+      name: filename || (workflowData ? `${resolvedName}.json` : null),
+      path: filePath || null
+    };
+
     this.tabs.push(ctx);
     this._renderTabPill(ctx);
     this.activateTab(id);
 
-    // 5. Load workflow if provided
+    // 5. Load workflow if provided (now with toolRegistry fully hydrated so authentic glyphs render)
     if (workflowData) {
       tabCanvas.loadWorkflow(workflowData);
-      ctx.name = workflowData.name || name;
+      ctx.isDirty = false;
+      window._activeTabIsDirty = false;
       this._updateTabPill(id);
+      const nameInput = document.getElementById('workflow-name-input');
+      if (nameInput) nameInput.value = resolvedName;
+      document.title = `${resolvedName} - Antigravity DataFlow`;
+      const dirtyBadge = document.getElementById('workflow-dirty-badge');
+      if (dirtyBadge) {
+        dirtyBadge.textContent = '✓ Saved';
+        dirtyBadge.classList.remove('is-dirty');
+        dirtyBadge.classList.add('is-clean');
+      }
     }
-
-    // 6. Propagate tools registry and sample datasets from active canvas
-    const toolsData = this._toolsData || (window.appCanvas && Object.values(window.appCanvas.toolRegistry || {}));
-    if (toolsData && toolsData.length > 0) {
-      tabCanvas.setToolsRegistry(toolsData);
-    }
-    // Sample datasets will be set by configPanel on next render (handled in activateTab)
 
     return ctx;
   }

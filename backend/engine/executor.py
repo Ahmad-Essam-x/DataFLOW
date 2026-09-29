@@ -1996,3 +1996,72 @@ class WorkflowExecutor:
             return result
 
         return {"available": False, "message": f"Unsupported chart type '{chart_type}'."}
+
+    def get_run_context(self, session_id: Optional[str] = None) -> 'RunContext':
+        """Creates a lightweight per-session execution context."""
+        return RunContext(self, session_id=session_id)
+
+
+class RunContext:
+    """
+    Lightweight per-session view of the shared WorkflowExecutor.
+    Ensures session_id is always threaded through execution and cache operations.
+    """
+    def __init__(self, executor: 'WorkflowExecutor', session_id: Optional[str] = None):
+        self._executor = executor
+        self.session_id = session_id
+
+    @property
+    def executor(self) -> 'WorkflowExecutor':
+        return self._executor
+
+    def run(
+        self,
+        workflow: Dict[str, Any],
+        observer_cb: Optional[Any] = None,
+        use_cache: bool = True,
+        run_id: Optional[str] = None
+    ) -> ExecutionResult:
+        return self._executor.run(
+            workflow=workflow,
+            observer_cb=observer_cb,
+            use_cache=use_cache,
+            session_id=self.session_id,
+            run_id=run_id
+        )
+
+    def run_node(
+        self,
+        workflow: Dict[str, Any],
+        node_id: str,
+        run_id: Optional[str] = None,
+        force_rerun: bool = True,
+        observer_cb: Optional[Any] = None
+    ) -> ExecutionResult:
+        return self._executor.run_node(
+            workflow=workflow,
+            node_id=node_id,
+            session_id=self.session_id,
+            run_id=run_id,
+            force_rerun=force_rerun,
+            observer_cb=observer_cb
+        )
+
+    def get_node_data(self, node_id: str, **kwargs) -> Dict[str, Any]:
+        if self.session_id and "session_id" not in kwargs:
+            kwargs["session_id"] = self.session_id
+        return self._executor.get_node_data(node_id=node_id, **kwargs)
+
+    def get_node_profiling(self, node_id: str, **kwargs) -> Dict[str, Any]:
+        if self.session_id and "session_id" not in kwargs:
+            kwargs["session_id"] = self.session_id
+        return self._executor.get_node_profiling(node_id=node_id, **kwargs)
+
+    def get_node_chart_data(self, node_id: str, **kwargs) -> Dict[str, Any]:
+        if self.session_id and "session_id" not in kwargs:
+            kwargs["session_id"] = self.session_id
+        return self._executor.get_node_chart_data(node_id=node_id, **kwargs)
+
+    def cancel_run(self, run_id: Optional[str] = None) -> bool:
+        return self._executor.cancel_run(run_id=run_id)
+

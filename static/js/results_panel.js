@@ -350,7 +350,8 @@ class ResultsPanel {
       return;
     }
 
-    const meta = window.appCanvas.toolRegistry[node.type] || { outputs: ['O'] };
+    const curCanvas = (typeof window.getActiveCanvas === 'function' ? window.getActiveCanvas() : (window.appTabManager && window.appTabManager.activeCanvas)) || window.appCanvas;
+    const meta = (curCanvas && curCanvas.toolRegistry && curCanvas.toolRegistry[node.type]) || (window.toolRegistry && window.toolRegistry[node.type]) || { outputs: ['O'] };
     const outputs = meta.outputs || ['O'];
 
     // Select default port
@@ -529,7 +530,8 @@ class ResultsPanel {
                   inputIdx = parseInt(data.column_sources[c.name]) || 1;
                 } else {
                   const selectFields = (selNode.config && selNode.config.select_fields) || [];
-                  const matchSf = selectFields.find(sf => (sf.rename || sf.field || sf.original) === c.name || (sf.field || sf.original) === c.name);
+                  const matchSf = selectFields.find(sf => sf.selected !== false && ((sf.rename || sf.field || sf.original) === c.name || (sf.field || sf.original) === c.name))
+                               || selectFields.find(sf => (sf.rename || sf.field || sf.original) === c.name || (sf.field || sf.original) === c.name);
                   if (matchSf && matchSf.source) {
                     inputIdx = parseInt(matchSf.source) || 1;
                   } else {
@@ -548,16 +550,25 @@ class ResultsPanel {
                 } else if (this.currentPort === 'L') {
                   src = 'L';
                 } else {
-                  const selectFields = (selNode.config && (selNode.config.select_fields || selNode.config.output_fields)) || [];
-                  const matchSf = selectFields.find(sf => (sf.rename || sf.field || sf.original) === c.name || (sf.field || sf.original) === c.name);
-                  if (matchSf && matchSf.source) {
-                    src = matchSf.source;
-                  } else if (c.name.startsWith('Right_')) {
-                    src = 'R';
+                  if (c.source !== undefined && c.source !== null) {
+                    src = String(c.source).toUpperCase();
+                  } else if (data.column_sources && data.column_sources[c.name] !== undefined) {
+                    src = String(data.column_sources[c.name]).toUpperCase();
+                  } else {
+                    const selectFields = (selNode.config && (selNode.config.select_fields || selNode.config.output_fields)) || [];
+                    const matchSf = selectFields.find(sf => sf.selected !== false && ((sf.rename || sf.field || sf.original) === c.name || (sf.field || sf.original) === c.name))
+                                 || selectFields.find(sf => (sf.rename || sf.field || sf.original) === c.name || (sf.field || sf.original) === c.name);
+                    if (matchSf && matchSf.source) {
+                      src = String(matchSf.source).toUpperCase();
+                    } else if (c.name.startsWith('Right_')) {
+                      src = 'R';
+                    }
                   }
                 }
+                const inputIdx = src === 'R' ? 2 : 1;
                 joinThClass = src === 'R' ? 'join-th-r' : 'join-th-l';
                 joinThTitle = `Source: ${src === 'R' ? 'Right Table (R)' : 'Left Table (L)'}`;
+                inputPillHtml = `<span class="th-input-source-pill source-input-${inputIdx}" title="${joinThTitle}">${src}</span>`;
               }
 
               const isSorted = (this.sortBy === c.name);
@@ -574,6 +585,9 @@ class ResultsPanel {
                   <div class="th-title-row">
                     <span class="th-name" title="${this.escapeHtml(c.name)} (Click to select column, right-click for options)">${inputPillHtml}${this.escapeHtml(c.name)}</span>
                     <div class="th-actions">
+                      <button type="button" class="th-lineage-btn" data-col="${this.escapeAttr(c.name)}" title="Inspect Column Lineage (${this.escapeAttr(c.name)})">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                      </button>
                       <button type="button" class="th-sort-btn ${isSorted ? 'is-sorted sorted-' + sortDir : ''}" data-col="${this.escapeAttr(c.name)}" title="Sort ${this.escapeAttr(c.name)}: ${isSorted ? (sortDir === 'asc' ? 'Ascending (click for Descending)' : 'Descending (click to clear)') : 'Click to Sort Ascending'}">
                         ${isSorted ? (sortDir === 'asc' ? `
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -805,6 +819,15 @@ class ResultsPanel {
       });
     });
 
+    // Lineage button click
+    this.gridWrapper.querySelectorAll('.th-lineage-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const col = btn.dataset.col;
+        this.openColumnLineage(col);
+      });
+    });
+
     // Sort button click
     this.gridWrapper.querySelectorAll('.th-sort-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -840,7 +863,7 @@ class ResultsPanel {
     // Column selection on column header click
     this.gridWrapper.querySelectorAll('th[data-col-idx]').forEach(th => {
       th.addEventListener('click', (e) => {
-        if (e.target.closest('.col-quality-bar') || e.target.closest('.col-hist-sparkline') || e.target.closest('.th-sort-btn') || e.target.closest('.th-menu-btn')) {
+        if (e.target.closest('.col-quality-bar') || e.target.closest('.col-hist-sparkline') || e.target.closest('.th-sort-btn') || e.target.closest('.th-menu-btn') || e.target.closest('.th-lineage-btn')) {
           return;
         }
         e.stopPropagation();
@@ -1128,6 +1151,13 @@ class ResultsPanel {
       ` : ''}
       ${(colName && this.currentNodeId) ? `
         <div class="grid-context-menu-divider"></div>
+        <button class="grid-context-menu-item" id="ctx-inspect-lineage" style="color: #38bdf8;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Inspect Column Lineage (${this.escapeHtml(colName)})</span>
+        </button>
+      ` : ''}
+      ${(colName && this.currentNodeId) ? `
+        <div class="grid-context-menu-divider"></div>
         <div class="grid-context-menu-section-header">Cleansing & Filtering</div>
         ${!isNull ? `
           <button class="grid-context-menu-item" id="ctx-filter-only">
@@ -1215,6 +1245,11 @@ class ResultsPanel {
     menu.querySelector('#ctx-clear-sort')?.addEventListener('click', () => {
       this.closeContextMenu();
       this.clearSort();
+    });
+
+    menu.querySelector('#ctx-inspect-lineage')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.openColumnLineage(colName);
     });
 
     menu.querySelector('#ctx-filter-only')?.addEventListener('click', () => {
@@ -1335,6 +1370,12 @@ class ResultsPanel {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
         <span>Copy Column Values</span>
       </button>
+      <div class="grid-context-menu-divider"></div>
+      <button class="grid-context-menu-item" id="col-menu-lineage" style="color: #38bdf8;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span>Inspect Column Lineage</span>
+      </button>
+      <div class="grid-context-menu-divider"></div>
       <button class="grid-context-menu-item" id="col-menu-hide">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
         <span>Hide Column</span>
@@ -1409,6 +1450,11 @@ class ResultsPanel {
       });
     });
 
+    menu.querySelector('#col-menu-lineage')?.addEventListener('click', () => {
+      this.closeContextMenu();
+      this.openColumnLineage(colName);
+    });
+
     menu.querySelector('#col-menu-hide')?.addEventListener('click', () => {
       this.closeContextMenu();
       this.hiddenColumns.add(colName);
@@ -1459,6 +1505,18 @@ class ResultsPanel {
         }, `Clean_${colName}_Trim`);
       }
     });
+  }
+
+  openColumnLineage(colName) {
+    if (!this.currentNodeId) return;
+    const canvas = this.getActiveCanvas();
+    const workflow = canvas && typeof canvas.getWorkflowData === 'function' ? canvas.getWorkflowData() : null;
+    const node = (canvas && canvas.nodes) ? canvas.nodes.find(n => n.id === this.currentNodeId) : null;
+    const nodeName = (node && (node.name || node.label)) || (node && node.type) || this.currentNodeId;
+
+    if (window.appLineagePanel && typeof window.appLineagePanel.showForNode === 'function') {
+      window.appLineagePanel.showForNode(this.currentNodeId, nodeName, workflow, colName);
+    }
   }
 
   toggleSort(colName) {

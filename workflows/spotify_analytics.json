@@ -1,0 +1,760 @@
+{
+  "name": "spotify analytics",
+  "description": "",
+  "metadata": {
+    "author": "Ahmed Gad",
+    "created_at": "2026-09-28T12:41:41",
+    "description": "",
+    "saved_file": "spotify analytics.json",
+    "updated_at": "2026-09-28T12:45:38",
+    "version": "2.1.0"
+  },
+  "viewport": {
+    "zoom": 0.69,
+    "panX": -2.1958927097705327,
+    "panY": 254.34710439842434
+  },
+  "nodes": [
+    {
+      "id": "node_1790547279588_441",
+      "type": "input_data",
+      "name": "spotify_history.csv",
+      "x": 208,
+      "y": 240,
+      "config": {
+        "column_meta": [
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "spotify_track_uri",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "DateTime",
+            "dtype": "DateTime",
+            "name": "ts",
+            "type": "datetime"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "platform",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "Int64",
+            "dtype": "Int64",
+            "name": "ms_played",
+            "type": "numeric"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "track_name",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "artist_name",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "album_name",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "reason_start",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "String",
+            "dtype": "String",
+            "name": "reason_end",
+            "type": "string"
+          },
+          {
+            "alteryx_type": "Bool",
+            "dtype": "Bool",
+            "name": "shuffle",
+            "type": "boolean"
+          },
+          {
+            "alteryx_type": "Bool",
+            "dtype": "Bool",
+            "name": "skipped",
+            "type": "boolean"
+          }
+        ],
+        "columns": [
+          "spotify_track_uri",
+          "ts",
+          "platform",
+          "ms_played",
+          "track_name",
+          "artist_name",
+          "album_name",
+          "reason_start",
+          "reason_end",
+          "shuffle",
+          "skipped"
+        ],
+        "delimiter": ",",
+        "file_path": "bda96510_spotify_history.csv",
+        "file_type": "csv",
+        "has_header": true,
+        "original_file_name": "spotify_history.csv",
+        "preview_columns": [
+          "spotify_track_uri",
+          "ts",
+          "platform",
+          "ms_played",
+          "track_name",
+          "artist_name",
+          "album_name",
+          "reason_start",
+          "reason_end",
+          "shuffle",
+          "skipped"
+        ],
+        "row_count": 149860,
+        "start_row": 1
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547301882_316",
+      "type": "select",
+      "name": "Select",
+      "x": 496,
+      "y": 240,
+      "config": {
+        "fields": [
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "spotify_track_uri",
+            "rename": "spotify_track_uri",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "ts",
+            "rename": "ts",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "platform",
+            "rename": "platform",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "ms_played",
+            "rename": "Hrs played",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "track_name",
+            "rename": "track_name",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "artist_name",
+            "rename": "artist_name",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "album_name",
+            "rename": "album_name",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "reason_start",
+            "rename": "reason_start",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "reason_end",
+            "rename": "reason_end",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "shuffle",
+            "rename": "shuffle",
+            "type": "none"
+          },
+          {
+            "isMissing": false,
+            "keep": true,
+            "original": "skipped",
+            "rename": "skipped",
+            "type": "none"
+          },
+          {
+            "isUnknown": true,
+            "keep": false,
+            "original": "*Unknown",
+            "rename": "*Unknown",
+            "type": "none"
+          }
+        ],
+        "select_unknown": false
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547313239_321",
+      "type": "formula",
+      "name": "Formula",
+      "x": 352,
+      "y": 240,
+      "config": {
+        "formulas": [
+          {
+            "expression": "[ms_played]/1000/60/60",
+            "output_field": "ms_played",
+            "type": "float"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547400679_708",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 688,
+      "y": 32,
+      "config": {
+        "actions": [
+          {
+            "action": "GroupBy",
+            "field": "artist_name",
+            "output_name": "artist_name"
+          },
+          {
+            "action": "Sum",
+            "field": "Hrs played",
+            "output_name": "Sum_Hrs played"
+          }
+        ]
+      },
+      "container_id": "container_1790548158902_68",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547441114_560",
+      "type": "sort",
+      "name": "Sort",
+      "x": 816,
+      "y": 32,
+      "config": {
+        "case_sensitive": true,
+        "sort_by": [
+          {
+            "ascending": false,
+            "column": "Sum_Hrs played"
+          }
+        ]
+      },
+      "container_id": "container_1790548158902_68",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547463423_851",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 1024,
+      "y": 224,
+      "config": {
+        "actions": [
+          {
+            "action": "GroupBy",
+            "field": "platform",
+            "output_name": "platform"
+          },
+          {
+            "action": "GroupBy",
+            "field": "reason_end",
+            "output_name": "reason_end"
+          },
+          {
+            "action": "Count",
+            "field": "reason_end",
+            "output_name": "Count_reason_end"
+          }
+        ]
+      },
+      "container_id": "container_1790548099835_278",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547516896_843",
+      "type": "sort",
+      "name": "Sort",
+      "x": 1168,
+      "y": 176,
+      "config": {
+        "case_sensitive": true,
+        "sort_by": [
+          {
+            "ascending": true,
+            "column": "platform"
+          },
+          {
+            "ascending": false,
+            "column": "Count_reason_end"
+          }
+        ]
+      },
+      "container_id": "container_1790548099835_278",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547587930_440",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 1168,
+      "y": 304,
+      "config": {
+        "actions": [
+          {
+            "action": "GroupBy",
+            "field": "platform",
+            "output_name": "platform"
+          },
+          {
+            "action": "Max",
+            "field": "Count_reason_end",
+            "output_name": "Max_Count_reason_end"
+          }
+        ]
+      },
+      "container_id": "container_1790548099835_278",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790547763885_691",
+      "type": "join",
+      "name": "Join",
+      "x": 1296,
+      "y": 224,
+      "config": {
+        "ignore_case": true,
+        "join_keys": [
+          {
+            "left_key": "platform",
+            "right_key": "platform"
+          },
+          {
+            "left_key": "Max_Count_reason_end",
+            "right_key": "Count_reason_end"
+          }
+        ],
+        "select_fields": [
+          {
+            "field": "platform",
+            "isMissing": false,
+            "original": "platform",
+            "rename": "platform",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "reason_end",
+            "isMissing": false,
+            "original": "reason_end",
+            "rename": "reason_end",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "Max_Count_reason_end",
+            "isMissing": false,
+            "original": "Max_Count_reason_end",
+            "rename": "Max_Count_reason_end",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "Right_platform",
+            "isMissing": false,
+            "original": "platform",
+            "rename": "Right_platform",
+            "selected": false,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "Count_reason_end",
+            "isMissing": false,
+            "original": "Count_reason_end",
+            "rename": "Count_reason_end",
+            "selected": false,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "*Unknown",
+            "isUnknown": true,
+            "original": "*Unknown",
+            "rename": "*Unknown",
+            "selected": false,
+            "source": "Dynamic",
+            "type": "none"
+          }
+        ],
+        "select_unknown": false
+      },
+      "container_id": "container_1790548099835_278",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790548072339_79",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 1024,
+      "y": 608,
+      "config": {
+        "actions": [
+          {
+            "action": "GroupBy",
+            "field": "platform",
+            "output_name": "platform"
+          },
+          {
+            "action": "GroupBy",
+            "field": "reason_start",
+            "output_name": "reason_start"
+          },
+          {
+            "action": "Count",
+            "field": "reason_start",
+            "output_name": "Count_reason_start"
+          }
+        ]
+      },
+      "container_id": "container_1790576742641_125",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790548238828_676",
+      "type": "sort",
+      "name": "Sort",
+      "x": 1168,
+      "y": 608,
+      "config": {
+        "sort_by": [
+          {
+            "ascending": true,
+            "column": "platform"
+          },
+          {
+            "ascending": false,
+            "column": "Count_reason_start"
+          }
+        ]
+      },
+      "container_id": "container_1790576742641_125",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790548279606_531",
+      "type": "join",
+      "name": "Join",
+      "x": 1424,
+      "y": 656,
+      "config": {
+        "ignore_case": true,
+        "join_keys": [
+          {
+            "left_key": "platform",
+            "right_key": "platform"
+          },
+          {
+            "left_key": "Max_Count_reason_start",
+            "right_key": "Count_reason_start"
+          }
+        ],
+        "select_fields": [
+          {
+            "field": "platform",
+            "isMissing": false,
+            "original": "platform",
+            "rename": "platform",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "Right_platform",
+            "isMissing": false,
+            "original": "platform",
+            "rename": "Right_platform",
+            "selected": false,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "reason_start",
+            "isMissing": false,
+            "original": "reason_start",
+            "rename": "reason_start",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "Max_Count_reason_start",
+            "isMissing": false,
+            "original": "Max_Count_reason_start",
+            "rename": "Max_Count_reason_start",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "Count_reason_start",
+            "isMissing": false,
+            "original": "Count_reason_start",
+            "rename": "Count_reason_start",
+            "selected": false,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "*Unknown",
+            "isUnknown": true,
+            "original": "*Unknown",
+            "rename": "*Unknown",
+            "selected": false,
+            "source": "Dynamic",
+            "type": "none"
+          }
+        ],
+        "select_unknown": false
+      },
+      "container_id": "container_1790576742641_125",
+      "is_cached": false
+    },
+    {
+      "id": "node_1790548290292_914",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 1328,
+      "y": 576,
+      "config": {
+        "actions": [
+          {
+            "action": "GroupBy",
+            "field": "platform",
+            "output_name": "platform"
+          },
+          {
+            "action": "Max",
+            "field": "Count_reason_start",
+            "output_name": "Max_Count_reason_start"
+          }
+        ]
+      },
+      "container_id": "container_1790576742641_125",
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_1790547313242_968",
+      "source": "node_1790547279588_441",
+      "sourceHandle": "O",
+      "target": "node_1790547313239_321",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790547313242_302",
+      "source": "node_1790547313239_321",
+      "sourceHandle": "O",
+      "target": "node_1790547301882_316",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790547401944_106",
+      "source": "node_1790547301882_316",
+      "sourceHandle": "O",
+      "target": "node_1790547400679_708",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790547442257_175",
+      "source": "node_1790547400679_708",
+      "sourceHandle": "O",
+      "target": "node_1790547441114_560",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790547464545_881",
+      "source": "node_1790547301882_316",
+      "sourceHandle": "O",
+      "target": "node_1790547463423_851",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790547518206_418",
+      "source": "node_1790547463423_851",
+      "sourceHandle": "O",
+      "target": "node_1790547516896_843",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790547589001_632",
+      "source": "node_1790547463423_851",
+      "sourceHandle": "O",
+      "target": "node_1790547587930_440",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790547765371_167",
+      "source": "node_1790547587930_440",
+      "sourceHandle": "O",
+      "target": "node_1790547763885_691",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_1790547767149_984",
+      "source": "node_1790547463423_851",
+      "sourceHandle": "O",
+      "target": "node_1790547763885_691",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_1790548073861_793",
+      "source": "node_1790547301882_316",
+      "sourceHandle": "O",
+      "target": "node_1790548072339_79",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790548241626_370",
+      "source": "node_1790548072339_79",
+      "sourceHandle": "O",
+      "target": "node_1790548238828_676",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790548282436_775",
+      "source": "node_1790548238828_676",
+      "sourceHandle": "O",
+      "target": "node_1790548279606_531",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_1790548297393_689",
+      "source": "node_1790548238828_676",
+      "sourceHandle": "O",
+      "target": "node_1790548290292_914",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_1790548325493_409",
+      "source": "node_1790548290292_914",
+      "sourceHandle": "O",
+      "target": "node_1790548279606_531",
+      "targetHandle": "L"
+    }
+  ],
+  "containers": [
+    {
+      "id": "container_1790548099835_278",
+      "title": "What is the most common reason for ending a track across platforms?",
+      "color": "#0284c7",
+      "textColor": "#ffffff",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "fillOpacity": 12,
+      "margin": 24,
+      "x": 1008,
+      "y": 128,
+      "width": 496,
+      "height": 288,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "node_1790547463423_851",
+        "node_1790547516896_843",
+        "node_1790547587930_440",
+        "node_1790547763885_691"
+      ]
+    },
+    {
+      "id": "container_1790548158902_68",
+      "title": "ranking top played artists by hrs played",
+      "color": "#0284c7",
+      "textColor": "#ffffff",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "fillOpacity": 12,
+      "margin": 24,
+      "x": 664,
+      "y": -26,
+      "width": 232,
+      "height": 138,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "node_1790547400679_708",
+        "node_1790547441114_560"
+      ]
+    },
+    {
+      "id": "container_1790576742641_125",
+      "title": "what is most common reason for starting a track",
+      "color": "#0284c7",
+      "textColor": "#ffffff",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "fillOpacity": 12,
+      "margin": 24,
+      "x": 992,
+      "y": 512,
+      "width": 504,
+      "height": 218,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "node_1790548072339_79",
+        "node_1790548238828_676",
+        "node_1790548279606_531",
+        "node_1790548290292_914"
+      ]
+    }
+  ],
+  "comments": [],
+  "cached_node_ids": [],
+  "auto_cache_upstream": false
+}

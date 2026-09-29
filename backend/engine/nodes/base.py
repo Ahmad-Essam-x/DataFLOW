@@ -40,9 +40,12 @@ def sanitize_dataframe(df: Any) -> Any:
             seen[c] += 1
             unique_cols.append(f"{c}_{seen[c]}")
 
+    attrs = getattr(df, "attrs", {}).copy() if hasattr(df, "attrs") else {}
     if list(df.columns) != unique_cols:
         df = df.copy(deep=False)
         df.columns = unique_cols
+    if attrs:
+        df.attrs = attrs
 
     return df
 

@@ -288,7 +288,18 @@ class MenuBar {
   async addRecentWorkflow(name, path = null, wfData = null) {
     if (!name || typeof name !== 'string') return;
     try {
-      const cleanPath = (typeof path === 'string' && path) ? path : `workflows/${name.replace(/\s+/g, '_').toLowerCase()}.json`;
+      let cleanPath = (typeof path === 'string' && path) ? path : null;
+      if (!cleanPath && wfData) {
+        cleanPath = wfData._path || wfData.path || null;
+      }
+      if (!cleanPath && window.activeWorkflowFile) {
+        cleanPath = window.activeWorkflowFile.path || null;
+      }
+      if (!cleanPath) {
+        cleanPath = `workflows/${name.replace(/\s+/g, '_').toLowerCase()}.json`;
+      }
+      cleanPath = cleanPath.replace(/\\/g, '/');
+
       const nodeCount = wfData && Array.isArray(wfData.nodes) ? wfData.nodes.length : 0;
       const entry = {
         name: name.trim(),
@@ -330,9 +341,22 @@ class MenuBar {
         const res = await fetch('/api/workflow/recent');
         if (res.ok) {
           const srvData = await res.json();
-          if (srvData.success && Array.isArray(srvData.recent_workflows)) {
+          if (srvData.success && Array.isArray(srvData.recent_workflows) && srvData.recent_workflows.length > 0) {
             recent = srvData.recent_workflows;
             localStorage.setItem('dataflow_recent_workflows', JSON.stringify(recent));
+          } else if (srvData.success && Array.isArray(srvData.recent_workflows) && srvData.recent_workflows.length === 0) {
+            // Server has no recent workflows (e.g. freshly cleared or started); check localStorage to heal server state
+            const localRecent = JSON.parse(localStorage.getItem('dataflow_recent_workflows') || '[]');
+            if (localRecent.length > 0) {
+              recent = localRecent;
+              try {
+                await fetch('/api/workflow/recent', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ recent_workflows: localRecent })
+                });
+              } catch (_) {}
+            }
           }
         }
       } catch (_) {}
@@ -349,7 +373,7 @@ class MenuBar {
 
       let html = recent.map((r, idx) => {
         const timeAgo = this.formatTimeAgo(r.timestamp);
-        const pathDisplay = r.path || 'Local Workflow';
+        const pathDisplay = r.resolved_path || r.path || 'Local Workflow';
         const isMissing = r.exists === false;
         const missingBadge = isMissing ? `<span style="font-size: 9px; color: #ef4444; margin-left: 4px; padding: 1px 4px; background: rgba(239, 68, 68, 0.12); border-radius: 4px;">Missing</span>` : '';
         const nodeNote = r.node_count ? ` • ${r.node_count} tools` : '';
@@ -414,19 +438,51 @@ class MenuBar {
     if (!item) return;
 
     let loadedWfData = null;
-    const filename = item.path ? item.path.split('/').pop().split('\\').pop() : `${item.name.replace(/\s+/g, '_').toLowerCase()}.json`;
+    let resolvedDiskPath = item.resolved_path || item.path || null;
+    let loadedFilename = null;
+    let loadedName = item.name || null;
 
-    // 1. Try fetching fresh from disk via server
+    // 1. Primary: Use dedicated /api/workflow/open endpoint (supports absolute paths, spaces, fuzzy lookup)
     try {
-      let res = await fetch(`/api/workflow/${encodeURIComponent(filename)}`);
-      if (!res.ok) {
-        res = await fetch(`/api/sample-workflow/${encodeURIComponent(filename)}`);
+      const openRes = await fetch('/api/workflow/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: resolvedDiskPath,
+          filename: item.path ? item.path.split('/').pop().split('\\').pop() : null,
+          name: item.name
+        })
+      });
+      if (openRes.ok) {
+        const openJson = await openRes.json();
+        if (openJson.success && openJson.workflow) {
+          loadedWfData = openJson.workflow;
+          resolvedDiskPath = openJson.path || resolvedDiskPath;
+          loadedFilename = openJson.filename || null;
+          loadedName = openJson.name || loadedName;
+        }
       }
-      if (res.ok) {
-        loadedWfData = await res.json();
+    } catch (openErr) {
+      console.warn('POST /api/workflow/open error, falling back:', openErr);
+    }
+
+    // 2. Fallbacks: Query /api/workflow/<filename> and /api/sample-workflow/<filename>
+    if (!loadedWfData) {
+      const filename = item.path ? item.path.split('/').pop().split('\\').pop() : `${item.name.replace(/\s+/g, '_').toLowerCase()}.json`;
+      try {
+        let res = await fetch(`/api/workflow/${encodeURIComponent(filename)}`);
+        if (!res.ok) {
+          res = await fetch(`/api/sample-workflow/${encodeURIComponent(filename)}`);
+        }
+        if (res.ok) {
+          const raw = await res.json();
+          loadedWfData = raw.workflow || raw;
+          resolvedDiskPath = (loadedWfData && loadedWfData._path) || resolvedDiskPath || `workflows/${filename}`;
+          loadedFilename = filename;
+        }
+      } catch (err) {
+        console.warn('Failed to fetch recent workflow from server fallback:', err);
       }
-    } catch (err) {
-      console.warn('Failed to fetch recent workflow from server:', err);
     }
 
     if (!loadedWfData) {
@@ -436,31 +492,21 @@ class MenuBar {
       return;
     }
 
-    // 2. Smart Tab Placement:
-    // If active tab has unsaved changes or existing tools, open in a new tab!
-    const activeCanvas = window.appCanvas;
-    const activeTab = window.appTabManager ? window.appTabManager.activeTab : null;
-    const isCurrentDirty = (activeTab && activeTab.isDirty) || !!window._activeTabIsDirty;
-    const hasTools = activeCanvas && activeCanvas.nodes && activeCanvas.nodes.length > 0;
+    // Ensure raw workflow object is unwrapped
+    const wf = (loadedWfData && loadedWfData.workflow) ? loadedWfData.workflow : loadedWfData;
+    const finalName = loadedName || wf.name || item.name;
+    const finalFilename = loadedFilename || (resolvedDiskPath ? resolvedDiskPath.split('/').pop().split('\\').pop() : `${finalName}.json`);
 
-    if (window.appTabManager && (isCurrentDirty || hasTools)) {
-      window.appTabManager.createTab(loadedWfData, item.name);
-      if (window.showToast) {
-        window.showToast('success', 'Opened in New Tab', `Opened '${item.name}' in a new tab.`);
-      }
-    } else {
-      if (typeof window.handleWorkflowLoaded === 'function') {
-        window.handleWorkflowLoaded(loadedWfData, item.name);
-      } else if (activeCanvas) {
-        activeCanvas.loadWorkflow(loadedWfData);
-      }
-      if (window.showToast) {
-        window.showToast('success', 'Workflow Loaded', `Opened '${item.name}'.`);
-      }
+    if (typeof window.openWorkflowData === 'function') {
+      window.openWorkflowData(wf, finalFilename, resolvedDiskPath, null);
+    } else if (typeof window.handleWorkflowLoaded === 'function') {
+      window.handleWorkflowLoaded(wf, finalName);
+    } else if (activeCanvas) {
+      activeCanvas.loadWorkflow(wf);
     }
 
     // Refresh position to top
-    this.addRecentWorkflow(item.name, item.path, loadedWfData);
+    this.addRecentWorkflow(finalName, resolvedDiskPath, wf);
   }
 
   formatTimeAgo(ts) {

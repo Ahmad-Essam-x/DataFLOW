@@ -169,13 +169,26 @@ class WorkflowManager:
         normalized, warnings = self.validate_and_normalize(wf_data)
 
         if target_filepath:
-            target_path = os.path.abspath(target_filepath)
+            norm_target = str(target_filepath).replace("\\", "/")
+            if not os.path.isabs(target_filepath) and "/" not in norm_target:
+                # Bare filename like "spotify_analytics.json" or "spotify_analytics"
+                candidate_workflows_p = os.path.join(self.workflows_dir, target_filepath)
+                if not (candidate_workflows_p.lower().endswith(".json") or candidate_workflows_p.lower().endswith(".yxmd")):
+                    candidate_workflows_p += ".json"
+                target_path = os.path.abspath(candidate_workflows_p)
+            else:
+                target_path = os.path.abspath(target_filepath)
+
             if not (target_path.lower().endswith(".json") or target_path.lower().endswith(".yxmd")):
                 target_path += ".json"
             target_filename = os.path.basename(target_path)
             target_dir = os.path.dirname(target_path)
             os.makedirs(target_dir, exist_ok=True)
             clean_stem = os.path.splitext(target_filename)[0]
+
+            generic_names = {"new workflow", "untitled_workflow", "untitled", "workflow"}
+            if not normalized.get("name") or str(normalized.get("name")).strip().lower() in generic_names:
+                normalized["name"] = clean_stem.replace("_", " ").title()
         else:
             raw_name = custom_filename or normalized.get("name", "untitled_workflow")
             if raw_name.lower().endswith(".json"):
@@ -244,11 +257,21 @@ class WorkflowManager:
 
         normalized, warnings = self.validate_and_normalize(raw_data)
         filename = os.path.basename(clean_p)
+        file_stem = os.path.splitext(filename)[0]
+
+        generic_names = {"new workflow", "untitled_workflow", "untitled", "workflow"}
+        current_name = normalized.get("name")
+        if not current_name or str(current_name).strip().lower() in generic_names:
+            resolved_name = file_stem.replace("_", " ").title()
+            normalized["name"] = resolved_name
+        else:
+            resolved_name = current_name
+
         return {
             "success": True,
             "filename": filename,
             "path": clean_p.replace("\\", "/"),
-            "name": normalized.get("name") or os.path.splitext(filename)[0],
+            "name": resolved_name,
             "workflow": normalized,
             "warnings": warnings
         }

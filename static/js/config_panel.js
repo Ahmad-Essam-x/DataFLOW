@@ -161,11 +161,13 @@ class ConfigPanel {
       return;
     }
 
-    const meta = this.canvas.toolRegistry[node.type] || {
-      name: node.type,
-      category: 'general',
-      color: '#38bdf8'
-    };
+    const meta = (this.canvas && this.canvas.toolRegistry && this.canvas.toolRegistry[node.type])
+      || (window.toolRegistry && window.toolRegistry[node.type])
+      || {
+        name: node.type,
+        category: 'general',
+        color: '#38bdf8'
+      };
 
     this.titleEl.textContent = node.name;
     this.iconEl.style.backgroundColor = `${meta.color}25`;
@@ -6362,17 +6364,30 @@ class ConfigPanel {
     }
 
     // Synchronize embedded select_fields
+    // Synchronize embedded select_fields
     if (!cfg.select_fields) cfg.select_fields = [];
-    const existingFieldMap = new Map();
+    const existingLeft = new Map();
+    const existingRight = new Map();
+    let unknownSf = null;
+
     cfg.select_fields.forEach(sf => {
-      if (sf && (sf.field || sf.original)) {
-        const key = `${sf.source || 'L'}:${sf.original || sf.field}`;
-        existingFieldMap.set(key, sf);
-        existingFieldMap.set(sf.field, sf);
+      if (!sf) return;
+      const fName = sf.field || sf.original;
+      if (fName === '*Unknown' || sf.original === '*Unknown') {
+        unknownSf = sf;
+        return;
+      }
+      const isRight = sf.source === 'R' || (sf.source !== 'L' && (fName.startsWith('Right_') || (sf.field && sf.field.startsWith('Right_'))));
+      const orig = sf.original || (isRight && fName.startsWith('Right_') ? fName.replace(/^Right_/, '') : fName);
+      if (isRight) {
+        if (!existingRight.has(orig)) existingRight.set(orig, sf);
+        if (!existingRight.has(fName)) existingRight.set(fName, sf);
+      } else {
+        if (!existingLeft.has(orig)) existingLeft.set(orig, sf);
+        if (!existingLeft.has(fName)) existingLeft.set(fName, sf);
       }
     });
 
-    let unknownSf = cfg.select_fields.find(sf => (sf.field || sf.original) === '*Unknown');
     if (!unknownSf) {
       unknownSf = {
         field: '*Unknown',
@@ -6391,58 +6406,115 @@ class ConfigPanel {
     }
 
     if (leftCols.length > 0 || rightCols.length > 0) {
-      const reconciled = [];
-      const seen = new Set();
+      const leftFields = [];
+      const rightFields = [];
+      const seenLeft = new Set();
+      const seenRight = new Set();
 
-      // 1. Preserve existing configured fields, marking isMissing if not in upstream
+      // Populate Left columns (in Alteryx, Left columns are ALWAYS first)
+      leftCols.forEach(c => {
+        seenLeft.add(c);
+        const prev = existingLeft.get(c);
+        leftFields.push({
+          field: c,
+          source: 'L',
+          original: c,
+          selected: prev ? (prev.selected !== false) : (unknownSf.selected !== false),
+          rename: prev && prev.rename ? prev.rename : c,
+          type: prev && prev.type ? prev.type : 'none',
+          isMissing: false
+        });
+      });
+
+      // Populate Right columns (in Alteryx, Right columns are ALWAYS second)
+      // Any column from Right that shares a name with ANY Left column is prefixed with "Right_"
+      rightCols.forEach(c => {
+        seenRight.add(c);
+        const prev = existingRight.get(c) || existingRight.get(`Right_${c}`);
+        const isColliding = leftCols.includes(c);
+        const fieldName = isColliding ? `Right_${c}` : c;
+
+        let renameVal = fieldName;
+        if (prev && prev.rename) {
+          // If previous rename was un-prefixed 'c' (the bug where R was added before L),
+          // correct it to 'Right_c' so it doesn't collide with Left's 'c'
+          if (isColliding && prev.rename === c && (!prev.source || prev.source === 'R')) {
+            renameVal = fieldName;
+          } else {
+            renameVal = prev.rename;
+          }
+        }
+
+        rightFields.push({
+          field: fieldName,
+          source: 'R',
+          original: c,
+          selected: prev ? (prev.selected !== false) : (unknownSf.selected !== false),
+          rename: renameVal,
+          type: prev && prev.type ? prev.type : 'none',
+          isMissing: false
+        });
+      });
+
+      // Preserve any missing columns that were previously configured
+      const missingFields = [];
       cfg.select_fields.forEach(prev => {
         const orig = prev.original || prev.field;
         if (!orig || orig === '*Unknown') return;
-        const isRight = prev.source === 'R';
-        const cols = isRight ? rightCols : leftCols;
-        prev.isMissing = (cols.length > 0 && !cols.includes(orig));
-        reconciled.push(prev);
-        seen.add(`${prev.source || (isRight ? 'R' : 'L')}:${orig}`);
-      });
-
-      // 2. Add any newly added Left columns
-      leftCols.forEach(c => {
-        const key = `L:${c}`;
-        if (!seen.has(key)) {
-          reconciled.push({
-            field: c,
-            source: 'L',
-            original: c,
-            selected: unknownSf.selected !== false,
-            rename: c,
-            type: 'none',
-            isMissing: false
-          });
-          seen.add(key);
+        const isRight = prev.source === 'R' || (prev.field && prev.field.startsWith('Right_'));
+        if (isRight) {
+          const cleanOrig = orig.replace(/^Right_/, '');
+          if (rightCols.length > 0 && !seenRight.has(cleanOrig) && !seenRight.has(orig)) {
+            prev.isMissing = true;
+            missingFields.push(prev);
+          }
+        } else {
+          if (leftCols.length > 0 && !seenLeft.has(orig)) {
+            prev.isMissing = true;
+            missingFields.push(prev);
+          }
         }
       });
 
-      // 3. Add any newly added Right columns
-      rightCols.forEach(c => {
-        const key = `R:${c}`;
-        if (!seen.has(key)) {
-          const outName = leftCols.includes(c) ? `Right_${c}` : c;
-          reconciled.push({
-            field: outName,
-            source: 'R',
-            original: c,
-            selected: unknownSf.selected !== false,
-            rename: outName,
-            type: 'none',
-            isMissing: false
-          });
-          seen.add(key);
-        }
-      });
+      // Check if user previously had a custom ordering (e.g. dragging fields)
+      // BUT if R was connected before L (all R fields appeared before any L field),
+      // we reset to standard Alteryx order: Left first, Right second.
+      const firstLIdx = cfg.select_fields.findIndex(sf => sf.source === 'L');
+      const lastRIdx = cfg.select_fields.map(sf => sf.source).lastIndexOf('R');
+      const rWasConnectedFirst = firstLIdx !== -1 && lastRIdx !== -1 && lastRIdx < firstLIdx;
 
-      // 4. Place *Unknown at the bottom
-      reconciled.push(unknownSf);
-      cfg.select_fields = reconciled;
+      if (!rWasConnectedFirst && cfg.select_fields.length > 1) {
+        const fieldLookup = new Map();
+        [...leftFields, ...rightFields, ...missingFields].forEach(f => {
+          fieldLookup.set(`${f.source}:${f.original}`, f);
+        });
+
+        const ordered = [];
+        const usedKeys = new Set();
+        cfg.select_fields.forEach(prev => {
+          const orig = prev.original || (prev.field ? prev.field.replace(/^Right_/, '') : '');
+          const src = prev.source || (prev.field?.startsWith('Right_') ? 'R' : 'L');
+          const key = `${src}:${orig}`;
+          const current = fieldLookup.get(key);
+          if (current && !usedKeys.has(key)) {
+            ordered.push(current);
+            usedKeys.add(key);
+          }
+        });
+
+        [...leftFields, ...rightFields, ...missingFields].forEach(f => {
+          const key = `${f.source}:${f.original}`;
+          if (!usedKeys.has(key)) {
+            ordered.push(f);
+            usedKeys.add(key);
+          }
+        });
+
+        ordered.push(unknownSf);
+        cfg.select_fields = ordered;
+      } else {
+        cfg.select_fields = [...leftFields, ...rightFields, ...missingFields, unknownSf];
+      }
     } else {
       if (!cfg.select_fields.some(sf => (sf.field || sf.original) === '*Unknown')) {
         cfg.select_fields.push(unknownSf);
@@ -6974,47 +7046,104 @@ class ConfigPanel {
 
     const hasAnyCols = upstreamInputs.some(u => u.columns && u.columns.length > 0);
     if (hasAnyCols) {
-      const reconciled = [];
-      const seen = new Set();
-      const inputMap = new Map();
-      upstreamInputs.forEach(u => inputMap.set(u.index, new Set(u.columns || [])));
+      const existingByInputAndCol = new Map();
+      cfg.select_fields.forEach(prev => {
+        if (!prev) return;
+        const orig = prev.original || (prev.field ? prev.field.replace(/^(?:Input|#)\d+_/, '') : '');
+        const src = prev.source !== undefined ? String(prev.source) : '1';
+        existingByInputAndCol.set(`${src}:${orig}`, prev);
+        if (prev.field) existingByInputAndCol.set(`${src}:${prev.field}`, prev);
+      });
 
-      // 1. Preserve existing fields (marking isMissing if input has columns and col missing)
+      const inputColsByStream = [];
+      const seenColNames = new Set();
+      const seenKeys = new Set();
+
+      // Ensure upstream inputs are processed in index order (1, 2, 3...)
+      const sortedInputs = [...upstreamInputs].sort((a, b) => a.index - b.index);
+
+      sortedInputs.forEach(u => {
+        const streamFields = [];
+        (u.columns || []).forEach(c => {
+          const key = `${u.index}:${c}`;
+          seenKeys.add(key);
+          const isColliding = seenColNames.has(c);
+          const expectedField = isColliding ? `Input${u.index}_${c}` : c;
+          seenColNames.add(c);
+
+          const prev = existingByInputAndCol.get(key) || existingByInputAndCol.get(`${u.index}:${expectedField}`);
+          let renameVal = expectedField;
+          if (prev && prev.rename) {
+            if (isColliding && prev.rename === c && String(prev.source) === String(u.index)) {
+              renameVal = expectedField;
+            } else {
+              renameVal = prev.rename;
+            }
+          }
+
+          streamFields.push({
+            field: expectedField,
+            source: u.index,
+            original: c,
+            selected: prev ? (prev.selected !== false) : (unknownSf.selected !== false),
+            rename: renameVal,
+            type: prev && prev.type ? prev.type : 'none',
+            isMissing: false
+          });
+        });
+        inputColsByStream.push(...streamFields);
+      });
+
+      // Preserve any missing columns
+      const missingFields = [];
+      const inputMap = new Map();
+      sortedInputs.forEach(u => inputMap.set(u.index, new Set(u.columns || [])));
+
       cfg.select_fields.forEach(prev => {
         const orig = prev.original || prev.field;
         if (!orig || orig === '*Unknown') return;
         const inCols = inputMap.get(prev.source);
-        prev.isMissing = (inCols && inCols.size > 0 && !inCols.has(orig));
-        reconciled.push(prev);
-        seen.add(`${prev.source}:${orig}`);
+        if (inCols && inCols.size > 0 && !inCols.has(orig) && !inCols.has(orig.replace(/^(?:Input|#)\d+_/, ''))) {
+          prev.isMissing = true;
+          missingFields.push(prev);
+        }
       });
 
-      // 2. Add newly discovered columns
-      upstreamInputs.forEach(u => {
-        (u.columns || []).forEach(c => {
-          const key = `${u.index}:${c}`;
-          if (!seen.has(key)) {
-            let outName = c;
-            if (reconciled.some(r => r.field === outName)) {
-              outName = `Input${u.index}_${c}`;
-            }
-            reconciled.push({
-              field: outName,
-              source: u.index,
-              original: c,
-              selected: unknownSf.selected !== false,
-              rename: outName,
-              type: 'none',
-              isMissing: false
-            });
-            seen.add(key);
+      // Check if user previously had manual drag-and-drop reordering
+      const allPrevSources = cfg.select_fields.map(sf => sf.source).filter(s => s !== undefined && s !== 'Dynamic');
+      const isSortedByDefault = allPrevSources.every((val, i, arr) => !i || Number(val) >= Number(arr[i - 1]));
+
+      if (!isSortedByDefault && cfg.select_fields.length > 1) {
+        const fieldLookup = new Map();
+        [...inputColsByStream, ...missingFields].forEach(f => {
+          fieldLookup.set(`${f.source}:${f.original}`, f);
+        });
+
+        const ordered = [];
+        const usedKeys = new Set();
+        cfg.select_fields.forEach(prev => {
+          const orig = prev.original || (prev.field ? prev.field.replace(/^(?:Input|#)\d+_/, '') : '');
+          const key = `${prev.source}:${orig}`;
+          const current = fieldLookup.get(key);
+          if (current && !usedKeys.has(key)) {
+            ordered.push(current);
+            usedKeys.add(key);
           }
         });
-      });
 
-      // 3. Put *Unknown at the bottom
-      reconciled.push(unknownSf);
-      cfg.select_fields = reconciled;
+        [...inputColsByStream, ...missingFields].forEach(f => {
+          const key = `${f.source}:${f.original}`;
+          if (!usedKeys.has(key)) {
+            ordered.push(f);
+            usedKeys.add(key);
+          }
+        });
+
+        ordered.push(unknownSf);
+        cfg.select_fields = ordered;
+      } else {
+        cfg.select_fields = [...inputColsByStream, ...missingFields, unknownSf];
+      }
     } else {
       if (!cfg.select_fields.some(sf => (sf.field || sf.original) === '*Unknown')) {
         cfg.select_fields.push(unknownSf);

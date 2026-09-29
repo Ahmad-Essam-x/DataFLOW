@@ -232,5 +232,81 @@ class TestJoinToolAdvanced(unittest.TestCase):
         with self.assertRaises(NodeExecutionError):
             node_bad_keys.execute({"L": pd.DataFrame({"A": [1]}), "R": pd.DataFrame({"A": [1]})}, self.context)
 
+    def test_r_table_selection_dispatches_right_data_and_origin(self):
+        df_l = pd.DataFrame({"id": [1, 2], "platform": ["Left_Android", "Left_iOS"]})
+        df_r = pd.DataFrame({"id": [1, 2], "platform": ["Right_Android", "Right_iOS"]})
+
+        # Scenario: Select platform from R, drop platform from L
+        sf = [
+            {"field": "platform", "source": "R", "original": "platform", "selected": True, "rename": "platform"},
+            {"field": "platform", "source": "L", "original": "platform", "selected": False, "rename": "platform"}
+        ]
+        node = JoinNode("j_select_r", {
+            "join_keys": [{"left_key": "id", "right_key": "id"}],
+            "select_fields": sf
+        })
+        res = node.execute({"L": df_l, "R": df_r}, self.context)
+        j_df = res["J"]
+
+        self.assertIn("platform", j_df.columns)
+        self.assertEqual(j_df.iloc[0]["platform"], "Right_Android")
+        self.assertEqual(j_df.iloc[1]["platform"], "Right_iOS")
+        # Column source must be attributed to R
+        col_sources = j_df.attrs.get("column_sources", {})
+        self.assertEqual(col_sources.get("platform"), "R")
+
+    def test_prevent_odd_naming_platform_2_use_right_prefix(self):
+        df_l = pd.DataFrame({"id": [1], "platform": ["Web_L"]})
+        df_r = pd.DataFrame({"id": [1], "platform": ["Web_R"]})
+
+        # If both are selected and both have name 'platform', second must become Right_platform, NEVER platform_2
+        sf = [
+            {"field": "platform", "source": "L", "original": "platform", "selected": True, "rename": "platform"},
+            {"field": "Right_platform", "source": "R", "original": "platform", "selected": True, "rename": "platform"}
+        ]
+        node = JoinNode("j_dedup", {
+            "join_keys": [{"left_key": "id", "right_key": "id"}],
+            "select_fields": sf
+        })
+        res = node.execute({"L": df_l, "R": df_r}, self.context)
+        j_df = res["J"]
+
+        self.assertNotIn("platform_2", j_df.columns)
+        self.assertIn("platform", j_df.columns)
+        self.assertIn("Right_platform", j_df.columns)
+        self.assertEqual(j_df.iloc[0]["platform"], "Web_L")
+        self.assertEqual(j_df.iloc[0]["Right_platform"], "Web_R")
+
+        col_sources = j_df.attrs.get("column_sources", {})
+        self.assertEqual(col_sources.get("platform"), "L")
+        self.assertEqual(col_sources.get("Right_platform"), "R")
+
+    def test_column_sources_metadata_attribution(self):
+        df_l = pd.DataFrame({"L_ID": [1], "Common": ["C1"]})
+        df_r = pd.DataFrame({"R_ID": [1], "Common": ["C1"], "R_Extra": ["E1"]})
+
+        node = JoinNode("j_meta", {
+            "join_keys": [{"left_key": "L_ID", "right_key": "R_ID"}]
+        })
+        res = node.execute({"L": df_l, "R": df_r}, self.context)
+        j_df = res["J"]
+        l_df = res["L"]
+        r_df = res["R"]
+
+        # J port sources
+        j_sources = j_df.attrs.get("column_sources", {})
+        self.assertEqual(j_sources.get("L_ID"), "L")
+        self.assertEqual(j_sources.get("Common"), "L")
+        self.assertEqual(j_sources.get("Right_Common"), "R")
+        self.assertEqual(j_sources.get("R_ID"), "R")
+        self.assertEqual(j_sources.get("R_Extra"), "R")
+
+        # L and R port sources
+        l_sources = l_df.attrs.get("column_sources", {})
+        self.assertTrue(all(v == "L" for v in l_sources.values()))
+        r_sources = r_df.attrs.get("column_sources", {})
+        self.assertTrue(all(v == "R" for v in r_sources.values()))
+
 if __name__ == "__main__":
     unittest.main()
+

@@ -59,6 +59,27 @@ def live_server():
             pass
 
 
+@pytest.fixture(autouse=True)
+def clean_autosave_state():
+    """Ensures workflows/.autosave is empty so crash recovery modals never block E2E interactions."""
+    import os
+    autosave_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "workflows", ".autosave")
+    if os.path.exists(autosave_dir):
+        for f in os.listdir(autosave_dir):
+            try:
+                os.remove(os.path.join(autosave_dir, f))
+            except Exception:
+                pass
+    yield
+    if os.path.exists(autosave_dir):
+        for f in os.listdir(autosave_dir):
+            try:
+                os.remove(os.path.join(autosave_dir, f))
+            except Exception:
+                pass
+
+
+
 @pytest.fixture(scope="module")
 def browser_context():
     """Launches Playwright headless Edge browser context."""
@@ -1631,6 +1652,7 @@ def test_e2e_align_selected_tools_locally(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
     page.wait_for_selector(".tool-card", timeout=15000)
+    page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes && window.appCanvas.nodes.length > 0", timeout=10000)
 
     # 1. Place 3 connected tools far away at x~1200, y~600
     init_res = page.evaluate("""() => {

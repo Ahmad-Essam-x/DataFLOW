@@ -91,6 +91,18 @@ class Canvas {
     this.comments = [];
     this.toolRegistry = {};
 
+    // Pre-hydrate toolRegistry from constructor options or global caches
+    const initialTools = options.toolRegistry
+      || (window.toolRegistry ? Object.values(window.toolRegistry) : null)
+      || (window.appTabManager && window.appTabManager._toolsData ? window.appTabManager._toolsData : null)
+      || (window.toolsData ? window.toolsData : null);
+    if (initialTools) {
+      const list = Array.isArray(initialTools) ? initialTools : Object.values(initialTools);
+      list.forEach(t => {
+        if (t && t.type) this.toolRegistry[t.type] = t;
+      });
+    }
+
     // View transform
     this.zoom = 1.0;
     this.panX = 0;
@@ -488,9 +500,17 @@ class Canvas {
   }
 
   setToolsRegistry(tools) {
-    tools.forEach(t => {
-      this.toolRegistry[t.type] = t;
+    if (!tools) return;
+    const list = Array.isArray(tools) ? tools : Object.values(tools);
+    list.forEach(t => {
+      if (t && t.type) {
+        this.toolRegistry[t.type] = t;
+      }
     });
+    // If nodes are already present on the canvas, immediately re-render them with authentic icons and I/O ports
+    if (this.nodes && this.nodes.length > 0) {
+      this.renderAll();
+    }
   }
 
   getCanvasCoords(clientX, clientY) {
@@ -1194,6 +1214,9 @@ class Canvas {
       <div class="context-menu-item" id="ctx-view-data">
         <span>👁️ View Results Data</span>
       </div>
+      <div class="context-menu-item" id="ctx-view-lineage" style="color: #38bdf8;">
+        <span>🔗 Show Column Lineage</span>
+      </div>
     `;
 
     this.contextMenu.style.left = `${Math.min(window.innerWidth - 220, x)}px`;
@@ -1233,6 +1256,15 @@ class Canvas {
       if (this.selectedNodeId && window.appResultsPanel) {
         const selNode = this.nodes.find(n => n.id === this.selectedNodeId);
         window.appResultsPanel.showNodeResults(selNode);
+      }
+    });
+    this.contextMenu.querySelector('#ctx-view-lineage')?.addEventListener('click', () => {
+      if (this.selectedNodeId && window.appLineagePanel) {
+        const selNode = this.nodes.find(n => n.id === this.selectedNodeId);
+        if (selNode) {
+          const wf = this.getWorkflowData();
+          window.appLineagePanel.showForNode(selNode.id, selNode.name || selNode.type, wf);
+        }
       }
     });
   }
@@ -3230,14 +3262,16 @@ class Canvas {
             const data = JSON.parse(ev.target.result);
             if (data && (Array.isArray(data.nodes) || Array.isArray(data.connections))) {
               const wfName = file.name.replace(/\.json$/i, '');
-              if (typeof window.handleWorkflowLoaded === 'function') {
+              if (typeof window.openWorkflowData === 'function') {
+                window.openWorkflowData(data, file.name, `workflows/${file.name}`, null);
+              } else if (typeof window.handleWorkflowLoaded === 'function') {
                 window.handleWorkflowLoaded(data, wfName);
               } else {
                 this.loadWorkflow(data);
                 const nameInput = document.getElementById('workflow-name-input');
                 if (nameInput) nameInput.value = wfName;
+                if (window.showToast) window.showToast('success', 'Workflow Loaded', `Loaded '${file.name}' onto canvas.`);
               }
-              if (window.showToast) window.showToast('success', 'Workflow Loaded', `Loaded '${file.name}' onto canvas.`);
               return;
             }
           } catch (jsonErr) {
@@ -3263,7 +3297,9 @@ class Canvas {
         .then(res => {
           if (res.success && res.workflow) {
             const wfName = res.workflow.name || file.name.replace(/\.(zip|yxzp)$/i, '');
-            if (typeof window.handleWorkflowLoaded === 'function') {
+            if (typeof window.openWorkflowData === 'function') {
+              window.openWorkflowData(res.workflow, file.name, `workflows/${wfName}.json`, null);
+            } else if (typeof window.handleWorkflowLoaded === 'function') {
               window.handleWorkflowLoaded(res.workflow, wfName);
             } else {
               this.loadWorkflow(res.workflow);
@@ -3649,14 +3685,28 @@ class Canvas {
   // Authentic Compact Alteryx Tool Rendering
   // --------------------------------------------------------------------
   renderNodeElement(node) {
-    const meta = this.toolRegistry[node.type] || {
-      name: node.type,
-      category: 'preparation',
-      color: '#0072ce',
-      icon: 'code',
-      inputs: ['I'],
-      outputs: ['O']
-    };
+    let meta = this.toolRegistry[node.type];
+    if (!meta && window.toolRegistry && window.toolRegistry[node.type]) {
+      meta = window.toolRegistry[node.type];
+      this.toolRegistry[node.type] = meta;
+    }
+    if (!meta && window.appTabManager && window.appTabManager._toolsData) {
+      const found = window.appTabManager._toolsData.find(t => t.type === node.type);
+      if (found) {
+        meta = found;
+        this.toolRegistry[node.type] = meta;
+      }
+    }
+    if (!meta) {
+      meta = {
+        name: node.type,
+        category: 'preparation',
+        color: '#0072ce',
+        icon: 'code',
+        inputs: ['I'],
+        outputs: ['O']
+      };
+    }
 
     const nodeEl = document.createElement('div');
     nodeEl.id = `node-elem-${node.id}`;
@@ -5029,8 +5079,64 @@ class Canvas {
     if (node) this.renderNodeElement(node);
     this.renderWires();
     this.updateSelectionVisuals();
-
     this.onWorkflowChange();
     if (window.showToast) window.showToast('info', 'Cache Cleared', `Cache/lock cleared for tool '${node ? node.name : nodeId}'.`);
+  }
+
+  highlightLineagePath(nodeIds) {
+    if (!this.wrapper) return;
+    const targetSet = new Set(nodeIds || []);
+    if (targetSet.size === 0) {
+      this.clearLineageHighlight();
+      return;
+    }
+
+    this.wrapper.classList.add('lineage-xray-active');
+
+    // Highlight or dim nodes
+    const allNodeEls = this.wrapper.querySelectorAll('.canvas-node');
+    allNodeEls.forEach(el => {
+      const nid = el.getAttribute('data-node-id') || (el.id ? el.id.replace('node-elem-', '') : null);
+      if (targetSet.has(nid)) {
+        el.classList.add('lineage-glow');
+        el.classList.remove('lineage-dimmed');
+      } else {
+        el.classList.remove('lineage-glow');
+        el.classList.add('lineage-dimmed');
+      }
+    });
+
+    // Highlight or dim connecting wires
+    if (this.svg) {
+      const allWirePaths = this.svg.querySelectorAll('.connection-path');
+      allWirePaths.forEach(p => {
+        const src = p.getAttribute('data-source-node-id');
+        const tgt = p.getAttribute('data-target-node-id');
+        if (targetSet.has(src) && targetSet.has(tgt)) {
+          p.classList.add('lineage-wire-glow');
+          p.classList.remove('lineage-wire-dimmed');
+        } else {
+          p.classList.remove('lineage-wire-glow');
+          p.classList.add('lineage-wire-dimmed');
+        }
+      });
+    }
+  }
+
+  clearLineageHighlight() {
+    if (!this.wrapper) return;
+    this.wrapper.classList.remove('lineage-xray-active');
+
+    const allNodeEls = this.wrapper.querySelectorAll('.canvas-node');
+    allNodeEls.forEach(el => {
+      el.classList.remove('lineage-glow', 'lineage-dimmed');
+    });
+
+    if (this.svg) {
+      const allWirePaths = this.svg.querySelectorAll('.connection-path');
+      allWirePaths.forEach(p => {
+        p.classList.remove('lineage-wire-glow', 'lineage-wire-dimmed');
+      });
+    }
   }
 }
