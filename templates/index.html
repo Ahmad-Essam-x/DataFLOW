@@ -744,8 +744,12 @@
             <span>Export</span>
           </button>
           <div id="export-menu" class="dropdown-menu dropdown-menu-right">
-            <button id="btn-export-csv" class="dropdown-item">Export to CSV</button>
+            <button id="btn-export-csv" class="dropdown-item">Export to CSV (All records)</button>
+            <button id="btn-export-csv-filtered" class="dropdown-item" style="display: none;">Export to CSV (Filtered view)</button>
             <button id="btn-export-excel" class="dropdown-item">Export to Excel (.xlsx)</button>
+            <button id="btn-export-parquet" class="dropdown-item">Export to Parquet (.parquet)</button>
+            <button id="btn-export-tsv" class="dropdown-item">Export to TSV (.tsv)</button>
+            <button id="btn-export-json" class="dropdown-item">Export to JSON (.json)</button>
           </div>
         </div>
 
@@ -1561,6 +1565,7 @@
   <script src="/static/js/user_settings.js"></script>
   <script src="/static/js/core/event_bus.js"></script>
   <script src="/static/js/core/history.js"></script>
+  <script src="/static/js/core/downloader.js"></script>
   <script src="/static/js/palette.js"></script>
   <script src="/static/js/canvas.js"></script>
   <script src="/static/js/file_explorer.js"></script>

@@ -143,6 +143,10 @@ class ResultsPanel {
     const exportMenu = document.getElementById('export-menu');
     exportBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      const filteredBtn = document.getElementById('btn-export-csv-filtered');
+      if (filteredBtn) {
+        filteredBtn.style.display = (this.searchQuery && this.searchQuery.trim()) ? 'block' : 'none';
+      }
       exportMenu.classList.toggle('show');
     });
 
@@ -150,31 +154,54 @@ class ResultsPanel {
       exportMenu.classList.remove('show');
     });
 
-    document.getElementById('btn-export-csv').addEventListener('click', () => {
-      if (this.currentNodeId) {
+    const bindExport = (btnId, format, isFiltered = false) => {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        if (!this.currentNodeId) {
+          if (window.showToast) window.showToast('info', 'Export', 'Please run workflow and select a tool first.');
+          return;
+        }
         const node = window.appCanvas ? window.appCanvas.nodes.find(n => n.id === this.currentNodeId) : null;
         const nodeName = node ? (node.name || node.type) : this.currentNodeId;
-        const filename = `${nodeName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}_export.csv`;
-        let url = `/api/export/${this.currentNodeId}?port=${this.currentPort}&format=csv&filename=${encodeURIComponent(filename)}`;
-        if (this.sortBy) url += `&sort_by=${encodeURIComponent(this.sortBy)}&sort_dir=${encodeURIComponent(this.sortDir)}`;
-        if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
-        if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
-        window.location.href = url;
-      }
-    });
+        const filterTag = isFiltered ? '_filtered' : '';
+        const ext = format === 'excel' ? 'xlsx' : format;
+        const filename = `${nodeName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}${filterTag}_export.${ext}`;
 
-    document.getElementById('btn-export-excel').addEventListener('click', () => {
-      if (this.currentNodeId) {
-        const node = window.appCanvas ? window.appCanvas.nodes.find(n => n.id === this.currentNodeId) : null;
-        const nodeName = node ? (node.name || node.type) : this.currentNodeId;
-        const filename = `${nodeName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}_export.xlsx`;
-        let url = `/api/export/${this.currentNodeId}?port=${this.currentPort}&format=excel&filename=${encodeURIComponent(filename)}`;
+        let url = `/api/export/${this.currentNodeId}?port=${this.currentPort}&format=${encodeURIComponent(format)}&filename=${encodeURIComponent(filename)}`;
         if (this.sortBy) url += `&sort_by=${encodeURIComponent(this.sortBy)}&sort_dir=${encodeURIComponent(this.sortDir)}`;
+        if (isFiltered && this.searchQuery) url += `&search=${encodeURIComponent(this.searchQuery.trim())}`;
         if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
         if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
-        window.location.href = url;
-      }
-    });
+
+        const origHtml = exportBtn.innerHTML;
+        if (window.safeDownloadFile) {
+          window.safeDownloadFile(url, filename, {
+            onStart: () => {
+              exportBtn.disabled = true;
+              exportBtn.innerHTML = `
+                <div class="spinner-small" style="width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;"></div>
+                <span>Exporting...</span>
+              `;
+            },
+            onFinish: () => {
+              exportBtn.disabled = false;
+              exportBtn.innerHTML = origHtml;
+            }
+          });
+        } else {
+          window.location.href = url;
+        }
+      });
+    };
+
+    bindExport('btn-export-csv', 'csv', false);
+    bindExport('btn-export-csv-filtered', 'csv', true);
+    bindExport('btn-export-excel', 'excel', false);
+    bindExport('btn-export-parquet', 'parquet', false);
+    bindExport('btn-export-tsv', 'tsv', false);
+    bindExport('btn-export-json', 'json', false);
+
 
     // Copy table or selected cells to clipboard
     const copyBtn = document.getElementById('btn-copy-table');
@@ -1918,8 +1945,14 @@ class ResultsPanel {
     let url = `/api/node-profile/${this.currentNodeId}/export-report?port=${this.currentPort}&title=${encodeURIComponent('Quality Report - ' + nodeName)}`;
     if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
     if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
-    window.location.href = url;
+    const fname = `Quality_Report_${nodeName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}.html`;
+    if (window.safeDownloadFile) {
+      window.safeDownloadFile(url, fname);
+    } else {
+      window.location.href = url;
+    }
   }
+
 
   renderProfilingCards(data) {
     const { total_rows, columns } = data;

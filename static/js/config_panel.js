@@ -1146,7 +1146,8 @@ class ConfigPanel {
         <label id="cfg-file-path-label">${isWildcard ? 'Multi-File Pattern (Glob)' : 'File Path'}</label>
         <div style="display: flex; gap: 6px;">
           <input type="text" class="form-control" id="cfg-file-path" value="${cfg.file_path || ''}" placeholder="${isWildcard ? 'e.g. data/sales_*.csv or orders_2024_??.xlsx' : 'e.g. sales_orders.csv or data/report.xlsx'}" style="flex: 1;">
-          <button type="button" class="btn btn-secondary" id="btn-browse-in-file" style="white-space: nowrap; padding: 6px 12px;" title="Explore workspace files">📁 Browse...</button>
+          <button type="button" class="btn btn-secondary" id="btn-browse-in-native" style="white-space: nowrap; padding: 6px 10px; gap: 4px;" title="Browse local files with Windows Explorer">🖥️ Browse...</button>
+          <button type="button" class="btn btn-secondary" id="btn-browse-in-file" style="white-space: nowrap; padding: 6px 10px;" title="Explore workspace directory">📁 Workspace</button>
         </div>
         <div id="cfg-wildcard-badge" class="wildcard-match-badge ${isWildcard ? '' : 'hidden'}"></div>
         <div class="form-hint" id="cfg-file-hint">Use wildcards (* or ?) to automatically stack and union multiple files.</div>
@@ -1251,19 +1252,33 @@ class ConfigPanel {
 
     // Helpers
     const toggleFileTypeUI = (targetPath) => {
-      const isEx = targetPath && (targetPath.endsWith('.xlsx') || targetPath.endsWith('.xls') || targetPath.endsWith('.xlsm'));
-      const isWc = hasWildcard(targetPath);
+      const lower = (targetPath || '').toLowerCase();
+      const isEx = lower.endsWith('.xlsx') || lower.endsWith('.xls') || lower.endsWith('.xlsm') || lower.endsWith('.xlsb');
+      const isParquet = lower.endsWith('.parquet') || lower.endsWith('.pq');
+      const isJson = lower.endsWith('.json') || lower.endsWith('.jsonl') || lower.endsWith('.ndjson');
+      const isTsv = lower.endsWith('.tsv') || lower.endsWith('.tab');
+
+      if (isTsv) {
+        const delimSel = container.querySelector('#cfg-delimiter');
+        if (delimSel && (!node.config.delimiter || node.config.delimiter === ',')) {
+          delimSel.value = '\\t';
+          node.config.delimiter = '\\t';
+        }
+      }
+
+      const isBinaryOrStructured = isEx || isParquet || isJson;
       container.querySelector('#cfg-sheet-group').style.display = isEx ? '' : 'none';
-      container.querySelector('#cfg-csv-options').style.display = isEx ? 'none' : '';
-      container.querySelector('#cfg-quote-group').style.display = isEx ? 'none' : '';
-      container.querySelector('#cfg-escape-group').style.display = isEx ? 'none' : '';
-      container.querySelector('#cfg-encoding-group').style.display = isEx ? 'none' : '';
-      container.querySelector('#cfg-bad-lines-group').style.display = isEx ? 'none' : '';
+      container.querySelector('#cfg-csv-options').style.display = isBinaryOrStructured ? 'none' : '';
+      container.querySelector('#cfg-quote-group').style.display = isBinaryOrStructured ? 'none' : '';
+      container.querySelector('#cfg-escape-group').style.display = isBinaryOrStructured ? 'none' : '';
+      container.querySelector('#cfg-encoding-group').style.display = isBinaryOrStructured ? 'none' : '';
+      container.querySelector('#cfg-bad-lines-group').style.display = isBinaryOrStructured ? 'none' : '';
       if (isEx) {
         fetchExcelSheets(targetPath);
       }
       updateWildcardPreview(targetPath);
     };
+
 
     let wildcardTimeout = null;
     const updateWildcardPreview = (pattern) => {
@@ -1401,6 +1416,36 @@ class ConfigPanel {
       this.canvas.onWorkflowChange();
     });
 
+    const btnBrowseNative = container.querySelector('#btn-browse-in-native');
+    if (btnBrowseNative) {
+      btnBrowseNative.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/dialog/pick-input-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initial_dir: node.config.file_path || '' })
+          });
+          const data = await res.json();
+          if (data.success && data.path) {
+            node.config.file_path = data.path;
+            filePathInput.value = data.path;
+            node.config.file_type = data.detected_format || 'csv';
+            if (data.detected_format === 'tsv') {
+              node.config.delimiter = '\\t';
+            }
+            toggleFileTypeUI(data.path);
+            this.fetchFileSchema(data.path, node);
+            this.canvas.onWorkflowChange();
+            if (window.appHistory) window.appHistory.pushSnapshot('Pick input file');
+          } else if (!data.success && !data.cancelled && window.showToast) {
+            window.showToast('error', 'File Selection Error', data.error || 'Failed to select file.');
+          }
+        } catch (err) {
+          if (window.showToast) window.showToast('error', 'Dialog Error', err.message);
+        }
+      });
+    }
+
     const btnBrowseIn = container.querySelector('#btn-browse-in-file');
     if (btnBrowseIn) {
       btnBrowseIn.addEventListener('click', () => {
@@ -1441,6 +1486,11 @@ class ConfigPanel {
           node.config.file_path = json.file_name;
           filePathInput.value = json.file_name;
           node.config.file_type = json.file_type;
+          if (json.file_type === 'tsv' || json.delimiter === '\t') {
+            node.config.delimiter = '\\t';
+            const delimSelect = container.querySelector('#cfg-delimiter');
+            if (delimSelect) delimSelect.value = '\\t';
+          }
           if (Array.isArray(json.columns)) {
             node.config.preview_columns = json.columns;
             node.config.column_meta = json.column_meta || [];
@@ -1454,6 +1504,7 @@ class ConfigPanel {
         uploadStatus.innerHTML = `<span style="color: var(--color-error)">Upload error: ${err.message}</span>`;
       }
     });
+
 
     const sheetSelect = container.querySelector('#cfg-sheet-name');
     if (sheetSelect) {
@@ -2006,18 +2057,40 @@ class ConfigPanel {
       this.canvas.onWorkflowChange();
     });
 
-    container.querySelector('#btn-cfg-download').addEventListener('click', () => {
-      const fmt = node.config.format || 'csv';
-      const rawName = (node.config.filename || 'export_result').trim();
-      const ext = fmt === 'excel' ? 'xlsx' : fmt;
-      const fullFilename = rawName.includes('.') ? rawName : `${rawName}.${ext}`;
-      const delim = encodeURIComponent(node.config.delimiter || ',');
-      let url = `/api/export/${node.id}?port=O&format=${fmt}&filename=${encodeURIComponent(fullFilename)}&delimiter=${delim}`;
-      if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
-      if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
-      window.location.href = url;
-    });
+    const downloadBtn = container.querySelector('#btn-cfg-download');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', () => {
+        const fmt = node.config.format || 'csv';
+        const rawName = (node.config.filename || 'export_result').trim();
+        const ext = fmt === 'excel' ? 'xlsx' : fmt;
+        const fullFilename = rawName.includes('.') ? rawName : `${rawName}.${ext}`;
+        const delim = encodeURIComponent(node.config.delimiter || ',');
+        let url = `/api/export/${node.id}?port=O&format=${encodeURIComponent(fmt)}&filename=${encodeURIComponent(fullFilename)}&delimiter=${delim}`;
+        if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
+        if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
+
+        const origHtml = downloadBtn.innerHTML;
+        if (window.safeDownloadFile) {
+          window.safeDownloadFile(url, fullFilename, {
+            onStart: () => {
+              downloadBtn.disabled = true;
+              downloadBtn.innerHTML = `
+                <div class="spinner-small" style="width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;"></div>
+                <span>Exporting...</span>
+              `;
+            },
+            onFinish: () => {
+              downloadBtn.disabled = false;
+              downloadBtn.innerHTML = origHtml;
+            }
+          });
+        } else {
+          window.location.href = url;
+        }
+      });
+    }
   }
+
 
   // --------------------------------------------------------------------
   // Browse Tool - Data Profiling Studio
@@ -2280,9 +2353,15 @@ class ConfigPanel {
         let url = `/api/node-profile/${node.id}/export-report?port=O&title=${encodeURIComponent('Data Quality Report - ' + node.name)}`;
         if (window.activeRunId) url += `&run_id=${encodeURIComponent(window.activeRunId)}`;
         if (window.clientSessionId) url += `&session_id=${encodeURIComponent(window.clientSessionId)}`;
-        window.location.href = url;
+        const rName = `Quality_Report_${(node.name || 'node').toLowerCase().replace(/[^a-z0-9_-]/g, '_')}.html`;
+        if (window.safeDownloadFile) {
+          window.safeDownloadFile(url, rName);
+        } else {
+          window.location.href = url;
+        }
       });
     }
+
 
     // View scatter plot buttons
     container.querySelectorAll('.btn-view-scatter').forEach(btn => {

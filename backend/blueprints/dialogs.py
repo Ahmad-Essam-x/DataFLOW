@@ -114,6 +114,47 @@ def show_native_open_dialog(initial_dir=None):
     return res
 
 
+def show_native_input_file_dialog(initial_dir=None):
+    """Opens native Windows Explorer Open File dialog for tabular data files via Tkinter."""
+    q = queue.Queue()
+
+    def _worker():
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            root.focus_force()
+            selected = filedialog.askopenfilename(
+                parent=root,
+                initialdir=initial_dir or ext.DATA_DIR or ext.BASE_DIR,
+                filetypes=[
+                    ("All Supported Data Files", "*.csv;*.tsv;*.tab;*.xlsx;*.xls;*.xlsm;*.xlsb;*.parquet;*.pq;*.json;*.jsonl;*.txt"),
+                    ("Delimited / CSV Files (*.csv, *.tsv, *.txt)", "*.csv;*.tsv;*.tab;*.txt"),
+                    ("Excel Workbooks (*.xlsx, *.xls, *.xlsm)", "*.xlsx;*.xls;*.xlsm;*.xlsb"),
+                    ("Parquet Files (*.parquet, *.pq)", "*.parquet;*.pq"),
+                    ("JSON Files (*.json, *.jsonl)", "*.json;*.jsonl;*.ndjson"),
+                    ("All Files (*.*)", "*.*")
+                ]
+            )
+            root.destroy()
+            q.put(selected)
+        except Exception as err:
+            q.put(err)
+
+    t = threading.Thread(target=_worker)
+    t.daemon = True
+    t.start()
+    t.join(timeout=30.0)
+    if t.is_alive():
+        return None
+    res = q.get() if not q.empty() else None
+    if isinstance(res, Exception):
+        raise res
+    return res
+
+
 def show_native_output_save_dialog(default_name="output.csv", initial_dir=None, fmt="csv"):
     """Opens native Windows Explorer Save As dialog to pick an output path and format."""
     q = queue.Queue()
@@ -296,6 +337,36 @@ def handle_native_pick_output_path():
         "directory": output_dir.replace("\\", "/"),
         "filename": stem or base_file,
         "full_filename": base_file,
+        "extension": extension,
+        "detected_format": detected_fmt
+    })
+
+
+@bp.route("/api/dialog/pick-input-file", methods=["POST", "GET"])
+def handle_native_pick_input_file():
+    """Opens Windows Explorer Open File dialog on host system and returns selected data file info."""
+    data = request.get_json(silent=True) or {}
+    initial_dir = data.get("initial_dir") or ext.DATA_DIR or ext.BASE_DIR
+
+    custom_handler = current_app.config.get("NATIVE_INPUT_FILE_HANDLER", show_native_input_file_dialog)
+    try:
+        chosen_path = _run_dialog_safe(custom_handler, timeout=30.0, initial_dir=initial_dir)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to launch Windows Explorer Open dialog: {str(e)}"}), 500
+
+    if not chosen_path:
+        return jsonify({"success": False, "cancelled": True, "message": "Dialog cancelled or unavailable."})
+
+    chosen_path = os.path.normpath(chosen_path)
+    extension = os.path.splitext(chosen_path)[1].lower()
+    from backend.engine.io_formats import detect_format
+    detected_fmt = detect_format(chosen_path)
+
+    return jsonify({
+        "success": True,
+        "path": chosen_path.replace("\\", "/"),
+        "raw_path": chosen_path,
+        "filename": os.path.basename(chosen_path),
         "extension": extension,
         "detected_format": detected_fmt
     })

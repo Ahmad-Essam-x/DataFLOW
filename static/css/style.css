@@ -8210,6 +8210,296 @@ body.node-tooltips-disabled .anchor-tooltip {
   word-break: break-all;
 }
 
+/* Source Origins Card Banner */
+.lineage-origins-card {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.lineage-origins-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.lineage-origins-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #34d399;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lineage-origins-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted, #64748b);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.lineage-origins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lineage-origin-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lineage-origin-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.lineage-origin-name {
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+}
+
+.lineage-origin-path {
+  font-size: 10px;
+  color: var(--text-muted, #64748b);
+  font-family: var(--font-mono, monospace);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.lineage-origin-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 12px;
+}
+
+.lineage-col-chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
+.lineage-col-chip.origin-chip {
+  background: rgba(16, 185, 129, 0.14);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.chip-bracket, .token-bracket {
+  opacity: 0.6;
+}
+
+/* View Mode Switcher inside card */
+.lineage-view-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle, #334155);
+  padding-bottom: 6px;
+}
+
+.lineage-subtab {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle, #334155);
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lineage-subtab:hover {
+  color: var(--text-primary, #f8fafc);
+  border-color: #475569;
+}
+
+.lineage-subtab.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+/* Subviews */
+.lineage-subview {
+  display: none;
+}
+
+.lineage-subview.active {
+  display: block;
+}
+
+/* Step dot and badges */
+.lineage-step-item.lineage-step-agg .lineage-step-dot {
+  background: #f97316;
+}
+
+.lineage-step-item.lineage-step-join .lineage-step-dot {
+  background: #3b82f6;
+}
+
+.lineage-step-col-target {
+  font-size: 10.5px;
+  color: var(--text-muted, #64748b);
+  margin-bottom: 2px;
+}
+
+.lineage-step-col-target strong {
+  color: var(--color-primary, #38bdf8);
+  font-family: var(--font-mono, monospace);
+}
+
+.lineage-token-col {
+  display: inline-block;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 0 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  margin: 0 1px;
+}
+
+.lineage-step-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 10.5px;
+}
+
+.lineage-inputs-lbl {
+  color: var(--text-muted, #64748b);
+  font-size: 10px;
+}
+
+/* Derivation Tree View Styles */
+.lineage-tree-wrapper {
+  padding: 4px 0 6px 4px;
+  overflow-x: auto;
+}
+
+.lineage-tree-branch {
+  position: relative;
+  margin-left: 14px;
+  padding-left: 12px;
+  border-left: 1.5px dashed var(--border-subtle, #334155);
+}
+
+.lineage-tree-branch.root-branch {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
+
+.lineage-tree-node {
+  background: var(--bg-surface, #0f172a);
+  border: 1px solid var(--border-subtle, #334155);
+  border-radius: 5px;
+  padding: 6px 8px;
+  margin: 4px 0;
+}
+
+.lineage-tree-node-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+
+.lineage-tree-col {
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-primary, #f8fafc);
+}
+
+.lineage-tree-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.lineage-tree-badge-origin {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.lineage-tree-badge-calc {
+  background: rgba(168, 85, 247, 0.16);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.lineage-tree-badge-agg {
+  background: rgba(249, 115, 22, 0.16);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+
+.lineage-tree-badge-rename {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.lineage-tree-badge-join {
+  background: rgba(59, 130, 246, 0.16);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.lineage-tree-badge-pass {
+  background: rgba(148, 163, 184, 0.14);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.lineage-tree-tool {
+  font-size: 10px;
+  color: var(--text-muted, #64748b);
+}
+
+.lineage-tree-node-detail {
+  font-size: 10.5px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-secondary, #94a3b8);
+  margin-top: 3px;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.lineage-tree-children {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Downstream Impact List */
 .lineage-impact-card {
   background: var(--bg-surface, #0f172a);
@@ -8557,4 +8847,109 @@ body.light-theme .lineage-empty,
 body.light-theme .lineage-placeholder {
   color: #64748b;
 }
+
+/* Light Theme Overrides for Origins, View Toggle, Chips, and Derivation Tree */
+body.theme-light .lineage-origins-card,
+body.light-theme .lineage-origins-card {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+body.theme-light .lineage-origins-title,
+body.light-theme .lineage-origins-title {
+  color: #065f46;
+}
+
+body.theme-light .lineage-origins-badge,
+body.light-theme .lineage-origins-badge {
+  background: #d1fae5;
+  color: #047857;
+}
+
+body.theme-light .lineage-origin-name,
+body.light-theme .lineage-origin-name {
+  color: #0f172a;
+}
+
+body.theme-light .lineage-origin-path,
+body.light-theme .lineage-origin-path {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+body.theme-light .lineage-col-chip,
+body.light-theme .lineage-col-chip {
+  background: #e0f2fe;
+  color: #0284c7;
+  border-color: #bae6fd;
+}
+
+body.theme-light .lineage-col-chip.origin-chip,
+body.light-theme .lineage-col-chip.origin-chip {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+body.theme-light .lineage-view-toggle,
+body.light-theme .lineage-view-toggle {
+  border-bottom-color: #e2e8f0;
+}
+
+body.theme-light .lineage-subtab,
+body.light-theme .lineage-subtab {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+body.theme-light .lineage-subtab:hover,
+body.light-theme .lineage-subtab:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+body.theme-light .lineage-subtab.active,
+body.light-theme .lineage-subtab.active {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+body.theme-light .lineage-token-col,
+body.light-theme .lineage-token-col {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+body.theme-light .lineage-step-col-target strong,
+body.light-theme .lineage-step-col-target strong {
+  color: #0284c7;
+}
+
+body.theme-light .lineage-tree-branch,
+body.light-theme .lineage-tree-branch {
+  border-left-color: #cbd5e1;
+}
+
+body.theme-light .lineage-tree-node,
+body.light-theme .lineage-tree-node {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+body.theme-light .lineage-tree-col,
+body.light-theme .lineage-tree-col {
+  color: #0f172a;
+}
+
+body.theme-light .lineage-tree-node-detail,
+body.light-theme .lineage-tree-node-detail {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
 

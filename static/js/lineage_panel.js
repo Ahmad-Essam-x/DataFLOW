@@ -310,11 +310,20 @@ class LineagePanel {
       const cat = info.category || 'passthrough';
       const hops = info.hops || [];
       const ancestors = info.ancestor_node_ids || [];
+      const rootOrigins = info.root_origins || [];
+      const derivationTree = info.derivation_tree || null;
 
       let originText = 'Unknown Origin';
-      if (hops.length > 0) {
-        const rootHop = hops[0];
-        originText = `${rootHop.node_name}: ${rootHop.column || col}`;
+      if (cat === 'origin') {
+        originText = 'Raw Source Column';
+      } else if (rootOrigins.length === 1) {
+        const ro = rootOrigins[0];
+        const numFields = (ro.columns || []).length;
+        originText = `${ro.node_name} (${numFields} field${numFields > 1 ? 's' : ''})`;
+      } else if (rootOrigins.length > 1) {
+        originText = `${rootOrigins.length} Datasets (${rootOrigins.map(r => r.node_name).join(', ')})`;
+      } else if (hops.length > 0) {
+        originText = hops[0].node_name || 'Upstream Data';
       }
 
       const catBadgeClass = `lineage-cat-${cat}`;
@@ -337,27 +346,104 @@ class LineagePanel {
           </div>
 
           <div class="lineage-card-steps">
-            <div class="lineage-step-list">
-              ${hops.map((hop, hIdx) => {
-                const isFirst = hIdx === 0;
-                const isLast = hIdx === hops.length - 1;
-                let stepClass = 'lineage-step-pass';
-                if (isFirst) stepClass = 'lineage-step-origin';
-                else if (hop.action && hop.action.toLowerCase().includes('calculat')) stepClass = 'lineage-step-calc';
-                else if (hop.action && hop.action.toLowerCase().includes('rename')) stepClass = 'lineage-step-rename';
-
-                return `
-                  <div class="lineage-step-item ${stepClass}">
-                    <div class="lineage-step-dot"></div>
-                    <div class="lineage-step-header">
-                      <span class="lineage-step-tool">${isFirst ? '🌱 ' : (isLast ? '🎯 ' : '⚙️ ')}${this._escape(hop.node_name || hop.node_id)}</span>
-                      <span class="lineage-step-action">${this._escape(hop.action || 'Hop')}</span>
+            <!-- Root Source Origins Section -->
+            ${rootOrigins.length > 0 ? `
+              <div class="lineage-origins-card">
+                <div class="lineage-origins-header">
+                  <span class="lineage-origins-title">🌱 Source Origins (${rootOrigins.length})</span>
+                  <span class="lineage-origins-badge">${rootOrigins.reduce((acc, r) => acc + (r.columns || []).length, 0)} field(s)</span>
+                </div>
+                <div class="lineage-origins-list">
+                  ${rootOrigins.map(ro => `
+                    <div class="lineage-origin-entry">
+                      <div class="lineage-origin-meta">
+                        <span class="lineage-origin-name">📁 ${this._escape(ro.node_name)}</span>
+                        ${ro.source_file && ro.source_file !== 'Raw Input Data' ? `
+                          <span class="lineage-origin-path" title="${this._escape(ro.source_file)}">${this._escape(ro.source_file.split(/[\/\\]/).pop())}</span>
+                        ` : ''}
+                      </div>
+                      <div class="lineage-origin-fields">
+                        ${(ro.columns || []).map(c => `
+                          <span class="lineage-col-chip origin-chip" title="Imported column: ${this._escape(c)}">
+                            <span class="chip-bracket">[</span>${this._escape(c)}<span class="chip-bracket">]</span>
+                          </span>
+                        `).join('')}
+                      </div>
                     </div>
-                    <div class="lineage-step-detail">${this._escape(hop.detail || hop.column || '')}</div>
-                  </div>
-                `;
-              }).join('')}
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- View Switcher -->
+            <div class="lineage-view-toggle">
+              <button class="lineage-subtab active" data-subtab="pipeline">📋 Pipeline Journey (${hops.length} steps)</button>
+              ${derivationTree ? `
+                <button class="lineage-subtab" data-subtab="tree">🌳 Derivation Tree</button>
+              ` : ''}
             </div>
+
+            <!-- Pipeline Flow Subview -->
+            <div class="lineage-subview lineage-subview-pipeline active">
+              <div class="lineage-step-list">
+                ${hops.map((hop, hIdx) => {
+                  const isFirst = hIdx === 0;
+                  const isLast = hIdx === hops.length - 1;
+                  let stepClass = 'lineage-step-pass';
+                  let stepIcon = '⚙️';
+                  const actLower = (hop.action || '').toLowerCase();
+
+                  if (isFirst && (hop.action === 'Origin' || hop.node_type === 'input_data')) {
+                    stepClass = 'lineage-step-origin';
+                    stepIcon = '🌱';
+                  } else if (isLast) {
+                    stepIcon = '🎯';
+                  }
+                  if (actLower.includes('calculat') || actLower.includes('formula')) {
+                    stepClass = 'lineage-step-calc';
+                    stepIcon = '✨';
+                  } else if (actLower.includes('aggregate') || actLower.includes('sum') || actLower.includes('avg') || actLower.includes('count')) {
+                    stepClass = 'lineage-step-agg';
+                    stepIcon = '📊';
+                  } else if (actLower.includes('renam')) {
+                    stepClass = 'lineage-step-rename';
+                    stepIcon = '🏷️';
+                  } else if (actLower.includes('join')) {
+                    stepClass = 'lineage-step-join';
+                    stepIcon = '🔀';
+                  }
+
+                  return `
+                    <div class="lineage-step-item ${stepClass}">
+                      <div class="lineage-step-dot"></div>
+                      <div class="lineage-step-header">
+                        <span class="lineage-step-tool">${stepIcon} ${this._escape(hop.node_name || hop.node_id)}</span>
+                        <span class="lineage-step-action">${this._escape(hop.action || 'Hop')}</span>
+                      </div>
+                      ${hop.column && hop.column !== col && !isFirst ? `
+                        <div class="lineage-step-col-target">Produced Field: <strong>[${this._escape(hop.column)}]</strong></div>
+                      ` : ''}
+                      <div class="lineage-step-detail">${this._formatExpression(hop.detail || hop.column || '')}</div>
+                      ${hop.inputs && hop.inputs.length > 0 ? `
+                        <div class="lineage-step-inputs">
+                          <span class="lineage-inputs-lbl">Consumes:</span>
+                          ${hop.inputs.map(inp => `<span class="lineage-col-chip">[${this._escape(inp)}]</span>`).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Derivation Tree Subview -->
+            ${derivationTree ? `
+              <div class="lineage-subview lineage-subview-tree">
+                <div class="lineage-tree-wrapper">
+                  ${this._renderDerivationTree(derivationTree, 0)}
+                </div>
+              </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -434,7 +520,7 @@ class LineagePanel {
                       <span class="lineage-impact-target">⚡ ${this._escape(u.node_name)}</span>
                       <span class="lineage-impact-badge">${this._escape(u.usage)}</span>
                     </div>
-                    <div class="lineage-impact-detail">${this._escape(u.detail)}</div>
+                    <div class="lineage-impact-detail">${this._formatExpression(u.detail)}</div>
                   </div>
                 `).join('')}
               </div>
@@ -472,12 +558,11 @@ class LineagePanel {
         nodeIds = [];
       }
 
-      // Always include current node in the highlight set
       if (this._currentNodeId && !nodeIds.includes(this._currentNodeId)) {
         nodeIds.push(this._currentNodeId);
       }
 
-      // Hover: Light up path on canvas (X-Ray glow)
+      // Hover: Light up path on canvas
       card.addEventListener('mouseenter', () => {
         if (!this._lockedHighlightCol && window.appCanvas) {
           window.appCanvas.highlightLineagePath(nodeIds);
@@ -490,26 +575,99 @@ class LineagePanel {
         }
       });
 
-      // Click: Toggle accordion step details and lock highlight
-      card.addEventListener('click', (e) => {
-        const isCurrentlyExpanded = card.classList.contains('expanded');
+      // Click on Card Header: Accordion toggle
+      const header = card.querySelector('.lineage-card-header');
+      if (header) {
+        header.addEventListener('click', (e) => {
+          const isCurrentlyExpanded = card.classList.contains('expanded');
+          cards.forEach(c => c.classList.remove('expanded', 'highlighted'));
 
-        // Close other cards for clean accordion feel
-        cards.forEach(c => c.classList.remove('expanded', 'highlighted'));
+          if (!isCurrentlyExpanded) {
+            card.classList.add('expanded', 'highlighted');
+            this._lockedHighlightCol = colName;
+            if (window.appCanvas) {
+              window.appCanvas.highlightLineagePath(nodeIds);
+            }
+          } else {
+            this._lockedHighlightCol = null;
+            if (window.appCanvas) {
+              window.appCanvas.clearLineageHighlight();
+            }
+          }
+        });
+      }
 
-        if (!isCurrentlyExpanded) {
-          card.classList.add('expanded', 'highlighted');
-          this._lockedHighlightCol = colName;
-          if (window.appCanvas) {
-            window.appCanvas.highlightLineagePath(nodeIds);
-          }
-        } else {
-          this._lockedHighlightCol = null;
-          if (window.appCanvas) {
-            window.appCanvas.clearLineageHighlight();
-          }
-        }
+      // View Subtab Toggle (Pipeline vs Tree)
+      card.querySelectorAll('.lineage-subtab').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetSubtab = btn.getAttribute('data-subtab');
+          card.querySelectorAll('.lineage-subtab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          card.querySelectorAll('.lineage-subview').forEach(v => {
+            v.classList.toggle('active', v.classList.contains(`lineage-subview-${targetSubtab}`));
+          });
+        });
       });
+    });
+  }
+
+  _renderDerivationTree(treeNode, depth = 0) {
+    if (!treeNode) return '';
+    const col = treeNode.column || '';
+    const action = treeNode.action || '';
+    const tool = treeNode.node_name || treeNode.node_id || '';
+    const detail = treeNode.detail || '';
+    const inputs = treeNode.inputs || [];
+
+    let badgeClass = 'lineage-tree-badge-pass';
+    let icon = '⚙️';
+    const actLower = action.toLowerCase();
+    if (actLower.includes('origin')) {
+      badgeClass = 'lineage-tree-badge-origin';
+      icon = '🌱';
+    } else if (actLower.includes('calculat') || actLower.includes('formula')) {
+      badgeClass = 'lineage-tree-badge-calc';
+      icon = '✨';
+    } else if (actLower.includes('aggregate') || actLower.includes('sum') || actLower.includes('avg') || actLower.includes('count')) {
+      badgeClass = 'lineage-tree-badge-agg';
+      icon = '📊';
+    } else if (actLower.includes('renam')) {
+      badgeClass = 'lineage-tree-badge-rename';
+      icon = '🏷️';
+    } else if (actLower.includes('join')) {
+      badgeClass = 'lineage-tree-badge-join';
+      icon = '🔀';
+    }
+
+    return `
+      <div class="lineage-tree-branch ${depth === 0 ? 'root-branch' : ''}">
+        <div class="lineage-tree-node">
+          <div class="lineage-tree-node-header">
+            <span class="lineage-tree-icon">${icon}</span>
+            <span class="lineage-tree-col">[${this._escape(col)}]</span>
+            <span class="lineage-tree-badge ${badgeClass}">${this._escape(action)}</span>
+            <span class="lineage-tree-tool">${this._escape(tool)}</span>
+          </div>
+          ${detail && detail !== col ? `
+            <div class="lineage-tree-node-detail">${this._formatExpression(detail)}</div>
+          ` : ''}
+        </div>
+        ${inputs.length > 0 ? `
+          <div class="lineage-tree-children">
+            ${inputs.map(child => this._renderDerivationTree(child, depth + 1)).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  _formatExpression(text) {
+    if (!text) return '';
+    const escaped = this._escape(text);
+    return escaped.replace(/\[([^\]]+)\]/g, (match, col) => {
+      return `<span class="lineage-token-col"><span class="token-bracket">[</span>${col}<span class="token-bracket">]</span></span>`;
     });
   }
 

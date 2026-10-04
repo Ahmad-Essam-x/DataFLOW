@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from .base import BaseNode, NodeExecutionError, sanitize_dataframe
 from backend.engine.security import is_safe_path, validate_safe_path, sanitize_file_basename, SecurityError
 from backend.engine.excel_reader import fast_read_excel, resolve_sheet_name, get_excel_sheet_names
+from backend.engine.io_formats import detect_format, read_tabular_file, SUPPORTED_FORMATS
 
 class InputDataNode(BaseNode):
     type_name = "input_data"
@@ -133,92 +134,34 @@ class InputDataNode(BaseNode):
         ).lower().strip()
 
         def read_single_file(fpath: str) -> pd.DataFrame:
-            ext = os.path.splitext(fpath)[1].lower()
             file_type = self.config.get("file_type", "").lower()
             if not file_type:
-                if ext in [".xlsx", ".xls", ".xlsm", ".xlsb"]:
-                    file_type = "excel"
-                elif ext == ".parquet":
-                    file_type = "parquet"
-                elif ext == ".json":
-                    file_type = "json"
-                else:
-                    file_type = "csv"
+                file_type = detect_format(fpath)
 
-            if file_type == "csv":
-                csv_kwargs = {
-                    "sep": delimiter,
-                    "encoding": encoding,
-                    "header": header,
-                    "nrows": max_rows,
-                    "skiprows": skiprows
-                }
-                if quote_char:
-                    csv_kwargs["quotechar"] = quote_char
-                if escape_char:
-                    csv_kwargs["escapechar"] = escape_char
-                if on_bad_lines in ["skip", "warn"]:
-                    csv_kwargs["on_bad_lines"] = "skip"
+            effective_delim = delimiter
+            if file_type == "tsv" and (not delimiter or delimiter == ","):
+                effective_delim = "\t"
 
-                try:
-                    single_df = pd.read_csv(fpath, **csv_kwargs)
-                except UnicodeDecodeError:
-                    csv_kwargs["encoding"] = "latin1"
-                    single_df = pd.read_csv(fpath, **csv_kwargs)
-
-            elif file_type == "excel":
-                is_all_sheets = read_all_sheets or str(sheet_name).strip() in ["*", "all", "ALL", "__all__"]
-                try:
-                    if is_all_sheets:
-                        sheets_dict = fast_read_excel(
-                            fpath,
-                            sheet_name=None,
-                            header=header,
-                            skiprows=skiprows,
-                            nrows=max_rows,
-                            trim_headers=trim_headers
-                        )
-                        sheet_dfs = []
-                        if isinstance(sheets_dict, dict):
-                            for s_name, s_df in sheets_dict.items():
-                                if s_df is not None and not s_df.empty:
-                                    s_df["SheetName"] = str(s_name)
-                                    sheet_dfs.append(s_df)
-                        elif isinstance(sheets_dict, pd.DataFrame):
-                            sheet_dfs.append(sheets_dict)
-                        single_df = pd.concat(sheet_dfs, ignore_index=True) if sheet_dfs else pd.DataFrame()
-                    else:
-                        single_df = fast_read_excel(
-                            fpath,
-                            sheet_name=sheet_name,
-                            header=header,
-                            skiprows=skiprows,
-                            nrows=max_rows,
-                            trim_headers=trim_headers
-                        )
-                        if isinstance(single_df, dict):
-                            single_df = next(iter(single_df.values())) if single_df else pd.DataFrame()
-                except ValueError as ve:
-                    raise NodeExecutionError(f"Input Data error: {str(ve)}")
-                except Exception as e:
-                    raise NodeExecutionError(f"Input Data error reading '{os.path.basename(fpath)}': {str(e)}")
-
-            elif file_type == "parquet":
-                single_df = pd.read_parquet(fpath)
-                if max_rows:
-                    single_df = single_df.iloc[:max_rows]
-
-            elif file_type == "json":
-                single_df = pd.read_json(fpath)
-                if max_rows:
-                    single_df = single_df.iloc[:max_rows]
-
-            else:
-                raise NodeExecutionError(f"Unsupported file type '{file_type}' for file '{fpath}'")
-
-            single_df.columns = [str(c) for c in single_df.columns]
-            if trim_headers:
-                single_df.columns = [c.strip() for c in single_df.columns]
+            try:
+                single_df = read_tabular_file(
+                    filepath=fpath,
+                    format_hint=file_type,
+                    delimiter=effective_delim,
+                    encoding=encoding,
+                    header=header,
+                    max_rows=max_rows,
+                    skiprows=skiprows,
+                    quote_char=quote_char,
+                    escape_char=escape_char,
+                    on_bad_lines=on_bad_lines,
+                    sheet_name=sheet_name,
+                    read_all_sheets=read_all_sheets,
+                    trim_headers=trim_headers
+                )
+            except ValueError as ve:
+                raise NodeExecutionError(f"Input Data error: {str(ve)}")
+            except Exception as e:
+                raise NodeExecutionError(f"Input Data error reading '{os.path.basename(fpath)}': {str(e)}")
 
             if output_fn in ("name", "name_only", "filename", "filename_only", "file_name_only"):
                 single_df["FileName"] = os.path.basename(fpath)
@@ -243,7 +186,15 @@ class InputDataNode(BaseNode):
         if not dfs:
             return {"O": pd.DataFrame()}
 
-        final_df = pd.concat(dfs, ignore_index=True) if len(dfs) > 1 else dfs[0]
+        if len(dfs) > 1:
+            col_sets = [set(d.columns) for d in dfs]
+            first_cols = col_sets[0]
+            differing = [i for i, cs in enumerate(col_sets[1:], 1) if cs != first_cols]
+            if differing:
+                self.messages.append(f"Input Data notice: Multi-file schemas differ across {len(differing)} file(s). Data aligned and unioned by column name.")
+            final_df = pd.concat(dfs, ignore_index=True)
+        else:
+            final_df = dfs[0]
 
         total_files = len(matched_files)
         total_rows = len(final_df)
@@ -252,6 +203,7 @@ class InputDataNode(BaseNode):
         self.messages.append(f"Loaded {total_rows:,} rows across {total_cols} columns from {file_desc}.")
 
         return {"O": final_df}
+
 
 
 # ----------------------------------------------------------------------
@@ -471,7 +423,7 @@ class TextInputNode(BaseNode):
                         df[col] = pd.to_numeric(df[col])
                     except (ValueError, TypeError):
                         pass
-                return {"O": df}
+                return {"O": sanitize_dataframe(df)}
             except Exception as e:
                 raise NodeExecutionError(f"Text Input: Failed to parse raw text: {str(e)}")
 
@@ -486,11 +438,12 @@ class TextInputNode(BaseNode):
                         df[col] = pd.to_numeric(df[col])
                     except (ValueError, TypeError):
                         pass
-                return {"O": df}
+                return {"O": sanitize_dataframe(df)}
             except Exception as e:
                 raise NodeExecutionError(f"Text Input: Failed to construct table: {str(e)}")
 
         return {"O": pd.DataFrame()}
+
 
 
 # ----------------------------------------------------------------------

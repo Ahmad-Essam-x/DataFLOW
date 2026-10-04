@@ -21,6 +21,14 @@ from backend.engine.security import (
     SecurityError
 )
 from backend.engine.excel_reader import get_excel_sheet_names, get_excel_row_count, fast_read_excel
+from backend.engine.io_formats import (
+    detect_format,
+    read_tabular_file,
+    filter_dataframe_by_search,
+    export_dataframe_to_stream,
+    get_format_extension,
+    SUPPORTED_FORMATS
+)
 
 bp = Blueprint("files", __name__)
 
@@ -59,13 +67,13 @@ def upload_file():
     file.save(save_path)
 
     extension = os.path.splitext(filename)[1].lower()
-    file_type = "excel" if extension in [".xlsx", ".xls", ".xlsm", ".xlsb"] else "csv"
+    file_type = detect_format(filename)
 
     sheets = []
     columns = []
     row_count = 0
     preview_records = []
-    detected_delimiter = ","
+    detected_delimiter = "\t" if file_type == "tsv" else ","
 
     try:
         if file_type == "excel":
@@ -76,6 +84,23 @@ def upload_file():
                 df_preview = next(iter(df_preview.values())) if df_preview else pd.DataFrame()
             try:
                 row_count = get_excel_row_count(save_path, sheet_name=first_sheet)
+            except Exception:
+                row_count = len(df_preview)
+        elif file_type == "parquet":
+            df_preview = read_tabular_file(save_path, format_hint="parquet", max_rows=10)
+            try:
+                import pyarrow.parquet as pq
+                row_count = pq.read_metadata(save_path).num_rows
+            except Exception:
+                try:
+                    row_count = len(pd.read_parquet(save_path))
+                except Exception:
+                    row_count = len(df_preview)
+        elif file_type == "json":
+            df_preview = read_tabular_file(save_path, format_hint="json", max_rows=10)
+            try:
+                full_json_df = read_tabular_file(save_path, format_hint="json")
+                row_count = len(full_json_df)
             except Exception:
                 row_count = len(df_preview)
         else:
@@ -94,14 +119,17 @@ def upload_file():
                 except Exception:
                     pass
 
+            df_preview = read_tabular_file(
+                save_path,
+                format_hint="csv",
+                delimiter=detected_delimiter,
+                max_rows=10
+            )
             try:
-                df_preview = pd.read_csv(save_path, sep=detected_delimiter, nrows=10)
-                with open(save_path, "r", encoding="utf-8") as f_in:
-                    row_count = sum(1 for _ in f_in) - 1
-            except UnicodeDecodeError:
-                df_preview = pd.read_csv(save_path, sep=detected_delimiter, encoding="latin1", nrows=10)
-                with open(save_path, "r", encoding="latin1") as f_in:
-                    row_count = sum(1 for _ in f_in) - 1
+                with open(save_path, "r", encoding="utf-8", errors="replace") as f_in:
+                    row_count = max(0, sum(1 for _ in f_in) - 1)
+            except Exception:
+                row_count = len(df_preview)
 
         columns = [str(c) for c in df_preview.columns]
         meta_list = []
@@ -124,8 +152,8 @@ def upload_file():
         "success": True,
         "file_name": unique_name,
         "original_name": filename,
-        "file_type": file_type,
-        "delimiter": detected_delimiter if file_type == "csv" else None,
+        "file_type": "csv" if file_type == "tsv" else file_type,
+        "delimiter": detected_delimiter if file_type in ["csv", "tsv"] else None,
         "sheets": sheets,
         "columns": columns,
         "column_meta": meta_list,
@@ -134,14 +162,17 @@ def upload_file():
     })
 
 
+
 @bp.route("/api/export/<node_id>", methods=["GET"])
 def export_node_data(node_id):
-    """Downloads intermediate or final node output as CSV, Excel, TSV, or JSON."""
+    """Downloads intermediate or final node output as CSV, Excel, TSV, JSON, or Parquet."""
     port = request.args.get("port", "O")
     fmt = request.args.get("format", "csv").lower()
     custom_name = request.args.get("filename", "").strip()
     sort_by = request.args.get("sort_by")
     sort_dir = request.args.get("sort_dir", "asc")
+    search = request.args.get("search", "").strip()
+    delim = request.args.get("delimiter", ",")
     run_id = request.args.get("run_id") or request.headers.get("X-Run-ID")
     session_id = request.args.get("session_id") or request.headers.get("X-Session-ID")
 
@@ -150,11 +181,14 @@ def export_node_data(node_id):
 
     node_cache = effective_cache.get(node_id)
     if not node_cache or port not in node_cache:
-        return jsonify({"error": "No cached data found for this node and port."}), 404
+        return jsonify({"error": "No cached data found for this node and port. Please run workflow first."}), 404
 
     df = node_cache[port]
     if not isinstance(df, pd.DataFrame):
         return jsonify({"error": "Data is not tabular."}), 400
+
+    if search:
+        df = filter_dataframe_by_search(df, search)
 
     if sort_by and sort_by in df.columns:
         ascending = (str(sort_dir).lower() != "desc")
@@ -165,63 +199,31 @@ def export_node_data(node_id):
 
     base_name = custom_name if custom_name else f"export_{node_id}_{port}"
     base_name = re.sub(r'[^\w\-_\.]', '_', base_name).strip()
-    for ext_strip in [".csv", ".xlsx", ".xls", ".tsv", ".json"]:
+    for ext_strip in [".csv", ".xlsx", ".xls", ".tsv", ".tab", ".json", ".jsonl", ".parquet", ".pq"]:
         if base_name.lower().endswith(ext_strip):
             base_name = base_name[:-len(ext_strip)]
             break
     if not base_name:
         base_name = f"export_{node_id}_{port}"
 
-    if fmt in ["excel", "xlsx"]:
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Export")
-        output.seek(0)
-        return send_file(
-            output,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name=f"{base_name}.xlsx"
+    try:
+        mem_stream, mimetype, def_ext = export_dataframe_to_stream(
+            df=df,
+            fmt=fmt,
+            delimiter=delim,
+            include_index=False,
+            sheet_name="Export"
         )
-    elif fmt in ["tsv", "tab"]:
-        output = io.StringIO()
-        df.to_csv(output, index=False, sep="\t", encoding="utf-8")
-        mem = io.BytesIO(output.getvalue().encode("utf-8"))
-        mem.seek(0)
+        download_filename = f"{base_name}{def_ext}"
         return send_file(
-            mem,
-            mimetype="text/tab-separated-values",
+            mem_stream,
+            mimetype=mimetype,
             as_attachment=True,
-            download_name=f"{base_name}.tsv"
+            download_name=download_filename
         )
-    elif fmt == "json":
-        json_str = df.to_json(orient="records", indent=2)
-        mem = io.BytesIO(json_str.encode("utf-8"))
-        mem.seek(0)
-        return send_file(
-            mem,
-            mimetype="application/json",
-            as_attachment=True,
-            download_name=f"{base_name}.json"
-        )
-    else:
-        delim = request.args.get("delimiter", ",")
-        if delim in ["\\t", "tab"]:
-            delim = "\t"
-        elif delim in ["pipe", "\\|"]:
-            delim = "|"
-        elif delim == "semicolon":
-            delim = ";"
-        output = io.StringIO()
-        df.to_csv(output, index=False, sep=delim, encoding="utf-8")
-        mem = io.BytesIO(output.getvalue().encode("utf-8"))
-        mem.seek(0)
-        return send_file(
-            mem,
-            mimetype="text/csv",
-            as_attachment=True,
-            download_name=f"{base_name}.csv"
-        )
+    except Exception as e:
+        return jsonify({"error": f"Export failed: {str(e)}"}), 500
+
 
 
 @bp.route("/api/browse", methods=["GET"])
@@ -318,25 +320,14 @@ def get_file_schema():
     delimiter = request.args.get("delimiter", ",").strip()
 
     try:
-        if extension in [".xlsx", ".xls", ".xlsm", ".xlsb"]:
-            sheet_name = int(sheet_param) if sheet_param.isdigit() else sheet_param
-            df_preview = fast_read_excel(resolved_path, sheet_name=sheet_name, nrows=5)
-            if isinstance(df_preview, dict):
-                df_preview = next(iter(df_preview.values())) if df_preview else pd.DataFrame()
-        elif extension in [".parquet", ".pq"]:
-            df_preview = pd.read_parquet(resolved_path)
-            if len(df_preview) > 5:
-                df_preview = df_preview.iloc[:5]
-        elif extension == ".json":
-            df_preview = pd.read_json(resolved_path)
-            if len(df_preview) > 5:
-                df_preview = df_preview.iloc[:5]
-        else:
-            sep = "\t" if extension in [".tsv", ".tab"] else (delimiter or ",")
-            try:
-                df_preview = pd.read_csv(resolved_path, sep=sep, nrows=5)
-            except Exception:
-                df_preview = pd.read_csv(resolved_path, sep=None, engine="python", nrows=5)
+        sheet_arg = int(sheet_param) if sheet_param.isdigit() else sheet_param
+        df_preview = read_tabular_file(
+            resolved_path,
+            sheet_name=sheet_arg,
+            delimiter=delimiter,
+            max_rows=5,
+            trim_headers=True
+        )
 
         columns = [str(c) for c in df_preview.columns]
         meta_list = []

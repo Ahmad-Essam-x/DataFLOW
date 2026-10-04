@@ -499,6 +499,83 @@ class TestArchitectureAndLineage(unittest.TestCase):
         self.assertIn(("left_in", "ID"), u_sources)
         self.assertIn(("right_in", "ID"), u_sources)
 
+    def test_lineage_no_duplicate_origins_and_derivation_tree(self):
+        """Verify multi-input formulas and aggregations do not produce duplicate origins or out-of-order hops."""
+        workflow = {
+            "nodes": [
+                {
+                    "id": "in1",
+                    "name": "Input Sales Orders (CSV)",
+                    "type": "input_data",
+                    "config": {
+                        "filename": "sales_orders.csv",
+                        "columns": ["Quantity", "UnitPrice", "Discount", "Region"]
+                    }
+                },
+                {
+                    "id": "calc1",
+                    "name": "Calculate Net Revenue",
+                    "type": "formula",
+                    "config": {
+                        "formulas": [
+                            {"output_field": "GrossAmount", "expression": "[Quantity] * [UnitPrice]"},
+                            {"output_field": "NetAmount", "expression": "[GrossAmount] * (1.0 - [Discount])"}
+                        ]
+                    }
+                },
+                {
+                    "id": "sum1",
+                    "name": "Summarize by Region & Segment",
+                    "type": "summarize",
+                    "config": {
+                        "actions": [
+                            {"field": "Region", "action": "GroupBy", "output_name": "Region"},
+                            {"field": "NetAmount", "action": "Average", "output_name": "AvgOrderValue"}
+                        ]
+                    }
+                }
+            ],
+            "connections": [
+                {"source": "in1", "target": "calc1"},
+                {"source": "calc1", "target": "sum1"}
+            ]
+        }
+
+        rich = compute_rich_lineage(workflow, target_node_id="sum1")
+        col_info = rich["sum1"]["AvgOrderValue"]
+
+        # 1. Hops must be strictly ordered and origins deduplicated
+        hops = col_info["hops"]
+        origin_hops = [h for h in hops if h.get("action") == "Origin"]
+        self.assertEqual(len(origin_hops), 1, "Must have exactly 1 consolidated origin hop for in1")
+        self.assertEqual(origin_hops[0]["node_id"], "in1")
+        self.assertIn("Quantity", origin_hops[0]["columns"])
+        self.assertIn("UnitPrice", origin_hops[0]["columns"])
+        self.assertIn("Discount", origin_hops[0]["columns"])
+        self.assertTrue(origin_hops[0]["detail"].startswith("Source columns:"))
+
+        # 2. Total hops must be 4: Origin -> GrossAmount -> NetAmount -> AvgOrderValue
+        self.assertEqual(len(hops), 4)
+        self.assertEqual(hops[0]["action"], "Origin")
+        self.assertEqual(hops[1]["column"], "GrossAmount")
+        self.assertEqual(hops[2]["column"], "NetAmount")
+        self.assertEqual(hops[3]["column"], "AvgOrderValue")
+
+        # 3. Root origins structure
+        roots = col_info["root_origins"]
+        self.assertEqual(len(roots), 1)
+        self.assertEqual(roots[0]["node_id"], "in1")
+        self.assertEqual(set(roots[0]["columns"]), {"Quantity", "UnitPrice", "Discount"})
+
+        # 4. Derivation tree structure
+        tree = col_info["derivation_tree"]
+        self.assertEqual(tree["column"], "AvgOrderValue")
+        self.assertEqual(tree["action"], "Aggregate (Average)")
+        self.assertEqual(len(tree["inputs"]), 1)
+        net_amt_node = tree["inputs"][0]
+        self.assertEqual(net_amt_node["column"], "NetAmount")
+        self.assertEqual(len(net_amt_node["inputs"]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

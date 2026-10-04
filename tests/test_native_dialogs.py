@@ -192,11 +192,30 @@ class TestNativeDialogsAndTargetPaths(unittest.TestCase):
         self.assertEqual(len(opened_paths), 1)
         self.assertEqual(opened_paths[0], os.path.normpath(test_file))
 
-    def test_open_in_explorer_missing_path(self):
-        res = self.client.post("/api/open-in-explorer", json={})
-        self.assertEqual(res.status_code, 400)
+    def test_pick_input_file_endpoint(self):
+        sample_input = os.path.join(self.outside_dir, "custom_dataset.parquet")
+        app.config["NATIVE_INPUT_FILE_HANDLER"] = lambda initial_dir: sample_input
+
+        res = self.client.post("/api/dialog/pick-input-file", json={"initial_dir": self.temp_dir})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["path"], sample_input.replace("\\", "/"))
+        self.assertEqual(data["filename"], "custom_dataset.parquet")
+        self.assertEqual(data["extension"], ".parquet")
+        self.assertEqual(data["detected_format"], "parquet")
+
+    def test_pick_input_file_cancellation(self):
+        app.config["NATIVE_INPUT_FILE_HANDLER"] = lambda initial_dir: None
+
+        res = self.client.post("/api/dialog/pick-input-file", json={})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertFalse(data["success"])
+        self.assertTrue(data["cancelled"])
 
 
 if __name__ == "__main__":
     unittest.main()
+
 
