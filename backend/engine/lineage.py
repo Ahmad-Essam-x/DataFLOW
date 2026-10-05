@@ -1013,10 +1013,21 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
 def compute_downstream_impact(
     workflow: Dict[str, Any],
     source_node_id: str,
-    column_name: Optional[str] = None
+    column_name: Optional[str] = None,
+    *,
+    lineage: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Computes downstream nodes that depend on fields from source_node_id.
+
+    Args:
+        workflow: Workflow dict.
+        source_node_id: Node whose downstream impact to trace.
+        column_name: If provided, restrict to a single column.
+        lineage: Pre-computed result of compute_rich_lineage(workflow). Pass this
+                 when the caller already has lineage to avoid computing it twice
+                 (e.g., endpoints that call both compute_rich_lineage and this function).
+
     Returns:
         {
             "node_id": source_node_id,
@@ -1059,8 +1070,9 @@ def compute_downstream_impact(
                 downstream_nodes.add(nxt)
                 queue.append(nxt)
 
-    # Inspect each downstream node for column usage
-    rich_upstream = compute_rich_lineage(workflow)
+    # Inspect each downstream node for column usage.
+    # Use caller-supplied lineage if available to avoid recomputing the full graph.
+    rich_upstream = lineage if lineage is not None else compute_rich_lineage(workflow)
     source_columns = list(rich_upstream.get(source_node_id, {}).keys())
 
     if column_name:

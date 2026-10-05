@@ -91,6 +91,13 @@ class Canvas {
     this.comments = [];
     this.toolRegistry = {};
 
+    // O(1) lookup indexes — kept in sync with this.nodes and this.containers
+    this.nodeMap = new Map();       // id -> node object
+    this.containerMap = new Map();  // id -> container object
+
+    // RAF wire render throttle state
+    this._wireRafPending = false;
+
     // Pre-hydrate toolRegistry from constructor options or global caches
     const initialTools = options.toolRegistry
       || (window.toolRegistry ? Object.values(window.toolRegistry) : null)
@@ -274,7 +281,7 @@ class Canvas {
 
       if (this.selectedNodeIds.size > 1 && this.selectedNodeIds.has(this.draggingNode.id)) {
         this.selectedNodeIds.forEach(id => {
-          const n = this.nodes.find(node => node.id === id);
+          const n = this.nodeMap.get(id);
           if (n) {
             const initPos = this.multiDragOffsets.get(id);
             if (initPos) {
@@ -307,7 +314,7 @@ class Canvas {
         cEl.style.top = `${newY}px`;
       }
       this.containerDragOffsets.forEach((initPos, nid) => {
-        const n = this.nodes.find(node => node.id === nid);
+        const n = this.nodeMap.get(nid);
         if (n) {
           n.x = this.snapCoord(initPos.x + totalDx);
           n.y = this.snapCoord(initPos.y + totalDy);
@@ -760,7 +767,7 @@ class Canvas {
         if (this.selectedNodeIds.size > 1 && this.selectedNodeIds.has(this.draggingNode.id)) {
           // Move all selected nodes in unison
           this.selectedNodeIds.forEach(id => {
-            const n = this.nodes.find(node => node.id === id);
+            const n = this.nodeMap.get(id);
             if (n) {
               const initPos = this.multiDragOffsets.get(id);
               if (initPos) {
@@ -811,7 +818,7 @@ class Canvas {
 
         // Move all enclosed nodes by totalDx, totalDy from their initial positions
         this.containerDragOffsets.forEach((initPos, nid) => {
-          const n = this.nodes.find(node => node.id === nid);
+          const n = this.nodeMap.get(nid);
           if (n) {
             n.x = this.snapCoord(initPos.x + totalDx);
             n.y = this.snapCoord(initPos.y + totalDy);
@@ -2109,6 +2116,7 @@ class Canvas {
         nodeIds: []
       };
       this.containers.push(copy);
+      this.containerMap.set(copy.id, copy);
       this.renderContainerElement(copy);
       this.selectedContainerIds.add(newId);
       newContainers.push(copy);
@@ -2142,6 +2150,7 @@ class Canvas {
         container_id: n.container_id && idMap[n.container_id] ? idMap[n.container_id] : null
       };
       this.nodes.push(copy);
+      this.nodeMap.set(copy.id, copy);
       this.renderNodeElement(copy);
       this.selectedNodeIds.add(newId);
       newNodes.push(copy);
@@ -2262,6 +2271,7 @@ class Canvas {
       nodeIds: []
     };
     this.containers.push(newContainer);
+    this.containerMap.set(newContainer.id, newContainer);
     this.renderContainerElement(newContainer);
     this.updateContainerEnclosedNodes(newContainer);
     this.renderWires();
@@ -2354,6 +2364,7 @@ class Canvas {
     const enclosedIds = c ? [...(c.nodeIds || [])] : [];
 
     this.containers = this.containers.filter(item => item.id !== containerId);
+    this.containerMap.delete(containerId);
     const el = document.getElementById(`container-elem-${containerId}`);
     if (el) el.remove();
     this.selectedContainerIds.delete(containerId);
@@ -3095,6 +3106,9 @@ class Canvas {
       is_cached: Boolean(n.is_cached || n.locked),
       locked: Boolean(n.locked !== undefined ? n.locked : n.is_cached)
     }));
+    // Rebuild lookup indexes after bulk load
+    this.nodeMap = new Map(this.nodes.map(n => [n.id, n]));
+    this.containerMap = new Map(this.containers.map(c => [c.id, c]));
 
     // Restore cached node IDs from workflow
     this.cachedNodeIds = new Set();
@@ -3233,6 +3247,7 @@ class Canvas {
     };
 
     this.nodes.push(newNode);
+    this.nodeMap.set(newNode.id, newNode);
     this.renderNodeElement(newNode);
     this.containers.forEach(c => this.updateContainerEnclosedNodes(c));
     this.renderWires();
@@ -3512,6 +3527,7 @@ class Canvas {
   removeNode(nodeId) {
     this.connections = this.connections.filter(c => c.source !== nodeId && c.target !== nodeId);
     this.nodes = this.nodes.filter(n => n.id !== nodeId);
+    this.nodeMap.delete(nodeId);
 
     const el = document.getElementById(`node-elem-${nodeId}`);
     if (el) el.remove();
@@ -4063,12 +4079,12 @@ class Canvas {
   }
 
   getPortPosition(nodeId, portName, type) {
-    const node = this.nodes.find(n => n.id === nodeId);
+    const node = this.nodeMap.get(nodeId);
     if (!node) return { x: 0, y: 0 };
 
     // When enclosed in a collapsed container, route connection to container header edge
     if (node.container_id) {
-      const c = this.containers.find(item => item.id === node.container_id);
+      const c = this.containerMap.get(node.container_id);
       if (c && c.collapsed) {
         const headerY = c.y + 17;
         const edgeX = type === 'input' ? c.x : (c.x + c.width);
@@ -4097,7 +4113,26 @@ class Canvas {
     return { x, y };
   }
 
+  /**
+   * Schedule a wire re-render via requestAnimationFrame.
+   * Calling this many times per frame coalesces to a single _doRenderWires() call.
+   * All renderWires() callers go through this automatically.
+   */
+  _scheduleWireRender() {
+    if (this._wireRafPending) return;
+    this._wireRafPending = true;
+    requestAnimationFrame(() => {
+      this._wireRafPending = false;
+      this._doRenderWires();
+    });
+  }
+
   renderWires() {
+    this._scheduleWireRender();
+  }
+
+  _doRenderWires() {
+    if (!this.wiresGroup) return;
     this.wiresGroup.innerHTML = '';
 
     // Update port-connected classes on all ports (scoped to this canvas wrapper)
@@ -4110,10 +4145,10 @@ class Canvas {
 
     this.connections.forEach(conn => {
       // If both source and target are inside the same collapsed container, hide the internal wire
-      const srcNode = this.nodes.find(n => n.id === conn.source);
-      const tgtNode = this.nodes.find(n => n.id === conn.target);
+      const srcNode = this.nodeMap.get(conn.source);
+      const tgtNode = this.nodeMap.get(conn.target);
       if (srcNode && tgtNode && srcNode.container_id && srcNode.container_id === tgtNode.container_id) {
-        const c = this.containers.find(item => item.id === srcNode.container_id);
+        const c = this.containerMap.get(srcNode.container_id);
         if (c && c.collapsed) {
           return;
         }
@@ -4721,6 +4756,8 @@ class Canvas {
     this.connections = [];
     this.containers = [];
     this.comments = [];
+    this.nodeMap.clear();
+    this.containerMap.clear();
     this.cachedNodeIds.clear();
     this.clearSelection();
     this.renderAll();

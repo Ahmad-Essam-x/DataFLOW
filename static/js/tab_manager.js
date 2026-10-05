@@ -231,134 +231,112 @@ class TabManager {
     const targetCtx = this.tabs.find(t => t.id === tabId);
     if (!targetCtx) return;
 
-    // Snapshot current tab's name from toolbar (user may have typed)
+    // Snapshot current tab's name and state before switching
     if (this.activeTabId !== null && this.activeTabId !== tabId) {
       const prevCtx = this.tabs.find(t => t.id === this.activeTabId);
       if (prevCtx) {
         const nameInput = document.getElementById('workflow-name-input');
         if (nameInput) prevCtx.name = nameInput.value.trim() || prevCtx.name;
-        // Snapshot dirty state
         prevCtx.isDirty = !!window._activeTabIsDirty;
         prevCtx.lastResult = window.appLastResult;
       }
     }
 
-    // Hide all canvas hosts
-    document.querySelectorAll('.tab-canvas-host').forEach(el => {
-      el.classList.remove('active-tab-host');
-    });
-
-    // Show target host
+    // Show target canvas host, hide all others
+    document.querySelectorAll('.tab-canvas-host').forEach(el => el.classList.remove('active-tab-host'));
     targetCtx.hostEl.classList.add('active-tab-host');
 
-    // Update active tab id
     this.activeTabId = tabId;
+    this._applyContext(targetCtx);
+  }
 
+  /**
+   * Single source of truth for context swap: hydrates all global singletons and
+   * syncs every UI element to the given tab context. Add new globals here only.
+   */
+  _applyContext(ctx) {
     // ── Hydrate global singletons ──
-    window.appCanvas = targetCtx.canvas;
-    window.appHistory = targetCtx.history;
-    window.clientSessionId = targetCtx.sessionId;
-    window.activeRunId = targetCtx.activeRunId;
-    window._isWorkflowRunning = targetCtx.isRunning;
-    window.activeWorkflowFile = targetCtx.workflowFile;
-    window.appLastResult = targetCtx.lastResult;
+    window.appCanvas = ctx.canvas;
+    window.appHistory = ctx.history;
+    window.clientSessionId = ctx.sessionId;
+    window.activeRunId = ctx.activeRunId;
+    window._isWorkflowRunning = ctx.isRunning;
+    window.activeWorkflowFile = ctx.workflowFile;
+    window.appLastResult = ctx.lastResult;
 
-    // Set history canvas reference
-    targetCtx.history.setCanvas(targetCtx.canvas);
+    // Bind history to canvas
+    ctx.history.setCanvas(ctx.canvas);
 
-    // ── Sync toolbar elements ──
+    // ── Sync toolbar ──
     const nameInput = document.getElementById('workflow-name-input');
-    if (nameInput) nameInput.value = targetCtx.name;
+    if (nameInput) nameInput.value = ctx.name;
 
-    // Sync dirty badge
-    window._activeTabIsDirty = targetCtx.isDirty;
-    if (targetCtx.isDirty) {
-      if (typeof window.markWorkflowDirty === 'function') {
-        // Call quietly without pushing another history snapshot
-        const dirtyBadge = document.getElementById('workflow-dirty-badge');
-        if (dirtyBadge) {
-          dirtyBadge.textContent = '● Unsaved';
-          dirtyBadge.classList.remove('is-clean');
-          dirtyBadge.classList.add('is-dirty');
-        }
-        const wfName = targetCtx.name || 'Workflow';
-        document.title = `* ${wfName} - Antigravity DataFlow`;
+    // Dirty badge
+    window._activeTabIsDirty = ctx.isDirty;
+    const dirtyBadge = document.getElementById('workflow-dirty-badge');
+    if (ctx.isDirty) {
+      if (dirtyBadge) {
+        dirtyBadge.textContent = '● Unsaved';
+        dirtyBadge.classList.remove('is-clean');
+        dirtyBadge.classList.add('is-dirty');
       }
+      document.title = `* ${ctx.name || 'Workflow'} - Antigravity DataFlow`;
     } else {
-      const dirtyBadge = document.getElementById('workflow-dirty-badge');
       if (dirtyBadge) {
         dirtyBadge.textContent = '✓ Saved';
         dirtyBadge.classList.remove('is-dirty');
         dirtyBadge.classList.add('is-clean');
       }
-      const wfName = targetCtx.name || 'Workflow';
-      document.title = `${wfName} - Antigravity DataFlow`;
+      document.title = `${ctx.name || 'Workflow'} - Antigravity DataFlow`;
     }
 
-    // Sync Run/Stop button states
-    this._syncRunStopButtons(targetCtx);
-
-    // Sync undo/redo buttons
-    const canUndo = targetCtx.history.undoStack.length > 0;
-    const canRedo = targetCtx.history.redoStack.length > 0;
+    // Run/Stop and undo/redo buttons
+    this._syncRunStopButtons(ctx);
+    const canUndo = ctx.history.undoStack.length > 0;
+    const canRedo = ctx.history.redoStack.length > 0;
     const undoBtn = document.getElementById('btn-undo');
     const redoBtn = document.getElementById('btn-redo');
     if (undoBtn) undoBtn.disabled = !canUndo;
     if (redoBtn) redoBtn.disabled = !canRedo;
 
-    // Sync ToolPalette and ConfigPanel with target canvas
+    // ── Sync panels ──
     if (window.appPalette && typeof window.appPalette.setCanvas === 'function') {
-      window.appPalette.setCanvas(targetCtx.canvas);
+      window.appPalette.setCanvas(ctx.canvas);
     }
 
-    // Re-render config and results panels for the now-active canvas
     if (window.appConfigPanel) {
       if (typeof window.appConfigPanel.setCanvas === 'function') {
-        window.appConfigPanel.setCanvas(targetCtx.canvas);
+        window.appConfigPanel.setCanvas(ctx.canvas);
       }
-      const selNode = targetCtx.canvas.selectedNodeId
-        ? targetCtx.canvas.nodes.find(n => n.id === targetCtx.canvas.selectedNodeId)
+      // O(1) node lookup via nodeMap (falls back to find for safety)
+      const selNode = ctx.canvas.selectedNodeId
+        ? (ctx.canvas.nodeMap?.get(ctx.canvas.selectedNodeId) ?? ctx.canvas.nodes.find(n => n.id === ctx.canvas.selectedNodeId))
         : null;
-      // Re-apply sample datasets so input node file-pickers work on any tab
       if (this._sampleDatasets && typeof window.appConfigPanel.setSampleDatasets === 'function') {
         window.appConfigPanel.setSampleDatasets(this._sampleDatasets);
       }
       window.appConfigPanel.render(selNode || null);
     }
 
-    // Hydrate ResultsPanel with target tab's execution logs and results
     if (window.appResultsPanel) {
       window.appResultsPanel.clear();
-      if (targetCtx.logs && targetCtx.logs.length > 0) {
-        targetCtx.logs.forEach(l => window.appResultsPanel.appendLog(l));
+      if (ctx.logs && ctx.logs.length > 0) {
+        ctx.logs.forEach(l => window.appResultsPanel.appendLog(l));
       }
-      if (targetCtx.lastResult) {
-        window.appResultsPanel.finalizeRun(targetCtx.lastResult);
+      if (ctx.lastResult) {
+        window.appResultsPanel.finalizeRun(ctx.lastResult);
       }
-      const selNode = targetCtx.canvas.selectedNodeId
-        ? targetCtx.canvas.nodes.find(n => n.id === targetCtx.canvas.selectedNodeId)
+      const selNode = ctx.canvas.selectedNodeId
+        ? (ctx.canvas.nodeMap?.get(ctx.canvas.selectedNodeId) ?? ctx.canvas.nodes.find(n => n.id === ctx.canvas.selectedNodeId))
         : null;
       window.appResultsPanel.showNodeResults(selNode || null);
     }
 
-    // Sync canvas transform & grid background for target canvas
-    if (targetCtx.canvas) {
-      targetCtx.canvas.updateTransform();
-    }
-
-    // Update minimap if present
-    if (window.appMiniMap) {
-      window.appMiniMap.canvas = targetCtx.canvas;
-      window.appMiniMap.render();
-    }
-
-    // Update tab pills
+    // Canvas transform, minimap, tab pills, event bus
+    if (ctx.canvas) ctx.canvas.updateTransform();
+    if (window.appMiniMap) { window.appMiniMap.canvas = ctx.canvas; window.appMiniMap.render(); }
     this._renderStrip();
-
-    // Notify event bus
-    if (window.appEventBus) {
-      window.appEventBus.emit('tab:activated', { tabId });
-    }
+    if (window.appEventBus) window.appEventBus.emit('tab:activated', { tabId: ctx.id });
   }
 
   // ── Tab Closing ──────────────────────────────────────────────

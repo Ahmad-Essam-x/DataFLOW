@@ -1,46 +1,46 @@
+"""
+Node Registry — auto-discovers all BaseNode subclasses from the nodes/ package.
+
+TOOL_METADATA (palette UI config) remains explicit; adding a new node type only
+requires creating a file in nodes/ that inherits BaseNode with a unique type_name,
+and adding an entry to TOOL_METADATA for palette display.
+"""
+import importlib
+import inspect
+from pathlib import Path
 from typing import Dict, Type, Any, List
-from .base import BaseNode, NodeExecutionError, sanitize_dataframe
-from .io import InputDataNode, OutputDataNode, TextInputNode, BrowseNode
-from .preparation import (
-    SelectNode, AutoFieldNode, FilterNode, FormulaNode, SortNode,
-    CleanNode, UniqueNode, SampleNode, RecordIDNode,
-    MultiRowFormulaNode, MultiFieldFormulaNode
-)
-from .join import JoinNode, UnionNode, FindReplaceNode, AppendFieldsNode, JoinMultipleNode
-from .transform import SummarizeNode, TransposeNode, CrossTabNode
-from .parse import TextToColumnsNode, DateTimeNode
-from .ai import LLMProcessNode
 
-NODE_REGISTRY = {
-    "input_data": InputDataNode,
-    "output_data": OutputDataNode,
-    "text_input": TextInputNode,
-    "browse": BrowseNode,
-    "select": SelectNode,
-    "auto_field": AutoFieldNode,
-    "filter": FilterNode,
-    "formula": FormulaNode,
-    "multi_row_formula": MultiRowFormulaNode,
-    "multi_field_formula": MultiFieldFormulaNode,
-    "sort": SortNode,
-    "clean": CleanNode,
-    "unique": UniqueNode,
-    "sample": SampleNode,
-    "record_id": RecordIDNode,
-    "join": JoinNode,
-    "join_multiple": JoinMultipleNode,
-    "union": UnionNode,
-    "find_replace": FindReplaceNode,
-    "append_fields": AppendFieldsNode,
-    "summarize": SummarizeNode,
-    "transpose": TransposeNode,
-    "crosstab": CrossTabNode,
-    "text_to_columns": TextToColumnsNode,
-    "date_time": DateTimeNode,
-    "llm_process": LLMProcessNode,
-}
+from .base import BaseNode
 
-TOOL_METADATA = [
+
+def _discover_nodes() -> Dict[str, Type[BaseNode]]:
+    """Auto-register every concrete BaseNode subclass found in the nodes/ directory.
+
+    Scans *.py files, skipping base/registry/__init__. Imports each module and
+    registers classes that inherit BaseNode and define a non-default type_name.
+    First registration wins on name collision (sorted alphabetically by filename).
+    """
+    registry: Dict[str, Type[BaseNode]] = {}
+    nodes_dir = Path(__file__).parent
+    skip = {'base', 'registry', '__init__'}
+    for py_file in sorted(nodes_dir.glob('*.py')):
+        if py_file.stem in skip:
+            continue
+        mod = importlib.import_module(f'.{py_file.stem}', package=__package__)
+        for _, cls in inspect.getmembers(mod, inspect.isclass):
+            if (
+                issubclass(cls, BaseNode)
+                and cls is not BaseNode
+                and getattr(cls, 'type_name', 'base') != 'base'
+                and cls.type_name not in registry
+            ):
+                registry[cls.type_name] = cls
+    return registry
+
+
+NODE_REGISTRY: Dict[str, Type[BaseNode]] = _discover_nodes()
+
+TOOL_METADATA: List[Dict[str, Any]] = [
     {
         "type": "input_data",
         "name": "Input Data",

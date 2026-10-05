@@ -110,6 +110,7 @@ class TextToColumnsNode(BaseNode):
     Splits text from one column into multiple columns or rows based on delimiters.
     Supports Alteryx quote-aware splitting, extra characters handling, and row exploding.
     """
+    type_name = "text_to_columns"
 
     def execute(self, inputs: Dict[str, pd.DataFrame], context: Any) -> Dict[str, pd.DataFrame]:
         df = self.get_single_input(inputs)
@@ -266,6 +267,7 @@ class DateTimeNode(BaseNode):
     Converts date-time data between standardized ISO formats and custom string formats.
     Supports String to Date/Time and Date/Time to String conversions.
     """
+    type_name = "date_time"
 
     def execute(self, inputs: Dict[str, pd.DataFrame], context: Any) -> Dict[str, pd.DataFrame]:
         df = self.get_single_input(inputs)

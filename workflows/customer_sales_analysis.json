@@ -2,25 +2,25 @@
   "name": "Customer Sales Analysis",
   "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
   "metadata": {
-    "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
-    "author": "",
+    "created_at": "2026-10-06T00:30:13",
+    "updated_at": "2026-10-06T00:30:13",
     "version": "2.1.0",
-    "saved_file": "C:/Users/Ahmed Gad/Documents/antigravity/quick-noether/workflows/sales_customer_enrichment.json",
-    "created_at": "2026-09-30T11:07:49",
-    "updated_at": "2026-09-30T11:07:49"
+    "author": "",
+    "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
+    "saved_file": "C:/DataFLOW/workflows/sales_customer_enrichment.json"
   },
   "viewport": {
     "zoom": 1.0,
-    "panX": -210.0,
-    "panY": 78.0
+    "panX": 0.0,
+    "panY": 0.0
   },
   "nodes": [
     {
       "id": "node_sales_in",
       "type": "input_data",
       "name": "Input Sales Orders (CSV)",
-      "x": 100,
-      "y": 180,
+      "x": 96,
+      "y": 176,
       "config": {
         "delimiter": ",",
         "file_path": "sales_orders.csv",
@@ -98,7 +98,8 @@
         ]
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_autofield",
@@ -110,7 +111,8 @@
         "fields": []
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_clean",
@@ -128,7 +130,8 @@
         "trim_whitespace": true
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_dt",
@@ -143,7 +146,8 @@
         "output_column": "OrderDate_ISO"
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_formula",
@@ -166,7 +170,8 @@
         ]
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_filter",
@@ -186,7 +191,8 @@
         "mode": "basic"
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_summarize",
@@ -224,7 +230,8 @@
         ]
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sort_1",
@@ -241,7 +248,8 @@
         ]
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_multirow",
@@ -258,7 +266,8 @@
         "values_for_rows_not_exist": "0"
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_out",
@@ -272,7 +281,8 @@
         "write_mode": "overwrite"
       },
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_sales_browse",
@@ -282,7 +292,8 @@
       "y": 260,
       "config": {},
       "container_id": "container_sales_1",
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     }
   ],
   "connections": [

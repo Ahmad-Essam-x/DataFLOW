@@ -56,8 +56,14 @@ class WorkflowExecutor:
                 self.context["data_dir"] = default_data
         self.cache_manager: SessionRunCacheManager = cache_manager or SessionRunCacheManager()
         self._local_data_cache = SpillableRunDataCache(run_id="local_exec", cache_root_dir=self.cache_manager.cache_root_dir)
+        # last_result is written on every run() call but never read by external code.
+        # It is last-writer-wins across sessions — do not rely on it for multi-session correctness.
+        # TODO: remove or replace with per-session Dict[session_id, ExecutionResult] before multi-user deployment.
         self.last_result: Optional[ExecutionResult] = None
         self._active_cancellations: Dict[str, threading.Event] = {}
+        # frozen_node_cache is intentionally a single shared SpillableRunDataCache.
+        # For single-user desktop use this is safe (UUID node IDs prevent collision).
+        # TODO: replace with Dict[session_id, SpillableRunDataCache] before multi-user deployment.
         self.frozen_node_cache = SpillableRunDataCache(run_id="frozen_cache", cache_root_dir=self.cache_manager.cache_root_dir)
         self.persistent_cache_dir = os.path.join(self.context.get("data_dir", os.path.join(os.getcwd(), "data")), ".cache")
         try:

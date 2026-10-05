@@ -111,7 +111,7 @@ function mapSelectTypeToAlteryx(selType) {
   return 'V_WString';
 }
 
-class ConfigPanel {
+export class ConfigPanel {
   constructor(canvas) {
     this._canvas = canvas;
     this.currentNode = null;
@@ -1147,17 +1147,16 @@ class ConfigPanel {
         <div style="display: flex; gap: 6px;">
           <input type="text" class="form-control" id="cfg-file-path" value="${cfg.file_path || ''}" placeholder="${isWildcard ? 'e.g. data/sales_*.csv or orders_2024_??.xlsx' : 'e.g. sales_orders.csv or data/report.xlsx'}" style="flex: 1;">
           <button type="button" class="btn btn-secondary" id="btn-browse-in-native" style="white-space: nowrap; padding: 6px 10px; gap: 4px;" title="Browse local files with Windows Explorer">🖥️ Browse...</button>
-          <button type="button" class="btn btn-secondary" id="btn-browse-in-file" style="white-space: nowrap; padding: 6px 10px;" title="Explore workspace directory">📁 Workspace</button>
         </div>
         <div id="cfg-wildcard-badge" class="wildcard-match-badge ${isWildcard ? '' : 'hidden'}"></div>
         <div class="form-hint" id="cfg-file-hint">Use wildcards (* or ?) to automatically stack and union multiple files.</div>
       </div>
 
       <div class="form-group" id="cfg-upload-group" style="${isWildcard ? 'display: none;' : ''}">
-        <label>Or Upload Local File (CSV / Excel / Parquet / JSON)</label>
+        <label>Upload File to Workspace <span style="font-weight: 400; color: var(--text-muted); font-size: 10.5px; margin-left: 6px;">— copies to app data folder; use File Path above to reference files in place</span></label>
         <input type="file" class="form-control" id="cfg-file-upload" accept=".csv,.xlsx,.xls,.xlsm,.xlsb,.tsv,.txt,.json,.parquet">
         <div id="cfg-upload-status" class="form-hint" style="margin-top: 4px;">
-          ${cfg.file_path ? `<span style="color: var(--color-success); font-weight: 500;">✓ Connected to <b>${cfg.original_file_name || cfg.file_path}</b>${cfg.row_count ? ` (${cfg.row_count.toLocaleString()} rows)` : ''}${cfg.sheet_name ? ` &bull; Sheet: <b>${cfg.sheet_name}</b>` : ''}</span>` : ''}
+          ${cfg.file_path ? `<span style="color: var(--color-success); font-weight: 500;">✓ Connected to <b>${cfg.original_file_name || cfg.file_path}</b>${cfg.row_count ? ` (${Number(cfg.row_count).toLocaleString()} rows)` : ''}${cfg.sheet_name && cfg.sheet_name !== '0' && cfg.sheet_name !== 0 ? ` &bull; Sheet: <b>${cfg.sheet_name}</b>` : ''}</span><a href="#" id="cfg-clear-file" style="margin-left: 8px; color: var(--text-muted); font-size: 10px; text-decoration: none;" title="Remove file connection">× Clear</a>` : '<span style="color: var(--text-muted);">No file connected. Upload a file below or enter a path above.</span>'}
         </div>
       </div>
 
@@ -1392,6 +1391,8 @@ class ConfigPanel {
       const val = e.target.value;
       if (val) {
         node.config.file_path = val;
+        node.config.original_file_name = '';   // sample name is readable; no alias needed
+        node.config.row_count = null;
         filePathInput.value = val;
         node.config.file_type = (val.endsWith('.xlsx') || val.endsWith('.xls') || val.endsWith('.xlsm')) ? 'excel' : 'csv';
         toggleFileTypeUI(val);
@@ -1403,6 +1404,8 @@ class ConfigPanel {
     filePathInput.addEventListener('input', (e) => {
       const val = e.target.value;
       node.config.file_path = val;
+      node.config.original_file_name = val ? val.replace(/\\/g, '/').split('/').pop() : '';
+      node.config.row_count = null;   // row count unknown when path is typed manually
       const isEx = val.endsWith('.xlsx') || val.endsWith('.xls') || val.endsWith('.xlsm');
       node.config.file_type = isEx ? 'excel' : 'csv';
       const isWc = hasWildcard(val);
@@ -1428,6 +1431,8 @@ class ConfigPanel {
           const data = await res.json();
           if (data.success && data.path) {
             node.config.file_path = data.path;
+            node.config.original_file_name = data.path.replace(/\\/g, '/').split('/').pop();
+            node.config.row_count = null;
             filePathInput.value = data.path;
             node.config.file_type = data.detected_format || 'csv';
             if (data.detected_format === 'tsv') {
@@ -1446,26 +1451,6 @@ class ConfigPanel {
       });
     }
 
-    const btnBrowseIn = container.querySelector('#btn-browse-in-file');
-    if (btnBrowseIn) {
-      btnBrowseIn.addEventListener('click', () => {
-        if (window.fileExplorer) {
-          window.fileExplorer.open({
-            title: 'Select Input Data File or Workspace Path',
-            mode: 'all',
-            initialPath: node.config.file_path || '',
-            onSelect: (selectedPath) => {
-              node.config.file_path = selectedPath;
-              filePathInput.value = selectedPath;
-              node.config.file_type = (selectedPath.endsWith('.xlsx') || selectedPath.endsWith('.xls') || selectedPath.endsWith('.xlsm')) ? 'excel' : 'csv';
-              toggleFileTypeUI(selectedPath);
-              this.fetchFileSchema(selectedPath, node);
-              this.canvas.onWorkflowChange();
-            }
-          });
-        }
-      });
-    }
 
     const fileUpload = container.querySelector('#cfg-file-upload');
     const uploadStatus = container.querySelector('#cfg-upload-status');
@@ -1482,9 +1467,11 @@ class ConfigPanel {
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const json = await res.json();
         if (json.success) {
-          uploadStatus.innerHTML = `<span style="color: var(--color-success)">✓ Uploaded ${json.file_name} (${json.row_count} rows)</span>`;
           node.config.file_path = json.file_name;
+          node.config.original_file_name = file.name;   // preserve user's original filename
+          node.config.row_count = json.row_count || 0;  // persist for reopen status display
           filePathInput.value = json.file_name;
+          uploadStatus.innerHTML = `<span style="color: var(--color-success)">✓ Uploaded <b>${file.name}</b> (${Number(json.row_count || 0).toLocaleString()} rows)</span>`;
           node.config.file_type = json.file_type;
           if (json.file_type === 'tsv' || json.delimiter === '\t') {
             node.config.delimiter = '\\t';
@@ -1505,6 +1492,23 @@ class ConfigPanel {
       }
     });
 
+    const clearFileBtn = container.querySelector('#cfg-clear-file');
+    if (clearFileBtn) {
+      clearFileBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        node.config.file_path = '';
+        node.config.original_file_name = '';
+        node.config.row_count = null;
+        node.config.preview_columns = [];
+        node.config.column_meta = [];
+        filePathInput.value = '';
+        const selectEl = container.querySelector('#cfg-file-select');
+        if (selectEl) selectEl.value = '';
+        uploadStatus.innerHTML = '<span style="color: var(--text-muted);">No file connected. Upload a file below or enter a path above.</span>';
+        toggleFileTypeUI('');
+        this.canvas.onWorkflowChange();
+      });
+    }
 
     const sheetSelect = container.querySelector('#cfg-sheet-name');
     if (sheetSelect) {
@@ -1666,6 +1670,11 @@ class ConfigPanel {
           <option value="json" ${currentFmt === 'json' ? 'selected' : ''}>JSON (.json)</option>
           <option value="parquet" ${currentFmt === 'parquet' ? 'selected' : ''}>Parquet (.parquet)</option>
         </select>
+      </div>
+
+      <div id="cfg-out-write-preview" style="margin: -4px 0 14px; padding: 8px 10px; background: var(--bg-main); border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        <span id="cfg-out-write-preview-text"></span>
       </div>
 
       <div class="form-group">
@@ -1843,6 +1852,18 @@ class ConfigPanel {
     const sheetGroup = container.querySelector('#cfg-out-sheet-group');
     const delimGroup = container.querySelector('#cfg-out-delimiter-group');
     const csvTextOpts = container.querySelector('#cfg-out-csv-text-options');
+    const writePreviewText = container.querySelector('#cfg-out-write-preview-text');
+
+    const updateWritePreview = () => {
+      if (!writePreviewText) return;
+      const fmt = node.config.format || 'csv';
+      const dir = (node.config.output_dir || '').trim() || 'data/outputs';
+      const baseName = (node.config.filename || 'export_result').trim();
+      const ext = { csv: 'csv', excel: 'xlsx', tsv: 'tsv', json: 'json', parquet: 'parquet' }[fmt] || fmt;
+      const fullName = baseName.match(/\.[^/.]+$/) ? baseName : `${baseName}.${ext}`;
+      writePreviewText.innerHTML = `Will write to: <b style="color: var(--text-main);">${dir}/${fullName}</b>`;
+    };
+    updateWritePreview();
 
     formatSelect.addEventListener('change', (e) => {
       const fmt = e.target.value;
@@ -1850,6 +1871,7 @@ class ConfigPanel {
       sheetGroup.style.display = (fmt === 'excel') ? '' : 'none';
       delimGroup.style.display = (fmt === 'csv' || fmt === 'tsv') ? '' : 'none';
       csvTextOpts.style.display = (fmt === 'csv' || fmt === 'tsv') ? '' : 'none';
+      updateWritePreview();
       this.canvas.onWorkflowChange();
     });
 
@@ -1865,6 +1887,7 @@ class ConfigPanel {
     if (outDirInput) {
       outDirInput.addEventListener('input', (e) => {
         node.config.output_dir = e.target.value;
+        updateWritePreview();
         this.canvas.onWorkflowChange();
       });
     }
@@ -1905,6 +1928,7 @@ class ConfigPanel {
           if (data && data.success && data.path) {
             node.config.output_dir = data.path;
             if (outDirInput) outDirInput.value = data.path;
+            updateWritePreview();
             this.canvas.onWorkflowChange();
             if (window.showToast) window.showToast('success', 'Folder Selected', `Target directory set to '${data.path}'.`);
             return;
@@ -1923,6 +1947,7 @@ class ConfigPanel {
             onSelect: (selectedPath) => {
               node.config.output_dir = selectedPath;
               if (outDirInput) outDirInput.value = selectedPath;
+              updateWritePreview();
               this.canvas.onWorkflowChange();
             }
           });
@@ -1934,6 +1959,7 @@ class ConfigPanel {
     if (filenameInput) {
       filenameInput.addEventListener('input', (e) => {
         node.config.filename = e.target.value;
+        updateWritePreview();
         this.canvas.onWorkflowChange();
       });
     }
@@ -1969,6 +1995,7 @@ class ConfigPanel {
               delimGroup.style.display = (data.detected_format === 'csv' || data.detected_format === 'tsv') ? '' : 'none';
               csvTextOpts.style.display = (data.detected_format === 'csv' || data.detected_format === 'tsv') ? '' : 'none';
             }
+            updateWritePreview();
             this.canvas.onWorkflowChange();
             if (window.showToast) {
               window.showToast('success', 'Destination Set', `Output file set to '${data.full_filename}' in '${data.directory}'.`);
@@ -8181,164 +8208,6 @@ class ConfigPanel {
     });
   }
 
-  // --------------------------------------------------------------------
-  // 16. Transpose Tool
-  // --------------------------------------------------------------------
-  renderTransposeConfig(container, node, upstreamCols) {
-    const cfg = node.config || {};
-    const keyCols = cfg.key_columns || [];
-    const dataCols = cfg.data_columns || [];
-    const nameCol = cfg.name_column || 'Name';
-    const valueCol = cfg.value_column || 'Value';
-
-    container.innerHTML = `
-      <div class="cfg-section-title">Key Columns (Identifiers to Keep)</div>
-      <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px; background: var(--bg-main); margin-bottom: 12px;">
-        ${upstreamCols.length > 0 ? upstreamCols.map(col => `
-          <label class="form-check" style="margin-bottom: 4px;">
-            <input type="checkbox" class="transpose-key-chk" value="${col}" ${keyCols.includes(col) ? 'checked' : ''}>
-            <span>${col}</span>
-          </label>
-        `).join('') : '<span class="form-hint">Connect input to see column list.</span>'}
-      </div>
-
-      <div class="cfg-section-title">Data Columns (Pivot Into Rows)</div>
-      <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px; background: var(--bg-main); margin-bottom: 12px;">
-        ${upstreamCols.length > 0 ? upstreamCols.map(col => `
-          <label class="form-check" style="margin-bottom: 4px;">
-            <input type="checkbox" class="transpose-data-chk" value="${col}" ${dataCols.includes(col) ? 'checked' : ''}>
-            <span>${col}</span>
-          </label>
-        `).join('') : '<span class="form-hint">Connect input to see column list.</span>'}
-      </div>
-
-      <div class="form-row">
-        <div class="form-group" style="flex: 1;">
-          <label>Name Column Header</label>
-          <input type="text" class="form-control" id="cfg-trans-name" value="${nameCol}">
-        </div>
-        <div class="form-group" style="flex: 1;">
-          <label>Value Column Header</label>
-          <input type="text" class="form-control" id="cfg-trans-val" value="${valueCol}">
-        </div>
-      </div>
-    `;
-
-    container.querySelectorAll('.transpose-key-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        const checked = Array.from(container.querySelectorAll('.transpose-key-chk:checked')).map(c => c.value);
-        node.config.key_columns = checked;
-        this.canvas.onWorkflowChange();
-      });
-    });
-
-    container.querySelectorAll('.transpose-data-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        const checked = Array.from(container.querySelectorAll('.transpose-data-chk:checked')).map(c => c.value);
-        node.config.data_columns = checked;
-        this.canvas.onWorkflowChange();
-      });
-    });
-
-    container.querySelector('#cfg-trans-name').addEventListener('input', (e) => {
-      node.config.name_column = e.target.value;
-      this.canvas.onWorkflowChange();
-    });
-
-    container.querySelector('#cfg-trans-val').addEventListener('input', (e) => {
-      node.config.value_column = e.target.value;
-      this.canvas.onWorkflowChange();
-    });
-  }
-
-  // --------------------------------------------------------------------
-  // 17. Cross Tab Tool
-  // --------------------------------------------------------------------
-  renderCrossTabConfig(container, node, upstreamCols) {
-    const cfg = node.config || {};
-    const groupBy = cfg.group_by || [];
-    const headerField = cfg.header_field || (upstreamCols[1] || '');
-    const valueField = cfg.value_field || (upstreamCols[2] || '');
-    const aggFunc = cfg.agg_func || 'sum';
-    const separator = cfg.separator || ', ';
-
-    container.innerHTML = `
-      <div class="cfg-section-title">1. Group By (Row Identifiers)</div>
-      <div style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px; background: var(--bg-main); margin-bottom: 10px;">
-        ${upstreamCols.length > 0 ? upstreamCols.map(col => `
-          <label class="form-check" style="margin-bottom: 4px;">
-            <input type="checkbox" class="crosstab-grp-chk" value="${col}" ${groupBy.includes(col) ? 'checked' : ''}>
-            <span>${col}</span>
-          </label>
-        `).join('') : '<span class="form-hint">Connect input to see column list.</span>'}
-      </div>
-
-      <div class="form-group">
-        <label>2. Change Column Headers (Unique values become headers)</label>
-        <select class="form-control" id="cfg-ct-header">
-          ${upstreamCols.length > 0 
-            ? upstreamCols.map(c => `<option value="${c}" ${headerField === c ? 'selected' : ''}>${c}</option>`).join('')
-            : `<option value="${headerField}">${headerField || 'Select header column'}</option>`}
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>3. Values for New Columns (Data to aggregate)</label>
-        <select class="form-control" id="cfg-ct-val">
-          ${upstreamCols.length > 0 
-            ? upstreamCols.map(c => `<option value="${c}" ${valueField === c ? 'selected' : ''}>${c}</option>`).join('')
-            : `<option value="${valueField}">${valueField || 'Select value column'}</option>`}
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>4. Method for Aggregating Values</label>
-        <select class="form-control" id="cfg-ct-agg">
-          <option value="sum" ${aggFunc === 'sum' ? 'selected' : ''}>Sum</option>
-          <option value="mean" ${aggFunc === 'mean' ? 'selected' : ''}>Average / Mean</option>
-          <option value="count" ${aggFunc === 'count' ? 'selected' : ''}>Count</option>
-          <option value="first" ${aggFunc === 'first' ? 'selected' : ''}>First</option>
-          <option value="last" ${aggFunc === 'last' ? 'selected' : ''}>Last</option>
-          <option value="concat" ${aggFunc === 'concat' ? 'selected' : ''}>Concatenate Strings</option>
-        </select>
-      </div>
-
-      <div class="form-group" id="cfg-ct-sep-grp" style="${aggFunc === 'concat' ? '' : 'display:none;'}">
-        <label>Separator for Concatenation</label>
-        <input type="text" class="form-control" id="cfg-ct-sep" value="${separator}">
-      </div>
-    `;
-
-    container.querySelectorAll('.crosstab-grp-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        const checked = Array.from(container.querySelectorAll('.crosstab-grp-chk:checked')).map(c => c.value);
-        node.config.group_by = checked;
-        this.canvas.onWorkflowChange();
-      });
-    });
-
-    container.querySelector('#cfg-ct-header').addEventListener('change', (e) => {
-      node.config.header_field = e.target.value;
-      this.canvas.onWorkflowChange();
-    });
-
-    container.querySelector('#cfg-ct-val').addEventListener('change', (e) => {
-      node.config.value_field = e.target.value;
-      this.canvas.onWorkflowChange();
-    });
-
-    container.querySelector('#cfg-ct-agg').addEventListener('change', (e) => {
-      node.config.agg_func = e.target.value;
-      container.querySelector('#cfg-ct-sep-grp').style.display = e.target.value === 'concat' ? '' : 'none';
-      this.canvas.onWorkflowChange();
-    });
-
-    container.querySelector('#cfg-ct-sep').addEventListener('input', (e) => {
-      node.config.separator = e.target.value;
-      this.canvas.onWorkflowChange();
-    });
-  }
-
   renderTextToColumnsConfig(container, node, upstreamCols) {
     const cfg = node.config || {};
     const column = cfg.column || (upstreamCols[0] || '');
@@ -10418,5 +10287,7 @@ class ConfigPanel {
       .replace(/'/g, '&#039;');
   }
 }
+
+export { SAMPLE_DATASET_SCHEMAS, mapSelectTypeToAlteryx };
 
 

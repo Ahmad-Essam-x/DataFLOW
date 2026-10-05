@@ -11,14 +11,25 @@ import time
 import zipfile
 import shutil
 import re
+import logging
 from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+from pydantic import ValidationError
 
 from backend.engine.security import (
     sanitize_file_basename,
     is_safe_path,
     validate_safe_path,
     SecurityError
+)
+from backend.engine.models import (
+    WorkflowNode,
+    WorkflowConnection,
+    WorkflowMetadata,
+    WorkflowViewport,
 )
 
 
@@ -50,68 +61,62 @@ class WorkflowManager:
         warnings = []
         normalized = dict(wf_data)
 
-        # 1. Name & metadata
+        # 1. Name & metadata — Pydantic fills defaults, we force-stamp updated_at
         name = str(normalized.get("name", "Untitled Workflow")).strip() or "Untitled Workflow"
         normalized["name"] = name
-        
-        metadata = normalized.get("metadata", {})
-        if not isinstance(metadata, dict):
-            metadata = {}
-        
-        now_iso = datetime.now().isoformat(timespec="seconds")
-        metadata.setdefault("created_at", now_iso)
-        metadata["updated_at"] = now_iso
-        metadata.setdefault("version", "2.1.0")
-        metadata.setdefault("author", os.environ.get("USERNAME", "Analyst"))
-        metadata.setdefault("description", normalized.get("description", ""))
-        normalized["metadata"] = metadata
-        normalized["description"] = metadata.get("description", "")
 
-        # 2. Viewport coordinates
-        viewport = normalized.get("viewport", {})
-        if not isinstance(viewport, dict):
-            viewport = {}
-        normalized["viewport"] = {
-            "zoom": float(viewport.get("zoom", 1.0)),
-            "panX": float(viewport.get("panX", 0.0)),
-            "panY": float(viewport.get("panY", 0.0))
-        }
+        raw_meta = normalized.get("metadata") or {}
+        if not isinstance(raw_meta, dict):
+            raw_meta = {}
+        # Seed description from top-level field if not already in metadata
+        raw_meta.setdefault("description", normalized.get("description", ""))
+        try:
+            meta = WorkflowMetadata.model_validate(raw_meta)
+        except ValidationError:
+            meta = WorkflowMetadata()
+        meta.updated_at = datetime.now().isoformat(timespec="seconds")
+        normalized["metadata"] = meta.model_dump()
+        normalized["description"] = meta.description
+
+        # 2. Viewport coordinates — Pydantic coerces and defaults
+        try:
+            vp = WorkflowViewport.model_validate(normalized.get("viewport") or {})
+        except ValidationError:
+            vp = WorkflowViewport()
+        normalized["viewport"] = vp.model_dump()
 
         # 3. Nodes normalization & deduplication
         raw_nodes = normalized.get("nodes", [])
         if not isinstance(raw_nodes, list):
             raw_nodes = []
-        
-        seen_node_ids = set()
+
+        seen_node_ids: set = set()
         clean_nodes = []
         for n in raw_nodes:
-            if not isinstance(n, dict) or "id" not in n or "type" not in n:
-                warnings.append("Skipped malformed node entry missing 'id' or 'type'.")
+            if not isinstance(n, dict):
+                warnings.append("Skipped malformed node entry (not a dict).")
                 continue
-            
-            node_id = str(n["id"]).strip()
-            if not node_id:
+            # Pydantic validates types and applies defaults; collect field errors as warnings
+            try:
+                node = WorkflowNode.model_validate(n)
+            except ValidationError as exc:
+                errs = "; ".join(f"{e['loc']}: {e['msg']}" for e in exc.errors())
+                warnings.append(f"Skipped malformed node: {errs}")
                 continue
-            
-            # Deduplicate node IDs if collision occurs
-            if node_id in seen_node_ids:
-                orig_id = node_id
-                node_id = f"{node_id}_{int(time.time() * 1000) % 10000}"
-                warnings.append(f"Duplicate node ID '{orig_id}' resolved to '{node_id}'.")
-            seen_node_ids.add(node_id)
 
-            clean_node = {
-                "id": node_id,
-                "type": str(n["type"]).strip(),
-                "name": str(n.get("name", n["type"])),
-                "x": int(n.get("x", 100)),
-                "y": int(n.get("y", 100)),
-                "config": dict(n.get("config", {})),
-                "container_id": n.get("container_id", None),
-                "is_cached": bool(n.get("is_cached", False))
-            }
-            clean_nodes.append(clean_node)
-        
+            # Deduplicate node IDs
+            if node.id in seen_node_ids:
+                orig_id = node.id
+                node.id = f"{orig_id}_{int(time.time() * 1000) % 10000}"
+                warnings.append(f"Duplicate node ID '{orig_id}' resolved to '{node.id}'.")
+            seen_node_ids.add(node.id)
+
+            # Backfill name from type if blank
+            if not node.name:
+                node.name = node.type
+
+            clean_nodes.append(node.model_dump())
+
         normalized["nodes"] = clean_nodes
         valid_node_ids = {n["id"] for n in clean_nodes}
 
@@ -119,32 +124,37 @@ class WorkflowManager:
         raw_conns = normalized.get("connections", [])
         if not isinstance(raw_conns, list):
             raw_conns = []
-        
+
         clean_conns = []
         for idx, c in enumerate(raw_conns):
             if not isinstance(c, dict):
                 continue
-            src = str(c.get("source") or c.get("from_node") or "").strip()
-            tgt = str(c.get("target") or c.get("to_node") or "").strip()
+            # Normalise legacy field aliases before Pydantic sees them
+            if "from_node" in c and "source" not in c:
+                c = dict(c, source=c["from_node"])
+            if "to_node" in c and "target" not in c:
+                c = dict(c, target=c["to_node"])
+            if "from_port" in c and "sourceHandle" not in c:
+                c = dict(c, sourceHandle=c["from_port"])
+            if "to_port" in c and "targetHandle" not in c:
+                c = dict(c, targetHandle=c["to_port"])
+            if not c.get("id"):
+                c = dict(c, id=f"conn_{c.get('source', '')}_{c.get('target', '')}_{idx}")
 
-            if not src or not tgt:
+            try:
+                conn = WorkflowConnection.model_validate(c)
+            except ValidationError:
+                continue  # missing/empty source or target — silently skip
+
+            if conn.source not in valid_node_ids:
+                warnings.append(f"Pruned dangling connection: source node '{conn.source}' not found.")
                 continue
-            
-            if src not in valid_node_ids:
-                warnings.append(f"Pruned dangling connection: source node '{src}' not found.")
-                continue
-            if tgt not in valid_node_ids:
-                warnings.append(f"Pruned dangling connection: target node '{tgt}' not found.")
+            if conn.target not in valid_node_ids:
+                warnings.append(f"Pruned dangling connection: target node '{conn.target}' not found.")
                 continue
 
-            clean_conns.append({
-                "id": str(c.get("id") or f"conn_{src}_{tgt}_{idx}"),
-                "source": src,
-                "sourceHandle": str(c.get("sourceHandle") or c.get("from_port") or "O"),
-                "target": tgt,
-                "targetHandle": str(c.get("targetHandle") or c.get("to_port") or "I")
-            })
-        
+            clean_conns.append(conn.model_dump())
+
         normalized["connections"] = clean_conns
 
         # 5. Containers & Comments
@@ -291,10 +301,10 @@ class WorkflowManager:
             for _, old_path in backups[max_keep:]:
                 try:
                     os.remove(old_path)
-                except Exception:
-                    pass
-        except Exception:
-            pass
+                except Exception as e:
+                    logger.warning("Failed to remove old backup %s: %s", old_path, e)
+        except Exception as e:
+            logger.warning("Failed to prune old backups for %r: %s", workflow_stem, e)
 
     def get_revisions(self, filename: str) -> List[Dict[str, Any]]:
         """Returns list of timestamped backups for a workflow file."""
