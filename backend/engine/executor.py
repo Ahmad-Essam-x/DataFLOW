@@ -282,6 +282,36 @@ class WorkflowExecutor:
             self.last_result = result
             return result
 
+        # --- DuckDB fast-path: whole-workflow SQL execution (no pandas overhead) ---
+        from backend.engine.duckdb_executor import can_use_duckdb, run_duckdb_workflow
+        if can_use_duckdb(active_nodes):
+            result.logs.append({
+                "time": time.strftime("%H:%M:%S"),
+                "level": "INFO",
+                "message": f"DuckDB fast-path engine selected ({len(execution_order)} tools)."
+            })
+            if run_duckdb_workflow(workflow, self.context, result, current_run_cache,
+                                   active_nodes, active_connections, observer_cb=observer_cb):
+                if observer_cb:
+                    try:
+                        observer_cb({
+                            "event": "workflow_completed",
+                            "run_id": result.run_id,
+                            "session_id": result.session_id,
+                            "success": result.success,
+                            "total_duration_ms": round(result.total_duration_ms, 2),
+                            "node_results": result.node_results,
+                            "logs": result.logs,
+                            "error": result.error,
+                            "diagnostic": result.diagnostic
+                        })
+                    except Exception:
+                        pass
+                self.cache_manager.store_run_data(result.run_id, current_run_cache, result)
+                self.last_result = result
+                return result
+            # run_duckdb_workflow returned False — fall through to pandas engine below
+
         # Determine execution engine: AMP (multi-threaded parallel, default) vs Classic (sequential)
         use_amp = workflow.get("use_amp_engine")
         if use_amp is None:

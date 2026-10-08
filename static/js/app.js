@@ -134,7 +134,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   function applyUIScale(scale, notify = false) {
     scale = Math.min(2.0, Math.max(0.6, Math.round(scale * 100) / 100));
     currentUIScale = scale;
-    document.documentElement.style.zoom = `${scale}`;
+
+    // Use transform:scale on the app wrapper instead of css `zoom` on documentElement.
+    // CSS zoom causes getBoundingClientRect() to return layout-px in older Chromium (pre-128)
+    // while mouse clientX/Y are always in viewport-px — producing a marquee offset.
+    // transform:scale is handled uniformly by all browsers: BoundingClientRect returns
+    // viewport-space coords that match clientX/Y. It also properly contains position:fixed
+    // elements so overlays/dropdowns scale with the UI instead of being clipped.
+    document.documentElement.style.zoom = '';  // clear any legacy value
+    const wrapper = document.getElementById('app-scale-wrapper');
+    if (wrapper) {
+      if (scale === 1.0) {
+        wrapper.style.transform = '';
+        wrapper.style.width = '';
+        wrapper.style.height = '';
+      } else {
+        wrapper.style.transform = `scale(${scale})`;
+        wrapper.style.transformOrigin = '0 0';
+        wrapper.style.width = `${(100 / scale).toFixed(4)}%`;
+        wrapper.style.height = `${(100 / scale).toFixed(4)}%`;
+      }
+    } else {
+      // Fallback for any context without the wrapper
+      document.documentElement.style.zoom = `${scale}`;
+    }
     localStorage.setItem('dataflow_ui_zoom', String(scale));
     if (window.userSettings) {
       window.userSettings.set('ui_zoom', scale);
@@ -1321,16 +1344,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         case 'view:zoom-in':
         case 'view:ui-zoom-in':
+          // Keyboard: Ctrl+NumpadAdd / Ctrl+Equal (see keyboard_shortcuts.js)
           zoomUIIn();
           break;
 
         case 'view:zoom-out':
         case 'view:ui-zoom-out':
+          // Keyboard: Ctrl+NumpadSubtract / Ctrl+Minus (see keyboard_shortcuts.js)
           zoomUIOut();
           break;
 
         case 'view:zoom-reset':
         case 'view:ui-zoom-reset':
+          // Keyboard: Ctrl+Numpad0 / Ctrl+Digit0 (see keyboard_shortcuts.js)
           resetUIZoom();
           break;
 

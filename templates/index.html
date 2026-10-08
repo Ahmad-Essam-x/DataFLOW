@@ -31,6 +31,7 @@
   </script>
 </head>
 <body class="theme-dark">
+<div id="app-scale-wrapper">
   <!-- Alteryx Main Menu Bar (File, Edit, View, Options, Help) -->
   <nav id="main-menubar" class="main-menubar" role="menubar">
     <div class="menubar-menus">
@@ -1053,6 +1054,14 @@
             </select>
             <span class="setting-desc">Maximum execution duration allowed for a workflow run before safety cancellation triggers.</span>
           </div>
+
+          <div class="setting-group">
+            <label for="setting-extra-data-dirs" class="setting-label">Trusted External Data Directories</label>
+            <textarea id="setting-extra-data-dirs" class="form-control" rows="4"
+              placeholder="One directory path per line, e.g.&#10;C:\Users\You\OneDrive\Data&#10;C:\Projects\Datasets"
+              style="resize: vertical; font-family: monospace; font-size: 12px;"></textarea>
+            <span class="setting-desc">Additional directories DataFLOW is allowed to read files from. Enter one absolute path per line. Files outside these directories and the default data folder remain blocked.</span>
+          </div>
         </div>
 
         <!-- Tab 3: Appearance -->
@@ -1577,5 +1586,6 @@
   <script src="/static/js/lineage_panel.js"></script>
   <script type="module" src="/static/js/app.js"></script>
   <script src="/static/js/menu_bar.js"></script>
+</div><!-- #app-scale-wrapper -->
 </body>
 </html>

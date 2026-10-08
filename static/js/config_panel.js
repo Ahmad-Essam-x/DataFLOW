@@ -9428,6 +9428,8 @@ export class ConfigPanel {
 
     cfg.system_prompt = cfg.system_prompt !== undefined ? cfg.system_prompt : 'You are an accurate, concise data processing assistant.';
     cfg.user_prompt_template = cfg.user_prompt_template !== undefined ? cfg.user_prompt_template : '';
+    cfg.system_prompt_source = cfg.system_prompt_source || 'static';
+    cfg.system_prompt_column = cfg.system_prompt_column || '';
 
     cfg.rag_context = cfg.rag_context || {};
     cfg.rag_context.enabled = !!cfg.rag_context.enabled;
@@ -9436,10 +9438,15 @@ export class ConfigPanel {
     cfg.rag_context.column = cfg.rag_context.column || '';
     cfg.rag_context.file_path = cfg.rag_context.file_path || '';
     cfg.rag_context.placement = cfg.rag_context.placement || 'before';
+    if (!Array.isArray(cfg.rag_contexts)) {
+      // Migrate legacy single rag_context to rag_contexts list on first open
+      cfg.rag_contexts = cfg.rag_context.enabled ? [Object.assign({}, cfg.rag_context)] : [];
+    }
 
     cfg.output_mode = cfg.output_mode || 'single';
     cfg.output_column = cfg.output_column || 'AI_Response';
     cfg.json_fields = Array.isArray(cfg.json_fields) ? cfg.json_fields : [];
+    cfg.response_schema = cfg.response_schema || '';
 
     cfg.on_error = cfg.on_error || 'null';
     cfg.max_retries = cfg.max_retries !== undefined ? cfg.max_retries : 2;
@@ -9493,17 +9500,31 @@ export class ConfigPanel {
 
         <!-- 0. Standalone Run & Output Lock Action Bar -->
         <div class="cfg-section llm-action-bar" style="border: 1px solid rgba(139,92,246,0.35); border-radius: 6px; padding: 10px 12px; background: rgba(139,92,246,0.08); display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <button type="button" id="btn-llm-run-standalone" class="btn btn-primary btn-sm btn-run-standalone" style="background: #8b5cf6; border-color: #7c3aed; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 4px 12px; height: 28px;" title="Execute only this LLM tool and preview outputs without running the rest of the workflow">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              <span>Run LLM Tool Only</span>
-            </button>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button type="button" id="btn-llm-run-standalone" class="btn btn-primary btn-sm btn-run-standalone" style="background: #8b5cf6; border-color: #7c3aed; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 4px 12px; height: 28px;" title="Execute only this LLM tool and preview outputs without running the rest of the workflow">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span>Run LLM Tool Only</span>
+              </button>
+              <button type="button" id="btn-llm-estimate" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 3px 8px; height: 28px; display: inline-flex; align-items: center; gap: 4px;" title="Estimate token count and cost before running">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Estimate
+              </button>
+              <span id="llm-estimate-result" style="display: none; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(139,92,246,0.15); color: #a78bfa;"></span>
+            </div>
             <label class="form-check" style="margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; user-select: none;" title="Freeze/lock the output so workflow runs don't rerun the LLM or consume tokens">
               <input type="checkbox" id="cfg-llm-lock-output" ${isLocked ? 'checked' : ''}>
               <span id="cfg-llm-lock-label" style="font-weight: 600; font-size: 11px; color: ${isLocked ? '#8b5cf6' : 'var(--text-color)'}; display: inline-flex; align-items: center; gap: 3px;">
                 <span>🔒</span> Lock Output (Freeze)
               </span>
             </label>
+          </div>
+          <!-- Progress bar (shown while running) -->
+          <div id="llm-progress-wrap" style="display: none; align-items: center; gap: 8px;">
+            <div style="flex: 1; height: 5px; background: rgba(0,0,0,0.25); border-radius: 3px; overflow: hidden;">
+              <div id="llm-progress-bar" style="height: 100%; width: 0%; background: #8b5cf6; border-radius: 3px; transition: width 0.3s ease;"></div>
+            </div>
+            <span id="llm-progress-text" style="font-size: 10px; color: var(--text-muted); white-space: nowrap; min-width: 50px; text-align: right;">0 / 0</span>
           </div>
           <div id="llm-run-status-line" style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between;">
             <span id="llm-standalone-status-text">${initialStatusText}</span>
@@ -9606,14 +9627,30 @@ export class ConfigPanel {
           </div>
 
           <div style="margin-bottom: 8px;">
-            <label class="form-label" style="font-size: 11px; margin-bottom: 3px;">System Prompt (Role & Guidelines)</label>
-            <textarea id="cfg-llm-sys-prompt" class="form-control" rows="2" style="font-size: 11px; resize: vertical;" placeholder="You are an accurate data assistant...">${this.escapeHtml(cfg.system_prompt)}</textarea>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
+              <label class="form-label" style="font-size: 11px; margin: 0;">System Prompt (Role & Guidelines)</label>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 10px; color: var(--text-muted);">Source:</span>
+                <select id="cfg-llm-sys-source" class="form-control form-control-sm" style="font-size: 10.5px; padding: 1px 4px; height: 22px; width: auto;">
+                  <option value="static" ${cfg.system_prompt_source === 'static' ? 'selected' : ''}>Static Text</option>
+                  <option value="column" ${cfg.system_prompt_source === 'column' ? 'selected' : ''}>From Column</option>
+                </select>
+              </div>
+            </div>
+            <textarea id="cfg-llm-sys-prompt" class="form-control" rows="2" style="font-size: 11px; resize: vertical; display: ${cfg.system_prompt_source === 'static' ? 'block' : 'none'};" placeholder="You are an accurate data assistant...">${this.escapeHtml(cfg.system_prompt)}</textarea>
+            <div id="cfg-llm-sys-col-row" style="display: ${cfg.system_prompt_source === 'column' ? 'block' : 'none'};">
+              <select id="cfg-llm-sys-col" class="form-control form-control-sm" style="font-size: 11px;">
+                <option value="">-- Select column containing system prompt --</option>
+                ${cols.map(c => { const n = typeof c === 'string' ? c : (c.name || c.field || ''); return `<option value="${this.escapeHtml(n)}" ${n === cfg.system_prompt_column ? 'selected' : ''}>${this.escapeHtml(n)}</option>`; }).join('')}
+              </select>
+              <div style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">Each row uses its own system prompt from this column.</div>
+            </div>
           </div>
 
           <div style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
               <label class="form-label" style="font-size: 11px; margin: 0;">User Prompt Template</label>
-              <span style="font-size: 10px; color: var(--text-muted);">Use {{[ColumnName]}} for row values</span>
+              <span style="font-size: 10px; color: var(--text-muted);">{{[ColumnName]}} or Jinja2 <code style="font-size: 9px;">{{ col }}</code></span>
             </div>
             <textarea id="cfg-llm-user-prompt" class="form-control" rows="4" style="font-size: 11.5px; font-family: monospace; resize: vertical;" placeholder="e.g. Extract the sentiment of this text: {{[ReviewText]}}&#10;Respond with Positive, Neutral, or Negative.">${this.escapeHtml(cfg.user_prompt_template)}</textarea>
           </div>
@@ -9627,58 +9664,22 @@ export class ConfigPanel {
           </div>
         </div>
 
-        <!-- 3. RAG / Context Injection Card (Collapsible) -->
+        <!-- 3. RAG / Context Injection Card (Multi-block) -->
         <div class="cfg-section" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; background: var(--bg-surface-subtle, rgba(255,255,255,0.02));">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <label class="form-check" style="font-size: 11.5px; font-weight: 600; margin: 0; cursor: pointer;">
-              <input type="checkbox" id="cfg-llm-rag-enable" ${cfg.rag_context.enabled ? 'checked' : ''}>
-              <span style="color: var(--text-color); display: flex; align-items: center; gap: 6px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                Context / RAG Injection
-              </span>
-            </label>
-            <span style="font-size: 10.5px; color: var(--text-muted);">Augment prompts with knowledge</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="font-weight: 600; font-size: 12px; color: var(--text-color); display: flex; align-items: center; gap: 6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Context / RAG Injection
+            </div>
+            <button type="button" id="btn-add-ctx-block" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px;">
+              <span style="font-size: 13px; line-height: 1;">+</span> Add Context Block
+            </button>
           </div>
-
-          <div id="cfg-llm-rag-body" style="margin-top: 10px; display: ${cfg.rag_context.enabled ? 'block' : 'none'};">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-              <div>
-                <label class="form-label" style="font-size: 10.5px; margin-bottom: 2px;">Context Source</label>
-                <select id="cfg-llm-rag-source" class="form-control form-control-sm" style="font-size: 11px;">
-                  <option value="static" ${cfg.rag_context.source === 'static' ? 'selected' : ''}>Static Text Block</option>
-                  <option value="column" ${cfg.rag_context.source === 'column' ? 'selected' : ''}>From Column (Per-Row)</option>
-                  <option value="file" ${cfg.rag_context.source === 'file' ? 'selected' : ''}>From File (Shared Doc)</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label" style="font-size: 10.5px; margin-bottom: 2px;">Placement</label>
-                <select id="cfg-llm-rag-placement" class="form-control form-control-sm" style="font-size: 11px;">
-                  <option value="before" ${cfg.rag_context.placement === 'before' ? 'selected' : ''}>Before User Prompt</option>
-                  <option value="after" ${cfg.rag_context.placement === 'after' ? 'selected' : ''}>After User Prompt</option>
-                  <option value="system" ${cfg.rag_context.placement === 'system' ? 'selected' : ''}>In System Instructions</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Static text input -->
-            <div id="cfg-rag-src-static" style="display: ${cfg.rag_context.source === 'static' ? 'block' : 'none'}; margin-bottom: 8px;">
-              <textarea id="cfg-llm-rag-text" class="form-control" rows="3" style="font-size: 11px;" placeholder="Paste domain guidelines, category definitions, or reference knowledge...">${this.escapeHtml(cfg.rag_context.text)}</textarea>
-            </div>
-
-            <!-- Column selector -->
-            <div id="cfg-rag-src-column" style="display: ${cfg.rag_context.source === 'column' ? 'block' : 'none'}; margin-bottom: 8px;">
-              <select id="cfg-llm-rag-col" class="form-control form-control-sm" style="font-size: 11px;">
-                <option value="">-- Select Context Column --</option>
-                ${colOptionsHtml}
-              </select>
-            </div>
-
-            <!-- File path picker -->
-            <div id="cfg-rag-src-file" style="display: ${cfg.rag_context.source === 'file' ? 'block' : 'none'}; margin-bottom: 8px;">
-              <div style="display: flex; gap: 6px;">
-                <input type="text" id="cfg-llm-rag-file" class="form-control form-control-sm" value="${this.escapeHtml(cfg.rag_context.file_path)}" placeholder="Path to .txt or .md reference file..." style="font-size: 11px; flex: 1;">
-              </div>
-            </div>
+          <div id="cfg-llm-ctx-blocks" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Rendered by JS -->
+          </div>
+          <div id="cfg-llm-ctx-empty" style="font-size: 10.5px; color: var(--text-muted); display: ${cfg.rag_contexts.length === 0 ? 'block' : 'none'};">
+            No context blocks. Click "+ Add Context Block" to augment prompts with knowledge.
           </div>
         </div>
 
@@ -9695,12 +9696,23 @@ export class ConfigPanel {
               <select id="cfg-llm-out-mode" class="form-control form-control-sm" style="font-size: 11px;">
                 <option value="single" ${cfg.output_mode === 'single' ? 'selected' : ''}>Single Column (Raw Response)</option>
                 <option value="json_parse" ${cfg.output_mode === 'json_parse' ? 'selected' : ''}>JSON Parse (Extract Fields)</option>
+                <option value="structured" ${cfg.output_mode === 'structured' ? 'selected' : ''}>Structured (Schema-Enforced)</option>
               </select>
             </div>
             <div>
               <label class="form-label" style="font-size: 11px; margin-bottom: 2px;">Output Column Name</label>
               <input type="text" id="cfg-llm-out-col" class="form-control form-control-sm" value="${this.escapeHtml(cfg.output_column)}" style="font-size: 11px;">
             </div>
+          </div>
+
+          <!-- Structured Output Schema -->
+          <div id="cfg-llm-structured-container" style="display: ${cfg.output_mode === 'structured' ? 'block' : 'none'}; margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.15); border-radius: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 11px; font-weight: 600;">JSON Schema (response_format)</span>
+              <button type="button" id="btn-gen-schema-from-fields" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 1px 6px;" title="Auto-generate schema from JSON fields table below">Auto from Fields</button>
+            </div>
+            <textarea id="cfg-llm-response-schema" class="form-control" rows="5" style="font-size: 10.5px; font-family: monospace; resize: vertical;" placeholder='{"type":"object","properties":{"sentiment":{"type":"string"},"score":{"type":"number"}},"required":["sentiment","score"]}'>${this.escapeHtml(cfg.response_schema)}</textarea>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">Schema is sent as <code style="font-size: 9px;">response_format.json_schema</code>. Supported by OpenAI gpt-4o and compatible providers. One output column per top-level property.</div>
           </div>
 
           <!-- JSON Parse Table -->
@@ -9765,6 +9777,10 @@ export class ConfigPanel {
     const lockCheckbox = container.querySelector('#cfg-llm-lock-output');
     const lockLabel = container.querySelector('#cfg-llm-lock-label');
 
+    const progressWrapEl = container.querySelector('#llm-progress-wrap');
+    const progressBarEl = container.querySelector('#llm-progress-bar');
+    const progressTextEl = container.querySelector('#llm-progress-text');
+
     if (runStandaloneBtn) {
       runStandaloneBtn.addEventListener('click', async () => {
         runStandaloneBtn.disabled = true;
@@ -9777,6 +9793,21 @@ export class ConfigPanel {
         `;
         if (statusTextEl) statusTextEl.textContent = 'Executing upstream lineage & sending batch to LLM...';
         if (tokensPillEl) tokensPillEl.style.display = 'none';
+
+        // Start progress polling
+        if (progressWrapEl) progressWrapEl.style.display = 'flex';
+        if (progressBarEl) progressBarEl.style.width = '0%';
+        if (progressTextEl) progressTextEl.textContent = '…';
+        let progressInterval = setInterval(async () => {
+          try {
+            const pr = await fetch(`/api/ai/progress/${node.id}`);
+            const pd = await pr.json();
+            const pct = pd.total > 0 ? Math.round((pd.completed / pd.total) * 100) : 0;
+            if (progressBarEl) progressBarEl.style.width = `${pct}%`;
+            if (progressTextEl) progressTextEl.textContent = `${pd.completed} / ${pd.total}`;
+            if (pd.done) clearInterval(progressInterval);
+          } catch (_) { /* ignore */ }
+        }, 500);
 
         saveChanges();
 
@@ -9850,6 +9881,9 @@ export class ConfigPanel {
           if (statusTextEl) statusTextEl.textContent = `Error: ${err.message}`;
           if (window.showToast) window.showToast('error', 'Execution Error', err.message);
         } finally {
+          clearInterval(progressInterval);
+          if (progressWrapEl) progressWrapEl.style.display = 'none';
+          if (progressBarEl) progressBarEl.style.width = '0%';
           runStandaloneBtn.disabled = false;
           runStandaloneBtn.innerHTML = `
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -9902,6 +9936,67 @@ export class ConfigPanel {
           this.canvas.updateSelectionVisuals();
           this.canvas.onWorkflowChange();
         }
+      });
+    }
+
+    // Estimate button
+    const estimateBtn = container.querySelector('#btn-llm-estimate');
+    const estimateResultEl = container.querySelector('#llm-estimate-result');
+    if (estimateBtn) {
+      estimateBtn.addEventListener('click', async () => {
+        estimateBtn.disabled = true;
+        estimateBtn.textContent = '…';
+        if (estimateResultEl) estimateResultEl.style.display = 'none';
+        try {
+          const resp = await fetch('/api/ai/estimate-tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_prompt_template: cfg.user_prompt_template,
+              system_prompt: cfg.system_prompt,
+              model: cfg.model,
+              max_tokens: cfg.max_tokens,
+              node_id: node.id
+            })
+          });
+          const res = await resp.json();
+          if (res.success && estimateResultEl) {
+            const cost = res.est_cost_usd > 0 ? `~$${res.est_cost_usd.toFixed(4)}` : 'free';
+            const tok = res.est_total_tokens >= 1000 ? `~${(res.est_total_tokens / 1000).toFixed(0)}K tok` : `~${res.est_total_tokens} tok`;
+            estimateResultEl.textContent = `${cost} / ${tok} (${res.row_count} rows)`;
+            estimateResultEl.style.display = 'inline-block';
+          } else if (estimateResultEl) {
+            estimateResultEl.textContent = res.message || 'Run upstream node first';
+            estimateResultEl.style.background = 'rgba(239,68,68,0.15)';
+            estimateResultEl.style.color = '#ef4444';
+            estimateResultEl.style.display = 'inline-block';
+          }
+        } catch (err) {
+          if (estimateResultEl) { estimateResultEl.textContent = err.message; estimateResultEl.style.display = 'inline-block'; }
+        } finally {
+          estimateBtn.disabled = false;
+          estimateBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Estimate`;
+        }
+      });
+    }
+
+    // System prompt source toggle
+    const sysSourceSelect = container.querySelector('#cfg-llm-sys-source');
+    const sysPromptTextarea = container.querySelector('#cfg-llm-sys-prompt');
+    const sysColRow = container.querySelector('#cfg-llm-sys-col-row');
+    const sysColSelect = container.querySelector('#cfg-llm-sys-col');
+    if (sysSourceSelect) {
+      sysSourceSelect.addEventListener('change', (e) => {
+        cfg.system_prompt_source = e.target.value;
+        if (sysPromptTextarea) sysPromptTextarea.style.display = cfg.system_prompt_source === 'static' ? 'block' : 'none';
+        if (sysColRow) sysColRow.style.display = cfg.system_prompt_source === 'column' ? 'block' : 'none';
+        saveChanges();
+      });
+    }
+    if (sysColSelect) {
+      sysColSelect.addEventListener('change', (e) => {
+        cfg.system_prompt_column = e.target.value;
+        saveChanges();
       });
     }
 
@@ -10117,7 +10212,8 @@ export class ConfigPanel {
             node_id: upstreamNodeId,
             user_prompt_template: cfg.user_prompt_template,
             system_prompt: cfg.system_prompt,
-            rag_context: cfg.rag_context
+            rag_contexts: cfg.rag_contexts,
+            rag_context: cfg.rag_context  // legacy fallback
           })
         });
         const res = await resp.json();
@@ -10152,47 +10248,72 @@ export class ConfigPanel {
       }
     });
 
-    // RAG Controls
-    const ragEnable = container.querySelector('#cfg-llm-rag-enable');
-    const ragBody = container.querySelector('#cfg-llm-rag-body');
-    const ragSource = container.querySelector('#cfg-llm-rag-source');
-    const ragPlacement = container.querySelector('#cfg-llm-rag-placement');
-    const ragSrcStatic = container.querySelector('#cfg-rag-src-static');
-    const ragSrcCol = container.querySelector('#cfg-rag-src-column');
-    const ragSrcFile = container.querySelector('#cfg-rag-src-file');
+    // Multi-context blocks
+    const ctxBlocksEl = container.querySelector('#cfg-llm-ctx-blocks');
+    const ctxEmptyEl = container.querySelector('#cfg-llm-ctx-empty');
 
-    ragEnable.addEventListener('change', (e) => {
-      cfg.rag_context.enabled = e.target.checked;
-      ragBody.style.display = cfg.rag_context.enabled ? 'block' : 'none';
-      saveChanges();
-    });
+    const renderCtxBlocks = () => {
+      ctxBlocksEl.innerHTML = '';
+      if (ctxEmptyEl) ctxEmptyEl.style.display = cfg.rag_contexts.length === 0 ? 'block' : 'none';
+      cfg.rag_contexts.forEach((ctx, idx) => {
+        const colOpts = cols.map(c => {
+          const n = typeof c === 'string' ? c : (c.name || c.field || '');
+          return `<option value="${n}" ${n === ctx.column ? 'selected' : ''}>${n}</option>`;
+        }).join('');
+        const block = document.createElement('div');
+        block.style.cssText = 'border: 1px solid var(--border-color); border-radius: 4px; padding: 8px; background: rgba(0,0,0,0.1); position: relative;';
+        block.innerHTML = `
+          <div style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center;">
+            <select class="ctx-enabled form-control form-control-sm" style="width:auto; font-size:10.5px; padding:1px 4px; height:22px;">
+              <option value="1" ${ctx.enabled !== false ? 'selected' : ''}>Enabled</option>
+              <option value="0" ${ctx.enabled === false ? 'selected' : ''}>Disabled</option>
+            </select>
+            <select class="ctx-source form-control form-control-sm" style="flex:1; font-size:10.5px;">
+              <option value="static" ${ctx.source === 'static' ? 'selected' : ''}>Static Text</option>
+              <option value="column" ${ctx.source === 'column' ? 'selected' : ''}>From Column</option>
+              <option value="file" ${ctx.source === 'file' ? 'selected' : ''}>From File</option>
+            </select>
+            <select class="ctx-placement form-control form-control-sm" style="flex:1; font-size:10.5px;">
+              <option value="before" ${ctx.placement === 'before' ? 'selected' : ''}>Before Prompt</option>
+              <option value="after" ${ctx.placement === 'after' ? 'selected' : ''}>After Prompt</option>
+              <option value="system" ${ctx.placement === 'system' ? 'selected' : ''}>In System</option>
+            </select>
+            <button class="btn btn-secondary btn-sm ctx-remove" style="padding:1px 6px; font-size:11px; color:#ef4444; flex-shrink:0;">&times;</button>
+          </div>
+          <div class="ctx-static-row" style="display:${ctx.source === 'static' ? 'block' : 'none'};">
+            <textarea class="ctx-text form-control" rows="2" style="font-size:10.5px; resize:vertical;" placeholder="Static context text...">${this.escapeHtml(ctx.text || '')}</textarea>
+          </div>
+          <div class="ctx-column-row" style="display:${ctx.source === 'column' ? 'block' : 'none'};">
+            <select class="ctx-col form-control form-control-sm" style="font-size:10.5px;">
+              <option value="">-- Select Column --</option>${colOpts}
+            </select>
+          </div>
+          <div class="ctx-file-row" style="display:${ctx.source === 'file' ? 'block' : 'none'};">
+            <input type="text" class="ctx-file form-control form-control-sm" value="${this.escapeHtml(ctx.file_path || '')}" placeholder="Path to .txt or .md file..." style="font-size:10.5px;">
+          </div>
+        `;
+        block.querySelector('.ctx-enabled').addEventListener('change', (e) => { ctx.enabled = e.target.value === '1'; saveChanges(); });
+        block.querySelector('.ctx-source').addEventListener('change', (e) => {
+          ctx.source = e.target.value;
+          block.querySelector('.ctx-static-row').style.display = ctx.source === 'static' ? 'block' : 'none';
+          block.querySelector('.ctx-column-row').style.display = ctx.source === 'column' ? 'block' : 'none';
+          block.querySelector('.ctx-file-row').style.display = ctx.source === 'file' ? 'block' : 'none';
+          saveChanges();
+        });
+        block.querySelector('.ctx-placement').addEventListener('change', (e) => { ctx.placement = e.target.value; saveChanges(); });
+        block.querySelector('.ctx-text').addEventListener('input', (e) => { ctx.text = e.target.value; saveChanges(); });
+        block.querySelector('.ctx-col').addEventListener('change', (e) => { ctx.column = e.target.value; saveChanges(); });
+        block.querySelector('.ctx-file').addEventListener('input', (e) => { ctx.file_path = e.target.value; saveChanges(); });
+        block.querySelector('.ctx-remove').addEventListener('click', () => { cfg.rag_contexts.splice(idx, 1); renderCtxBlocks(); saveChanges(); });
+        ctxBlocksEl.appendChild(block);
+      });
+    };
 
-    ragSource.addEventListener('change', (e) => {
-      const src = e.target.value;
-      cfg.rag_context.source = src;
-      ragSrcStatic.style.display = src === 'static' ? 'block' : 'none';
-      ragSrcCol.style.display = src === 'column' ? 'block' : 'none';
-      ragSrcFile.style.display = src === 'file' ? 'block' : 'none';
-      saveChanges();
-    });
+    renderCtxBlocks();
 
-    ragPlacement.addEventListener('change', (e) => {
-      cfg.rag_context.placement = e.target.value;
-      saveChanges();
-    });
-
-    container.querySelector('#cfg-llm-rag-text').addEventListener('input', (e) => {
-      cfg.rag_context.text = e.target.value;
-      saveChanges();
-    });
-
-    container.querySelector('#cfg-llm-rag-col').addEventListener('change', (e) => {
-      cfg.rag_context.column = e.target.value;
-      saveChanges();
-    });
-
-    container.querySelector('#cfg-llm-rag-file').addEventListener('input', (e) => {
-      cfg.rag_context.file_path = e.target.value;
+    container.querySelector('#btn-add-ctx-block').addEventListener('click', () => {
+      cfg.rag_contexts.push({ enabled: true, source: 'static', placement: 'before', text: '', column: '', file_path: '' });
+      renderCtxBlocks();
       saveChanges();
     });
 
@@ -10200,11 +10321,13 @@ export class ConfigPanel {
     const outMode = container.querySelector('#cfg-llm-out-mode');
     const outCol = container.querySelector('#cfg-llm-out-col');
     const jsonContainer = container.querySelector('#cfg-llm-json-container');
+    const structuredContainer = container.querySelector('#cfg-llm-structured-container');
     const jsonFieldsList = container.querySelector('#json-fields-list');
 
     outMode.addEventListener('change', (e) => {
       cfg.output_mode = e.target.value;
       jsonContainer.style.display = cfg.output_mode === 'json_parse' ? 'block' : 'none';
+      if (structuredContainer) structuredContainer.style.display = cfg.output_mode === 'structured' ? 'block' : 'none';
       saveChanges();
     });
 
@@ -10212,6 +10335,34 @@ export class ConfigPanel {
       cfg.output_column = e.target.value.trim() || 'AI_Response';
       saveChanges();
     });
+
+    // Structured output schema textarea
+    const schemaTextarea = container.querySelector('#cfg-llm-response-schema');
+    if (schemaTextarea) {
+      schemaTextarea.addEventListener('input', (e) => {
+        cfg.response_schema = e.target.value;
+        saveChanges();
+      });
+    }
+
+    // Auto-generate JSON schema from json_fields table
+    const genSchemaBtn = container.querySelector('#btn-gen-schema-from-fields');
+    if (genSchemaBtn) {
+      genSchemaBtn.addEventListener('click', () => {
+        const props = {};
+        (cfg.json_fields || []).forEach(f => {
+          if (f.field_name) props[f.field_name] = { type: 'string' };
+        });
+        if (Object.keys(props).length === 0) {
+          if (window.showToast) window.showToast('warning', 'No Fields', 'Add JSON field mappings first.');
+          return;
+        }
+        const schema = { type: 'object', properties: props, required: Object.keys(props) };
+        cfg.response_schema = JSON.stringify(schema, null, 2);
+        if (schemaTextarea) schemaTextarea.value = cfg.response_schema;
+        saveChanges();
+      });
+    }
 
     const renderJsonFields = () => {
       jsonFieldsList.innerHTML = '';

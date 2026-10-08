@@ -358,6 +358,13 @@ class WorkflowManager:
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         backup_filename = f"{clean_stem}_{timestamp_str}.json"
         backup_path = os.path.join(self.backups_dir, backup_filename)
+        # Guard against sub-millisecond collisions on Windows (limited %f resolution).
+        # Append a counter suffix until we find a free filename.
+        _collision = 0
+        while os.path.exists(backup_path):
+            _collision += 1
+            backup_filename = f"{clean_stem}_{timestamp_str}_{_collision}.json"
+            backup_path = os.path.join(self.backups_dir, backup_filename)
         validate_safe_path(backup_path, [self.backups_dir])
 
         commit_meta = {

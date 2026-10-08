@@ -125,11 +125,25 @@ body {
   font-family: var(--font-sans);
   background-color: var(--bg-main);
   color: var(--text-primary);
-  display: flex;
-  flex-direction: column;
   height: 100vh;
+  width: 100vw;
   overflow: hidden;
   user-select: none;
+}
+
+/* UI-scale wrapper — transform:scale() applied here for View > Zoom.
+   Using transform instead of css zoom ensures getBoundingClientRect() returns
+   viewport-space coordinates in all Chromium versions (not just 128+),
+   fixing the canvas marquee-selection offset when UI scale ≠ 100%.
+   transform also properly contains position:fixed descendants so overlays
+   scale with the UI rather than being clipped or mispositioned. */
+#app-scale-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transform-origin: 0 0;
 }
 
 /* ======================================================================

@@ -52,8 +52,21 @@ class OpenAICompatProvider(LLMProvider):
             ],
             "temperature": config.temperature,
             "max_tokens": config.max_tokens,
-            "top_p": config.top_p
+            "top_p": config.top_p,
         }
+
+        # Structured output: pass JSON schema to the API so the model is
+        # constrained to return valid JSON matching the schema (OpenAI o-series
+        # and gpt-4o support this; older models fall back gracefully).
+        if config.response_schema:
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "structured_output",
+                    "strict": True,
+                    "schema": config.response_schema,
+                },
+            }
         
         try:
             response = requests.post(

@@ -30,6 +30,35 @@ class InputDataNode(BaseNode):
             df.columns = [str(c) for c in df.columns]
             return {"O": df}
 
+        if source_type == "database":
+            import backend.extensions as _ext
+            if _ext.connection_manager is None:
+                raise NodeExecutionError("Input Data: Connection manager not initialized.")
+            conn_id = self.config.get("connection_id", "").strip()
+            if not conn_id:
+                raise NodeExecutionError("Input Data: No connection_id configured.")
+            query = self.config.get("query", "").strip()
+            table = self.config.get("table", "").strip()
+            if not query and not table:
+                raise NodeExecutionError("Input Data: Either 'query' or 'table' must be configured.")
+            if not query:
+                query = f'SELECT * FROM "{table}"'
+            max_rows_db = self.config.get("max_rows")
+            if max_rows_db and str(max_rows_db).isdigit():
+                max_rows_db = int(max_rows_db)
+            else:
+                max_rows_db = None
+            try:
+                driver = _ext.connection_manager.get_driver(conn_id)
+                df = driver.read_query(query, limit=max_rows_db)
+            except Exception as exc:
+                raise NodeExecutionError(f"Input Data database error: {exc}")
+            df.columns = [str(c) for c in df.columns]
+            self.messages.append(
+                f"Loaded {len(df):,} rows × {len(df.columns)} columns from database connection."
+            )
+            return {"O": df}
+
         file_path = self.config.get("file_path", "").strip()
         if not file_path:
             raise NodeExecutionError("Input Data: No file specified.")
@@ -37,6 +66,21 @@ class InputDataNode(BaseNode):
         data_dir = context.get("data_dir", "")
         base_dir = context.get("base_dir", "")
         allowed_dirs = [d for d in [data_dir, base_dir] if d]
+
+        # Add user-configured trusted external directories (Settings → Trusted External Data Directories).
+        # Read directly from the settings file to avoid import-time coupling.
+        try:
+            import json as _json
+            import backend.extensions as _ext_io
+            _settings_file = getattr(_ext_io, "USER_SETTINGS_FILE", None)
+            if _settings_file and os.path.isfile(_settings_file):
+                with open(_settings_file, "r", encoding="utf-8") as _sf:
+                    _user_cfg = _json.load(_sf)
+                _extra = _user_cfg.get("extra_data_dirs", [])
+                if isinstance(_extra, list):
+                    allowed_dirs.extend([d for d in _extra if d and isinstance(d, str)])
+        except Exception:
+            pass  # Never block execution due to settings read failure
 
         # Check if file_path has wildcards (* or ?) for multi-file glob ingestion
         has_wildcard = any(char in file_path for char in ["*", "?"])

@@ -627,6 +627,13 @@ class MenuBar {
       histCheck.checked = window.appResultsPanel.showHistograms;
     }
 
+    // Extra trusted data directories
+    const extraDirsTA = document.getElementById('setting-extra-data-dirs');
+    if (extraDirsTA && window.userSettings) {
+      const dirs = window.userSettings.get('extra_data_dirs', []);
+      extraDirsTA.value = Array.isArray(dirs) ? dirs.join('\n') : String(dirs || '');
+    }
+
     this.openModal('modal-user-settings');
   }
 
@@ -741,8 +748,15 @@ class MenuBar {
         window.appUIScale.apply(zVal, false);
       } else if (window.userSettings) {
         window.userSettings.set('ui_zoom', zVal);
-        document.documentElement.style.zoom = `${zVal}`;
+        if (window.appUIScale) window.appUIScale.apply(zVal, false);
       }
+    }
+
+    // 6. Extra trusted data directories
+    const extraDirsTA = document.getElementById('setting-extra-data-dirs');
+    if (extraDirsTA && window.userSettings) {
+      const rawLines = extraDirsTA.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      window.userSettings.set('extra_data_dirs', rawLines);
     }
 
     this.closeAllModals();

@@ -9,3 +9,13 @@ python-calamine>=0.8.0
 pyarrow>=14.0.0
 jinja2>=3.1.0
 pywebview>=5.0.0
+
+# DuckDB — fast-path execution engine + streaming file I/O
+duckdb>=0.10.0
+
+# Database connectors
+keyring>=24.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+snowflake-sqlalchemy>=1.5.0
+snowflake-connector-python>=3.0.0

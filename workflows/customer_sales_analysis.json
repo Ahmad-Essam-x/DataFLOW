@@ -2,25 +2,25 @@
   "name": "Customer Sales Analysis",
   "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
   "metadata": {
-    "created_at": "2026-10-06T00:30:13",
-    "updated_at": "2026-10-06T00:30:13",
+    "created_at": "2026-10-09T01:45:09",
+    "updated_at": "2026-10-09T01:45:09",
     "version": "2.1.0",
     "author": "",
     "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
     "saved_file": "C:/DataFLOW/workflows/sales_customer_enrichment.json"
   },
   "viewport": {
-    "zoom": 1.0,
-    "panX": 0.0,
-    "panY": 0.0
+    "zoom": 0.21,
+    "panX": 635.0035,
+    "panY": 312.088
   },
   "nodes": [
     {
       "id": "node_sales_in",
       "type": "input_data",
       "name": "Input Sales Orders (CSV)",
-      "x": 96,
-      "y": 176,
+      "x": -208,
+      "y": -384,
       "config": {
         "delimiter": ",",
         "file_path": "sales_orders.csv",
@@ -105,8 +105,8 @@
       "id": "node_sales_autofield",
       "type": "auto_field",
       "name": "Auto Field Types",
-      "x": 280,
-      "y": 180,
+      "x": -32,
+      "y": -384,
       "config": {
         "fields": []
       },
@@ -118,8 +118,8 @@
       "id": "node_sales_clean",
       "type": "clean",
       "name": "Clean Text & Region",
-      "x": 460,
-      "y": 180,
+      "x": 144,
+      "y": -384,
       "config": {
         "case_transformation": "title",
         "columns": [
@@ -137,8 +137,8 @@
       "id": "node_sales_dt",
       "type": "date_time",
       "name": "Parse OrderDate",
-      "x": 640,
-      "y": 180,
+      "x": 320,
+      "y": -384,
       "config": {
         "column": "OrderDate",
         "conversion_type": "string_to_date",
@@ -153,8 +153,8 @@
       "id": "node_sales_formula",
       "type": "formula",
       "name": "Calculate Net Revenue",
-      "x": 820,
-      "y": 180,
+      "x": 512,
+      "y": -384,
       "config": {
         "formulas": [
           {
@@ -177,8 +177,8 @@
       "id": "node_sales_filter",
       "type": "filter",
       "name": "Filter Orders > $500",
-      "x": 1000,
-      "y": 180,
+      "x": 688,
+      "y": -384,
       "config": {
         "conditions": [
           {
@@ -198,8 +198,8 @@
       "id": "node_sales_summarize",
       "type": "summarize",
       "name": "Summarize by Region & Segment",
-      "x": 1200,
-      "y": 140,
+      "x": 880,
+      "y": -432,
       "config": {
         "actions": [
           {
@@ -237,8 +237,8 @@
       "id": "node_sort_1",
       "type": "sort",
       "name": "Sort Revenue Desc",
-      "x": 1380,
-      "y": 140,
+      "x": 1072,
+      "y": -432,
       "config": {
         "sort_by": [
           {
@@ -255,8 +255,8 @@
       "id": "node_sales_multirow",
       "type": "multi_row_formula",
       "name": "Cumulative Sales Total",
-      "x": 1560,
-      "y": 140,
+      "x": 1248,
+      "y": -432,
       "config": {
         "expression": "[Row-1:CumulativeRevenue] + [TotalRevenue]",
         "group_by_fields": [],
@@ -273,8 +273,8 @@
       "id": "node_sales_out",
       "type": "output_data",
       "name": "Export Sales Summary",
-      "x": 1740,
-      "y": 140,
+      "x": 1424,
+      "y": -432,
       "config": {
         "filename": "regional_sales_summary",
         "format": "csv",
@@ -288,8 +288,8 @@
       "id": "node_sales_browse",
       "type": "browse",
       "name": "Browse Sales Profile",
-      "x": 1740,
-      "y": 260,
+      "x": 1424,
+      "y": -304,
       "config": {},
       "container_id": "container_sales_1",
       "is_cached": false,
@@ -378,8 +378,8 @@
       "borderWidth": 2,
       "fillOpacity": 12,
       "margin": 24,
-      "x": 60,
-      "y": 60,
+      "x": -256,
+      "y": -512,
       "width": 1840,
       "height": 380,
       "collapsed": false,

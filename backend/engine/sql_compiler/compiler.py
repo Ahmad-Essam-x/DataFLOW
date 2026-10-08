@@ -288,13 +288,24 @@ class SQLCompiler:
             f"SELECT * FROM {final_cte_name};"
         )
 
+        # Build node_cte_map for the DuckDB executor: {node_id: {port: cte_name}}
+        node_cte_map: Dict[str, Dict[str, str]] = {}
+        for c in compiled_ctes:
+            nid = c["node_id"]
+            if nid not in node_cte_map:
+                node_cte_map[nid] = {}
+            node_cte_map[nid][c["port"]] = c["cte_name"]
+
         return {
             "success": True,
             "sql": full_sql,
             "dialect": self.dialect.name,
             "terminal_cte": final_cte_name,
             "ctes_generated": len(compiled_ctes),
-            "warnings": self.warnings
+            "warnings": self.warnings,
+            # Structured output for DuckDB executor (does not affect SQL export path)
+            "compiled_ctes": compiled_ctes,
+            "node_cte_map": node_cte_map,
         }
 
 

@@ -17,11 +17,13 @@ if TYPE_CHECKING:
     from backend.engine.executor import WorkflowExecutor
     from backend.engine.workflow_manager import WorkflowManager
     from backend.engine.cache_manager import SessionRunCacheManager
+    from backend.engine.connections.manager import ConnectionManager
 
 # Shared singletons — assigned in app.py before first request
 executor: Optional["WorkflowExecutor"] = None
 workflow_manager: Optional["WorkflowManager"] = None
 cache_manager: Optional["SessionRunCacheManager"] = None
+connection_manager: Optional["ConnectionManager"] = None
 
 # Paths — assigned in app.py based on frozen/source detection
 BASE_DIR: Optional[str] = None

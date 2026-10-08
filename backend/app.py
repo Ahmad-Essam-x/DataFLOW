@@ -111,6 +111,10 @@ ext.cache_manager = cache_manager
 ext.executor = executor
 ext.workflow_manager = workflow_manager
 
+from backend.engine.connections.manager import ConnectionManager
+connection_manager = ConnectionManager(config_dir=os.path.join(BASE_DIR, "settings"))
+ext.connection_manager = connection_manager
+
 INITIAL_WORKFLOW_FILE = None
 _app_dirty_state = ext._app_dirty_state
 
@@ -136,6 +140,7 @@ def create_app():
     from backend.blueprints.settings import bp as settings_bp
     from backend.blueprints.dialogs import bp as dialogs_bp
     from backend.blueprints.ai import bp as ai_bp
+    from backend.blueprints.connections import bp as connections_bp
 
     app_instance.register_blueprint(execution_bp)
     app_instance.register_blueprint(files_bp)
@@ -143,6 +148,7 @@ def create_app():
     app_instance.register_blueprint(settings_bp)
     app_instance.register_blueprint(dialogs_bp)
     app_instance.register_blueprint(ai_bp)
+    app_instance.register_blueprint(connections_bp)
 
     @app_instance.route("/")
     def index():

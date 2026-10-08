@@ -166,9 +166,21 @@ def read_tabular_file(
                 df = next(iter(df.values())) if df else pd.DataFrame()
 
     elif fmt == "parquet":
-        df = pd.read_parquet(filepath)
-        if max_rows and len(df) > max_rows:
-            df = df.iloc[:max_rows]
+        # DuckDB pushes LIMIT into the Parquet scan — avoids loading the full file first.
+        _duck_ok = False
+        try:
+            import duckdb as _ddb
+            _con = _ddb.connect()
+            _limit = f" LIMIT {int(max_rows)}" if max_rows else ""
+            _safe = filepath.replace("\\", "/")
+            df = _con.execute(f"SELECT * FROM read_parquet('{_safe}'){_limit}").df()
+            _duck_ok = True
+        except Exception:
+            pass
+        if not _duck_ok:
+            df = pd.read_parquet(filepath)
+            if max_rows and len(df) > max_rows:
+                df = df.iloc[:max_rows]
 
     elif fmt == "json":
         ext = os.path.splitext(filepath)[1].lower()
@@ -200,32 +212,57 @@ def read_tabular_file(
         elif sep == "semicolon":
             sep = ";"
 
-        csv_kwargs: Dict[str, Any] = {
-            "sep": sep,
-            "encoding": encoding,
-            "header": header,
-            "nrows": max_rows,
-            "skiprows": skiprows
-        }
-        if quote_char and quote_char not in ["none", "None"]:
-            csv_kwargs["quotechar"] = quote_char
-        if escape_char and escape_char not in ["none", "None"]:
-            csv_kwargs["escapechar"] = escape_char
-        if on_bad_lines in ["skip", "warn"]:
-            csv_kwargs["on_bad_lines"] = "skip"
-
+        # DuckDB fast-path: pushes LIMIT into the file scan, auto-detects types.
+        # Falls back to full pandas chain on any failure (encoding issues, etc.).
+        _duck_ok = False
         try:
-            df = pd.read_csv(filepath, **csv_kwargs)
-        except UnicodeDecodeError:
-            csv_kwargs["encoding"] = "latin1"
-            df = pd.read_csv(filepath, **csv_kwargs)
-        except Exception as e:
-            # Fallback with python engine
+            import duckdb as _ddb
+            _con = _ddb.connect()
+            _ddb_params = [f"delim='{sep}'"]
+            _ddb_params.append(f"header={'true' if header is not None else 'false'}")
+            if skiprows:
+                _ddb_params.append(f"skip={int(skiprows)}")
+            if quote_char and quote_char not in ("none", "None"):
+                _safe_q = quote_char.replace("\\", "\\\\").replace("'", "\\'")
+                _ddb_params.append(f"quote='{_safe_q}'")
+            if on_bad_lines in ("skip", "warn"):
+                _ddb_params.append("ignore_errors=true")
+            _limit = f" LIMIT {int(max_rows)}" if max_rows else ""
+            _safe = filepath.replace("\\", "/")
+            df = _con.execute(
+                f"SELECT * FROM read_csv_auto('{_safe}', {', '.join(_ddb_params)}){_limit}"
+            ).df()
+            _duck_ok = True
+        except Exception:
+            pass
+
+        if not _duck_ok:
+            csv_kwargs: Dict[str, Any] = {
+                "sep": sep,
+                "encoding": encoding,
+                "header": header,
+                "nrows": max_rows,
+                "skiprows": skiprows
+            }
+            if quote_char and quote_char not in ["none", "None"]:
+                csv_kwargs["quotechar"] = quote_char
+            if escape_char and escape_char not in ["none", "None"]:
+                csv_kwargs["escapechar"] = escape_char
+            if on_bad_lines in ["skip", "warn"]:
+                csv_kwargs["on_bad_lines"] = "skip"
+
             try:
-                csv_kwargs["engine"] = "python"
                 df = pd.read_csv(filepath, **csv_kwargs)
-            except Exception:
-                raise e
+            except UnicodeDecodeError:
+                csv_kwargs["encoding"] = "latin1"
+                df = pd.read_csv(filepath, **csv_kwargs)
+            except Exception as e:
+                # Fallback with python engine
+                try:
+                    csv_kwargs["engine"] = "python"
+                    df = pd.read_csv(filepath, **csv_kwargs)
+                except Exception:
+                    raise e
 
     if df is not None:
         df.columns = [str(c) for c in df.columns]

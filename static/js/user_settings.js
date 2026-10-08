@@ -193,7 +193,22 @@ class UserSettings {
     const raw = this.get('ui_zoom', 1.0);
     const scale = parseFloat(raw);
     if (!isNaN(scale) && scale >= 0.5 && scale <= 2.5) {
-      document.documentElement.style.zoom = `${scale}`;
+      // Prefer appUIScale if already initialised (uses transform on wrapper)
+      if (window.appUIScale) {
+        window.appUIScale.apply(scale, false);
+      } else {
+        // Called during early init — apply directly to wrapper if present,
+        // otherwise fall back to documentElement.zoom (cleared later by appUIScale.apply)
+        const wrapper = document.getElementById('app-scale-wrapper');
+        if (wrapper && scale !== 1.0) {
+          wrapper.style.transform = `scale(${scale})`;
+          wrapper.style.transformOrigin = '0 0';
+          wrapper.style.width = `${(100 / scale).toFixed(4)}%`;
+          wrapper.style.height = `${(100 / scale).toFixed(4)}%`;
+        } else if (!wrapper) {
+          document.documentElement.style.zoom = `${scale}`;
+        }
+      }
     }
   }
 
