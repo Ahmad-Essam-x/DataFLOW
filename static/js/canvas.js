@@ -1880,7 +1880,11 @@ class Canvas {
     if (customName) {
       newNode.name = customName;
       const annotEl = document.querySelector(`#node-elem-${newNode.id} .node-annotation`);
-      if (annotEl) annotEl.textContent = customName;
+      if (annotEl) {
+        const nameSpan = annotEl.querySelector('.node-annotation-name');
+        if (nameSpan) nameSpan.textContent = customName;
+        else annotEl.textContent = customName;
+      }
     }
 
     if (toolConfig && Object.keys(toolConfig).length > 0) {
@@ -3698,6 +3702,139 @@ class Canvas {
   }
 
   // --------------------------------------------------------------------
+  // Dynamic Node Annotation (Alteryx-style config summary)
+  // --------------------------------------------------------------------
+  getNodeAnnotation(node) {
+    const cfg = node.config || {};
+    const trunc = (s, n = 28) => s && s.length > n ? s.slice(0, n) + '…' : (s || '');
+    const basename = p => p ? p.replace(/\\/g, '/').split('/').pop() : '';
+
+    switch (node.type) {
+      case 'input_data':
+        return trunc(basename(cfg.file_path || cfg.filename || ''));
+      case 'output_data':
+        return trunc(basename(cfg.file_path || cfg.filename || ''));
+      case 'text_input':
+        if (cfg.rows && cfg.rows.length) return `${cfg.rows.length} row${cfg.rows.length !== 1 ? 's' : ''}`;
+        return '';
+      case 'filter': {
+        const expr = cfg.expression || cfg.filter_expr || '';
+        return trunc(expr);
+      }
+      case 'formula': {
+        const exprs = cfg.expressions || [];
+        if (!exprs.length) return '';
+        const first = exprs[0];
+        const field = first.field || first.output_field || '';
+        if (exprs.length > 1) return trunc(`[${field}] +${exprs.length - 1} more`);
+        return trunc(`[${field}]`);
+      }
+      case 'multi_field_formula': {
+        const fields = cfg.fields || [];
+        return fields.length ? `${fields.length} field${fields.length !== 1 ? 's' : ''}` : '';
+      }
+      case 'select': {
+        const fields = cfg.fields || [];
+        if (!fields.length) return '';
+        const active = fields.filter(f => f.selected !== false).length;
+        return `${active} of ${fields.length} fields`;
+      }
+      case 'sort': {
+        const sorts = cfg.sorts || cfg.sort_fields || [];
+        if (!sorts.length) return '';
+        const first = sorts[0];
+        const field = first.field || first.column || '';
+        const dir = (first.order || first.direction || 'asc').toLowerCase().startsWith('d') ? '↓' : '↑';
+        return trunc(`[${field}] ${dir}`);
+      }
+      case 'join': {
+        const conds = cfg.join_conditions || [];
+        if (conds.length) {
+          const c = conds[0];
+          return trunc(`L:[${c.left}] = R:[${c.right}]`);
+        }
+        const lk = cfg.left_key || cfg.left_field || '';
+        const rk = cfg.right_key || cfg.right_field || lk;
+        if (lk) return trunc(`L:[${lk}] = R:[${rk}]`);
+        return '';
+      }
+      case 'join_multiple': {
+        const inputs = node._inputCount || 2;
+        return `${inputs} inputs`;
+      }
+      case 'union':
+        return cfg.method === 'by_position' ? 'by position' : 'by name';
+      case 'summarize': {
+        const fields = cfg.fields || [];
+        const groups = fields.filter(f => f.action === 'group_by').map(f => f.field || f.name).filter(Boolean);
+        if (!groups.length) return fields.length ? `${fields.length} metrics` : '';
+        return trunc(`Group: ${groups.join(', ')}`);
+      }
+      case 'sample': {
+        const method = cfg.method || 'first';
+        const n = cfg.n || cfg.count || '';
+        if (method === 'first') return `First ${n}`;
+        if (method === 'last') return `Last ${n}`;
+        if (method === 'percentage') return `${n}%`;
+        if (method === 'random') return `Random ${n}`;
+        return trunc(`${method} ${n}`);
+      }
+      case 'unique': {
+        const keys = cfg.key_fields || [];
+        if (!keys.length) return '';
+        return trunc(keys.length === 1 ? `[${keys[0]}]` : `${keys.length} key fields`);
+      }
+      case 'record_id':
+        return cfg.field_name ? trunc(`→ [${cfg.field_name}]`) : '';
+      case 'clean': {
+        const ops = cfg.operations || cfg.actions || [];
+        return ops.length ? `${ops.length} operation${ops.length !== 1 ? 's' : ''}` : '';
+      }
+      case 'transpose': {
+        const keys = cfg.key_columns || [];
+        return keys.length ? trunc(`Key: ${keys.join(', ')}`) : '';
+      }
+      case 'crosstab': {
+        const gb = cfg.group_by || '';
+        const hf = cfg.header_field || '';
+        if (gb && hf) return trunc(`${gb} → ${hf}`);
+        return '';
+      }
+      case 'text_to_columns': {
+        const f = cfg.field || cfg.column || '';
+        const delim = cfg.delimiter || ',';
+        return f ? trunc(`[${f}] on "${delim}"`) : '';
+      }
+      case 'find_replace': {
+        const f = cfg.find_field || cfg.field || '';
+        return f ? trunc(`[${f}]`) : '';
+      }
+      case 'append_fields':
+        return 'Cartesian append';
+      case 'multi_row_formula': {
+        const exprs = cfg.expressions || [];
+        const f = cfg.new_field || (exprs[0] && exprs[0].field) || '';
+        return f ? trunc(`[${f}]`) : '';
+      }
+      case 'date_time': {
+        const f = cfg.field || cfg.column || '';
+        return f ? trunc(`[${f}]`) : '';
+      }
+      case 'llm_process': {
+        const model = cfg.model || '';
+        if (!model) return '';
+        return trunc(model);
+      }
+      case 'auto_field':
+        return 'Auto-detect types';
+      case 'browse':
+        return '';
+      default:
+        return '';
+    }
+  }
+
+  // --------------------------------------------------------------------
   // Authentic Compact Alteryx Tool Rendering
   // --------------------------------------------------------------------
   renderNodeElement(node) {
@@ -3780,9 +3917,13 @@ class Canvas {
     // Tool label / annotation rendered cleanly underneath
     const annot = document.createElement('div');
     annot.className = 'node-annotation';
-    annot.textContent = node.name;
-    annot.title = this.nodeTooltipsEnabled ? node.name : '';
-    annot._savedTitle = node.name;
+    const subText = this.getNodeAnnotation(node);
+    const escName = node.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const escSub = subText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    annot.innerHTML = `<span class="node-annotation-name">${escName}</span>${subText ? `<span class="node-annotation-sub">${escSub}</span>` : ''}`;
+    const fullTitle = subText ? `${node.name}\n${subText}` : node.name;
+    annot.title = this.nodeTooltipsEnabled ? fullTitle : '';
+    annot._savedTitle = fullTitle;
     nodeEl.appendChild(annot);
 
     // Render Input Ports (Left side)
@@ -3940,8 +4081,16 @@ class Canvas {
       if (el) {
         const labelEl = el.querySelector('.node-annotation');
         if (labelEl) {
-          labelEl.textContent = newName;
-          labelEl.title = newName;
+          const nameSpan = labelEl.querySelector('.node-annotation-name');
+          if (nameSpan) {
+            nameSpan.textContent = newName;
+          } else {
+            labelEl.textContent = newName;
+          }
+          const subText = this.getNodeAnnotation(node);
+          const fullTitle = subText ? `${newName}\n${subText}` : newName;
+          labelEl.title = fullTitle;
+          labelEl._savedTitle = fullTitle;
         }
       }
     }

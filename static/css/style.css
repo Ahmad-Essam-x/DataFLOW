@@ -887,6 +887,34 @@ textarea.form-control {
   line-height: 1.2;
   pointer-events: none;
   word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.node-annotation-name {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-primary);
+  max-width: 110px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.node-annotation-sub {
+  font-weight: 400;
+  font-style: italic;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  max-width: 110px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+  display: block;
 }
 
 /* Status Badges */
