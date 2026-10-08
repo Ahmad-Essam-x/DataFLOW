@@ -3710,23 +3710,34 @@ class Canvas {
     const basename = p => p ? p.replace(/\\/g, '/').split('/').pop() : '';
 
     switch (node.type) {
-      case 'input_data':
-        return trunc(basename(cfg.file_path || cfg.filename || ''));
+      case 'input_data': {
+        // Strip 8-hex UUID prefix added by the upload handler (e.g. "2a172b8e_file.csv")
+        let name = basename(cfg.file_path || cfg.filename || '');
+        name = name.replace(/^[0-9a-f]{8}_/i, '');
+        return trunc(name);
+      }
       case 'output_data':
-        return trunc(basename(cfg.file_path || cfg.filename || ''));
+        return trunc(cfg.filename || basename(cfg.file_path || ''));
       case 'text_input':
         if (cfg.rows && cfg.rows.length) return `${cfg.rows.length} row${cfg.rows.length !== 1 ? 's' : ''}`;
         return '';
       case 'filter': {
-        const expr = cfg.expression || cfg.filter_expr || '';
-        return trunc(expr);
+        // Basic / conditions mode: show first condition as "[col] op val"
+        const conds = cfg.conditions || [];
+        if (conds.length) {
+          const c = conds[0];
+          const extra = conds.length > 1 ? ` +${conds.length - 1}` : '';
+          return trunc(`[${c.column}] ${c.operator} ${c.value}${extra}`);
+        }
+        // Query mode: show the expression string
+        return trunc(cfg.expression || '');
       }
       case 'formula': {
-        const exprs = cfg.expressions || [];
-        if (!exprs.length) return '';
-        const first = exprs[0];
-        const field = first.field || first.output_field || '';
-        if (exprs.length > 1) return trunc(`[${field}] +${exprs.length - 1} more`);
+        // cfg.formulas array; each item has output_field
+        const formulas = cfg.formulas || [];
+        if (!formulas.length) return '';
+        const field = formulas[0].output_field || formulas[0].field || '';
+        if (formulas.length > 1) return trunc(`[${field}] +${formulas.length - 1} more`);
         return trunc(`[${field}]`);
       }
       case 'multi_field_formula': {
@@ -3740,22 +3751,22 @@ class Canvas {
         return `${active} of ${fields.length} fields`;
       }
       case 'sort': {
-        const sorts = cfg.sorts || cfg.sort_fields || [];
+        // cfg.sort_by array; items have column + ascending (boolean)
+        const sorts = cfg.sort_by || cfg.sorts || cfg.sort_fields || [];
         if (!sorts.length) return '';
         const first = sorts[0];
-        const field = first.field || first.column || '';
-        const dir = (first.order || first.direction || 'asc').toLowerCase().startsWith('d') ? '↓' : '↑';
-        return trunc(`[${field}] ${dir}`);
+        const field = first.column || first.field || '';
+        const dir = first.ascending === false ? '↓' : '↑';
+        const extra = sorts.length > 1 ? ` +${sorts.length - 1}` : '';
+        return trunc(`[${field}] ${dir}${extra}`);
       }
       case 'join': {
-        const conds = cfg.join_conditions || [];
-        if (conds.length) {
-          const c = conds[0];
-          return trunc(`L:[${c.left}] = R:[${c.right}]`);
+        // cfg.join_keys array; items have left_key + right_key
+        const keys = cfg.join_keys || [];
+        if (keys.length) {
+          const k = keys[0];
+          return trunc(`L:[${k.left_key}] = R:[${k.right_key}]`);
         }
-        const lk = cfg.left_key || cfg.left_field || '';
-        const rk = cfg.right_key || cfg.right_field || lk;
-        if (lk) return trunc(`L:[${lk}] = R:[${rk}]`);
         return '';
       }
       case 'join_multiple': {
@@ -3763,32 +3774,49 @@ class Canvas {
         return `${inputs} inputs`;
       }
       case 'union':
-        return cfg.method === 'by_position' ? 'by position' : 'by name';
+        // cfg.mode: "by_name" | "by_position"
+        return (cfg.mode || cfg.method) === 'by_position' ? 'by position' : 'by name';
       case 'summarize': {
-        const fields = cfg.fields || [];
-        const groups = fields.filter(f => f.action === 'group_by').map(f => f.field || f.name).filter(Boolean);
-        if (!groups.length) return fields.length ? `${fields.length} metrics` : '';
-        return trunc(`Group: ${groups.join(', ')}`);
+        // cfg.actions array; items have action (CamelCase: "GroupBy", "Sum", …)
+        const actions = cfg.actions || [];
+        const groups = actions
+          .filter(a => (a.action || '').toLowerCase() === 'groupby')
+          .map(a => a.field).filter(Boolean);
+        const nonGroups = actions.filter(a => (a.action || '').toLowerCase() !== 'groupby');
+        if (!groups.length) return actions.length ? `${actions.length} metrics` : '';
+        const groupStr = groups.length === 1 ? `[${groups[0]}]` : `${groups.length} groups`;
+        return trunc(groupStr + (nonGroups.length ? ` +${nonGroups.length}` : ''));
       }
       case 'sample': {
-        const method = cfg.method || 'first';
-        const n = cfg.n || cfg.count || '';
-        if (method === 'first') return `First ${n}`;
-        if (method === 'last') return `Last ${n}`;
-        if (method === 'percentage') return `${n}%`;
-        if (method === 'random') return `Random ${n}`;
-        return trunc(`${method} ${n}`);
+        // cfg.sample_type: "first_n" | "last_n" | "percent" | "random_n"
+        const stype = cfg.sample_type || cfg.method || 'first_n';
+        if (stype === 'first_n' || stype === 'first') return `First ${cfg.n_records || cfg.n || ''}`;
+        if (stype === 'last_n'  || stype === 'last')  return `Last ${cfg.n_records || cfg.n || ''}`;
+        if (stype === 'percent' || stype === 'percentage') return `${cfg.percent || cfg.n || ''}%`;
+        if (stype === 'random_n'|| stype === 'random') return `Random ${cfg.n_records || cfg.n || ''}`;
+        return trunc(stype);
       }
       case 'unique': {
-        const keys = cfg.key_fields || [];
-        if (!keys.length) return '';
-        return trunc(keys.length === 1 ? `[${keys[0]}]` : `${keys.length} key fields`);
+        // cfg.columns array of column name strings
+        const cols = cfg.columns || cfg.key_fields || [];
+        if (!cols.length) return '';
+        return trunc(cols.length === 1 ? `[${cols[0]}]` : `${cols.length} key fields`);
       }
       case 'record_id':
-        return cfg.field_name ? trunc(`→ [${cfg.field_name}]`) : '';
+        // cfg.column_name is the correct key
+        return (cfg.column_name || cfg.field_name) ? trunc(`→ [${cfg.column_name || cfg.field_name}]`) : '';
       case 'clean': {
-        const ops = cfg.operations || cfg.actions || [];
-        return ops.length ? `${ops.length} operation${ops.length !== 1 ? 's' : ''}` : '';
+        // config uses boolean flags + case_transformation string, not an ops array
+        const parts = [];
+        if (cfg.trim_whitespace) parts.push('Trim');
+        if (cfg.case_transformation && cfg.case_transformation !== 'none')
+          parts.push(cfg.case_transformation.charAt(0).toUpperCase() + cfg.case_transformation.slice(1));
+        if (cfg.remove_empty_rows) parts.push('No empties');
+        if (!parts.length) {
+          const opsArr = cfg.operations || [];
+          return opsArr.length ? `${opsArr.length} op${opsArr.length !== 1 ? 's' : ''}` : '';
+        }
+        return trunc(parts.join(', '));
       }
       case 'transpose': {
         const keys = cfg.key_columns || [];
@@ -3797,7 +3825,7 @@ class Canvas {
       case 'crosstab': {
         const gb = cfg.group_by || '';
         const hf = cfg.header_field || '';
-        if (gb && hf) return trunc(`${gb} → ${hf}`);
+        if (gb && hf) return trunc(`${gb} / ${hf}`);
         return '';
       }
       case 'text_to_columns': {
@@ -3812,12 +3840,12 @@ class Canvas {
       case 'append_fields':
         return 'Cartesian append';
       case 'multi_row_formula': {
-        const exprs = cfg.expressions || [];
-        const f = cfg.new_field || (exprs[0] && exprs[0].field) || '';
+        // top-level cfg.output_field string (not an expressions array)
+        const f = cfg.output_field || cfg.new_field || '';
         return f ? trunc(`[${f}]`) : '';
       }
       case 'date_time': {
-        const f = cfg.field || cfg.column || '';
+        const f = cfg.column || cfg.field || '';
         return f ? trunc(`[${f}]`) : '';
       }
       case 'llm_process': {
