@@ -1,0 +1,76 @@
+DealID,AccountName,SalesRep,Region,Stage,DealValue,Probability,CloseDate,IsWon
+DEAL-2001,Enterprise Account B 1,Charlie Davis,LATAM,Negotiation,114332.15,0.75,2024-05-07,False
+DEAL-2002,Enterprise Account C 2,Charlie Davis,APAC,Qualification,22939.37,0.25,2024-08-21,False
+DEAL-2003,Enterprise Account D 3,Charlie Davis,EMEA,Negotiation,21429.68,0.75,2024-05-02,False
+DEAL-2004,Enterprise Account E 4,Bob Smith,LATAM,Negotiation,112933.56,0.75,2024-12-21,False
+DEAL-2005,Enterprise Account F 5,Evan Wright,LATAM,Lead,39987.86,0.1,2024-09-17,False
+DEAL-2006,Enterprise Account G 6,Bob Smith,LATAM,Proposal,75363.08,0.5,2024-12-16,False
+DEAL-2007,Enterprise Account H 7,Charlie Davis,LATAM,Closed Lost,15419.74,0.0,2024-07-20,False
+DEAL-2008,Enterprise Account I 8,Charlie Davis,APAC,Lead,10341.8,0.1,2024-05-09,False
+DEAL-2009,Enterprise Account J 9,Diana Prince,EMEA,Qualification,114121.84,0.25,2024-02-26,False
+DEAL-2010,Enterprise Account K 10,Bob Smith,LATAM,Lead,6836.12,0.1,2024-12-15,False
+DEAL-2011,Enterprise Account L 11,Evan Wright,LATAM,Negotiation,19034.4,0.75,2024-03-14,False
+DEAL-2012,Enterprise Account M 12,Diana Prince,EMEA,Lead,34759.7,0.1,2024-06-22,False
+DEAL-2013,Enterprise Account N 13,Evan Wright,APAC,Qualification,70285.54,0.25,2024-02-26,False
+DEAL-2014,Enterprise Account O 14,Diana Prince,EMEA,Negotiation,113042.38,0.75,2024-08-14,False
+DEAL-2015,Enterprise Account P 15,Evan Wright,LATAM,Negotiation,10201.14,0.75,2024-02-15,False
+DEAL-2016,Enterprise Account Q 16,Alice Johnson,LATAM,Closed Won,72476.38,1.0,2024-12-13,True
+DEAL-2017,Enterprise Account R 17,Evan Wright,North America,Lead,39071.45,0.1,2024-09-07,False
+DEAL-2018,Enterprise Account S 18,Diana Prince,LATAM,Lead,93808.15,0.1,2024-08-11,False
+DEAL-2019,Enterprise Account T 19,Charlie Davis,APAC,Proposal,86288.59,0.5,2024-01-27,False
+DEAL-2020,Enterprise Account U 20,Bob Smith,North America,Closed Won,111524.6,1.0,2024-12-07,True
+DEAL-2021,Enterprise Account V 21,Bob Smith,North America,Lead,76679.28,0.1,2024-07-23,False
+DEAL-2022,Enterprise Account W 22,Charlie Davis,LATAM,Closed Lost,42396.08,0.0,2024-08-22,False
+DEAL-2023,Enterprise Account X 23,Charlie Davis,North America,Proposal,69542.99,0.5,2024-03-01,False
+DEAL-2024,Enterprise Account Y 24,Charlie Davis,North America,Closed Won,69546.88,1.0,2024-10-10,True
+DEAL-2025,Enterprise Account Z 25,Alice Johnson,LATAM,Negotiation,17407.51,0.75,2024-04-05,False
+DEAL-2026,Enterprise Account A 26,Evan Wright,LATAM,Closed Won,67081.73,1.0,2024-07-27,True
+DEAL-2027,Enterprise Account B 27,Bob Smith,EMEA,Proposal,23540.45,0.5,2024-09-21,False
+DEAL-2028,Enterprise Account C 28,Diana Prince,LATAM,Closed Lost,57501.48,0.0,2024-04-11,False
+DEAL-2029,Enterprise Account D 29,Alice Johnson,APAC,Qualification,19040.11,0.25,2024-01-01,False
+DEAL-2030,Enterprise Account E 30,Alice Johnson,LATAM,Lead,79484.36,0.1,2024-09-03,False
+DEAL-2031,Enterprise Account F 31,Alice Johnson,EMEA,Closed Lost,63735.94,0.0,2024-05-01,False
+DEAL-2032,Enterprise Account G 32,Charlie Davis,EMEA,Proposal,35982.42,0.5,2024-08-09,False
+DEAL-2033,Enterprise Account H 33,Alice Johnson,EMEA,Negotiation,46817.4,0.75,2024-04-12,False
+DEAL-2034,Enterprise Account I 34,Charlie Davis,North America,Closed Lost,85074.99,0.0,2024-05-17,False
+DEAL-2035,Enterprise Account J 35,Bob Smith,EMEA,Lead,35679.82,0.1,2024-12-22,False
+DEAL-2036,Enterprise Account K 36,Alice Johnson,APAC,Closed Won,44683.19,1.0,2024-02-21,True
+DEAL-2037,Enterprise Account L 37,Diana Prince,APAC,Negotiation,56495.06,0.75,2024-11-24,False
+DEAL-2038,Enterprise Account M 38,Evan Wright,LATAM,Proposal,32848.39,0.5,2024-02-06,False
+DEAL-2039,Enterprise Account N 39,Alice Johnson,North America,Closed Lost,66614.09,0.0,2024-12-27,False
+DEAL-2040,Enterprise Account O 40,Charlie Davis,LATAM,Closed Lost,85018.47,0.0,2024-12-27,False
+DEAL-2041,Enterprise Account P 41,Charlie Davis,APAC,Negotiation,6907.6,0.75,2024-03-20,False
+DEAL-2042,Enterprise Account Q 42,Bob Smith,LATAM,Negotiation,113160.18,0.75,2024-01-11,False
+DEAL-2043,Enterprise Account R 43,Bob Smith,APAC,Negotiation,89549.85,0.75,2024-10-03,False
+DEAL-2044,Enterprise Account S 44,Alice Johnson,LATAM,Negotiation,25119.82,0.75,2024-12-17,False
+DEAL-2045,Enterprise Account T 45,Diana Prince,North America,Qualification,119569.18,0.25,2024-05-27,False
+DEAL-2046,Enterprise Account U 46,Charlie Davis,LATAM,Lead,37070.21,0.1,2024-03-20,False
+DEAL-2047,Enterprise Account V 47,Diana Prince,APAC,Closed Lost,94685.69,0.0,2024-01-08,False
+DEAL-2048,Enterprise Account W 48,Diana Prince,EMEA,Negotiation,108333.73,0.75,2024-03-16,False
+DEAL-2049,Enterprise Account X 49,Alice Johnson,North America,Closed Lost,113115.35,0.0,2024-02-14,False
+DEAL-2050,Enterprise Account Y 50,Charlie Davis,LATAM,Qualification,60845.58,0.25,2024-09-04,False
+DEAL-2051,Enterprise Account Z 51,Evan Wright,LATAM,Lead,7078.67,0.1,2024-04-24,False
+DEAL-2052,Enterprise Account A 52,Alice Johnson,LATAM,Proposal,80625.48,0.5,2024-12-27,False
+DEAL-2053,Enterprise Account B 53,Evan Wright,APAC,Proposal,78178.25,0.5,2024-06-08,False
+DEAL-2054,Enterprise Account C 54,Evan Wright,EMEA,Proposal,54955.35,0.5,2024-01-15,False
+DEAL-2055,Enterprise Account D 55,Evan Wright,LATAM,Lead,27452.94,0.1,2024-03-04,False
+DEAL-2056,Enterprise Account E 56,Alice Johnson,LATAM,Proposal,93383.71,0.5,2024-12-14,False
+DEAL-2057,Enterprise Account F 57,Diana Prince,North America,Closed Won,106601.81,1.0,2024-05-24,True
+DEAL-2058,Enterprise Account G 58,Evan Wright,APAC,Closed Won,54241.18,1.0,2024-03-01,True
+DEAL-2059,Enterprise Account H 59,Evan Wright,LATAM,Negotiation,38861.62,0.75,2024-07-01,False
+DEAL-2060,Enterprise Account I 60,Alice Johnson,EMEA,Proposal,24491.67,0.5,2024-06-26,False
+DEAL-2061,Enterprise Account J 61,Bob Smith,LATAM,Proposal,70557.03,0.5,2024-06-23,False
+DEAL-2062,Enterprise Account K 62,Bob Smith,EMEA,Qualification,34228.82,0.25,2024-10-17,False
+DEAL-2063,Enterprise Account L 63,Evan Wright,EMEA,Lead,20711.45,0.1,2024-07-26,False
+DEAL-2064,Enterprise Account M 64,Evan Wright,LATAM,Proposal,34463.8,0.5,2024-10-07,False
+DEAL-2065,Enterprise Account N 65,Diana Prince,North America,Lead,77207.86,0.1,2024-08-14,False
+DEAL-2066,Enterprise Account O 66,Diana Prince,EMEA,Closed Lost,107350.61,0.0,2024-02-23,False
+DEAL-2067,Enterprise Account P 67,Bob Smith,APAC,Closed Lost,42737.56,0.0,2024-06-26,False
+DEAL-2068,Enterprise Account Q 68,Diana Prince,EMEA,Qualification,8507.53,0.25,2024-06-15,False
+DEAL-2069,Enterprise Account R 69,Evan Wright,North America,Closed Lost,66764.48,0.0,2024-08-21,False
+DEAL-2070,Enterprise Account S 70,Evan Wright,APAC,Negotiation,29819.42,0.75,2024-04-06,False
+DEAL-2071,Enterprise Account T 71,Charlie Davis,APAC,Closed Won,27353.7,1.0,2024-08-20,True
+DEAL-2072,Enterprise Account U 72,Bob Smith,EMEA,Closed Won,116496.74,1.0,2024-03-17,True
+DEAL-2073,Enterprise Account V 73,Bob Smith,North America,Proposal,55481.71,0.5,2024-10-21,False
+DEAL-2074,Enterprise Account W 74,Alice Johnson,LATAM,Closed Lost,101137.71,0.0,2024-05-01,False
+DEAL-2075,Enterprise Account X 75,Bob Smith,LATAM,Qualification,110249.58,0.25,2024-06-16,False

@@ -39,6 +39,18 @@ class TokenBucketRateLimiter:
                 wait = (tokens - self.tokens) / self.rate
             time.sleep(max(0.001, wait))
 
+    def consume(self, tokens: int = 1) -> bool:
+        """Attempt to consume tokens without blocking. Returns True if consumed, False otherwise."""
+        with self.lock:
+            now = time.monotonic()
+            elapsed = now - self.last_update
+            self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
+            self.last_update = now
+            if self.tokens >= tokens:
+                self.tokens -= tokens
+                return True
+            return False
+
 
 def _make_error_response(error_msg: str, model: str, on_error: str) -> LLMResponse:
     """Create an LLMResponse representing a failed row."""
@@ -97,8 +109,18 @@ def batch_execute(
             return system_prompt[idx] if idx < len(system_prompt) else ""
         return system_prompt
 
+    offline_error: Optional[str] = None
+    offline_lock = threading.Lock()
+
     def process_row(idx: int, prompt: str) -> tuple:
         """Process a single row with cache check, retries, and rate limiting."""
+        nonlocal offline_error
+        with offline_lock:
+            if offline_error is not None:
+                if on_error == "stop":
+                    raise Exception(offline_error)
+                return idx, _make_error_response(offline_error, llm_config.model, on_error)
+
         sys = _get_system(idx)
 
         # --- Dedup cache check ---
@@ -108,20 +130,44 @@ def batch_execute(
 
         last_error = None
         for attempt in range(max_retries + 1):
+            with offline_lock:
+                if offline_error is not None:
+                    if on_error == "stop":
+                        raise Exception(offline_error)
+                    return idx, _make_error_response(offline_error, llm_config.model, on_error)
+
             rate_limiter.acquire()
             try:
                 response = provider.generate(sys, prompt, llm_config)
                 # If the provider returned an error response, retry
-                if response.error and attempt < max_retries:
-                    last_error = response.error
-                    time.sleep(1.0 * (2 ** attempt))  # 1s, 2s, 4s
-                    continue
+                if response.error:
+                    err_lower = response.error.lower()
+                    if any(s in err_lower for s in ("not running", "connection refused", "failed to establish")):
+                        with offline_lock:
+                            offline_error = response.error
+                        if on_error == "stop":
+                            raise Exception(response.error)
+                        return idx, _make_error_response(response.error, llm_config.model, on_error)
+
+                    if attempt < max_retries:
+                        last_error = response.error
+                        time.sleep(1.0 * (2 ** attempt))  # 1s, 2s, 4s
+                        continue
+
                 # Cache successful (non-error) response
                 if prompt_cache is not None and not response.error:
                     prompt_cache[cache_key] = response
                 return idx, response
             except Exception as e:
                 last_error = str(e)
+                err_lower = last_error.lower()
+                if any(s in err_lower for s in ("not running", "connection refused", "failed to establish")):
+                    with offline_lock:
+                        offline_error = last_error
+                    if on_error == "stop":
+                        raise
+                    return idx, _make_error_response(last_error, llm_config.model, on_error)
+
                 if attempt < max_retries:
                     time.sleep(1.0 * (2 ** attempt))
                     continue

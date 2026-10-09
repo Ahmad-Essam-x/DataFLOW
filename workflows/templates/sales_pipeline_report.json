@@ -1,37 +1,37 @@
 {
-  "name": "Sales Pipeline Report",
-  "description": "Reads a CRM export, calculates deal stage conversion rates and weighted revenue by sales rep, filters active deals, and produces a ranked performance summary.",
+  "name": "Sales Pipeline & Lead Velocity Report",
+  "description": "Reads a CRM export, calculates probability-weighted deal revenue, excludes lost opportunities, summarizes pipeline velocity by representative, and calculates cumulative performance contributions.",
   "category": "sales",
   "tags": [
     "sales",
-    "crm",
     "pipeline",
+    "crm",
     "revenue",
-    "conversion",
-    "reporting"
+    "multi_row_formula",
+    "forecast"
   ],
-  "difficulty": "beginner",
+  "difficulty": "intermediate",
   "containers": [
     {
       "id": "ctr_sp1",
-      "title": "Step 1 - Ingest & Normalize CRM Data",
+      "title": "Pipeline Transformation & Weighted Valuation",
       "x": 60,
       "y": 60,
-      "width": 840,
-      "height": 300,
-      "color": "rgba(59,130,246,0.07)",
+      "width": 860,
+      "height": 380,
+      "color": "rgba(59, 130, 246, 0.08)",
       "headerColor": "#3b82f6",
       "collapsed": false,
       "disabled": false
     },
     {
       "id": "ctr_sp2",
-      "title": "Step 2 - Summarize & Rank by Rep",
-      "x": 950,
+      "title": "Representative Ranking & Velocity Summary",
+      "x": 960,
       "y": 60,
-      "width": 780,
-      "height": 300,
-      "color": "rgba(34,197,94,0.07)",
+      "width": 860,
+      "height": 380,
+      "color": "rgba(34, 197, 94, 0.08)",
       "headerColor": "#16a34a",
       "collapsed": false,
       "disabled": false
@@ -40,10 +40,10 @@
   "comments": [
     {
       "id": "comment_sp1",
-      "text": "### Sales Pipeline Report\n- **Input CSV**: Expects columns: DealID, SalesRep, Stage, DealValue, CloseDate, IsWon\n- **Formula**: Computes WeightedRevenue based on stage probability\n- **Filter**: Only active or won deals (excludes Lost/Cancelled)\n- **Summarize**: Groups by SalesRep, sums DealValue and counts wins\n- **Multi-Row Formula**: Running cumulative revenue across reps",
+      "text": "### Sales Pipeline Forecasting Methodology\n- Ingests raw deal stages, accounts, and values from CRM.\n- Formula calculates Weighted Revenue = DealValue * Probability.\n- Filter eliminates closed-lost deals from active projections.\n- Summarize aggregates total and weighted pipeline per representative.\n- Multi-Row Formula computes cumulative running pipeline contributions.",
       "x": 60,
-      "y": 380,
-      "width": 500,
+      "y": 470,
+      "width": 520,
       "height": 160,
       "color": "#3b82f6"
     }
@@ -52,7 +52,7 @@
     {
       "id": "node_sp_in",
       "type": "input_data",
-      "name": "Input CRM Pipeline (CSV)",
+      "name": "Input CRM Deals (CSV)",
       "x": 100,
       "y": 170,
       "config": {
@@ -65,7 +65,7 @@
     {
       "id": "node_sp_af",
       "type": "auto_field",
-      "name": "Auto Field Types",
+      "name": "Auto Detect Types",
       "x": 280,
       "y": 170,
       "config": {
@@ -75,36 +75,32 @@
     {
       "id": "node_sp_clean",
       "type": "clean",
-      "name": "Normalize Stage Names",
+      "name": "Clean Rep & Stage Names",
       "x": 460,
       "y": 170,
       "config": {
         "columns": [
+          "SalesRep",
           "Stage",
-          "SalesRep"
+          "Region"
         ],
         "trim_whitespace": true,
         "case_transformation": "title",
-        "remove_empty_rows": true
+        "remove_empty_rows": false
       }
     },
     {
       "id": "node_sp_formula",
       "type": "formula",
-      "name": "Calculate Weighted Revenue",
+      "name": "Calculate Weighted Value",
       "x": 660,
       "y": 170,
       "config": {
         "formulas": [
           {
-            "output_field": "StageProbability",
-            "type": "float",
-            "expression": "IF([Stage] = \"Won\", 1.0, IF([Stage] = \"Proposal\", 0.7, IF([Stage] = \"Qualified\", 0.4, IF([Stage] = \"Discovery\", 0.2, 0.05))))"
-          },
-          {
             "output_field": "WeightedRevenue",
             "type": "float",
-            "expression": "[DealValue] * [StageProbability]"
+            "expression": "[DealValue] * [Probability]"
           }
         ]
       }
@@ -112,8 +108,8 @@
     {
       "id": "node_sp_filter",
       "type": "filter",
-      "name": "Exclude Lost Deals",
-      "x": 990,
+      "name": "Filter Out Closed Lost",
+      "x": 1000,
       "y": 170,
       "config": {
         "mode": "basic",
@@ -122,7 +118,7 @@
           {
             "column": "Stage",
             "operator": "!=",
-            "value": "Lost"
+            "value": "Closed Lost"
           }
         ]
       }
@@ -131,8 +127,8 @@
       "id": "node_sp_sum",
       "type": "summarize",
       "name": "Summarize by Sales Rep",
-      "x": 1190,
-      "y": 130,
+      "x": 1180,
+      "y": 170,
       "config": {
         "actions": [
           {
@@ -143,22 +139,17 @@
           {
             "field": "DealValue",
             "action": "Sum",
-            "output_name": "TotalPipelineValue"
+            "output_name": "PipelineTotal"
           },
           {
             "field": "WeightedRevenue",
             "action": "Sum",
-            "output_name": "WeightedPipelineValue"
+            "output_name": "WeightedPipeline"
           },
           {
             "field": "DealID",
             "action": "Count",
-            "output_name": "TotalDeals"
-          },
-          {
-            "field": "IsWon",
-            "action": "Sum",
-            "output_name": "ClosedWonCount"
+            "output_name": "OpportunityCount"
           }
         ]
       }
@@ -166,51 +157,51 @@
     {
       "id": "node_sp_sort",
       "type": "sort",
-      "name": "Sort by Weighted Revenue",
-      "x": 1410,
-      "y": 130,
+      "name": "Rank by Weighted Pipeline",
+      "x": 1360,
+      "y": 170,
       "config": {
         "sort_by": [
           {
-            "column": "WeightedPipelineValue",
+            "column": "WeightedPipeline",
             "ascending": false
           }
         ]
       }
     },
     {
-      "id": "node_sp_cumulative",
+      "id": "node_sp_multirow",
       "type": "multi_row_formula",
-      "name": "Running Cumulative Revenue",
-      "x": 1590,
-      "y": 130,
+      "name": "Cumulative Contribution",
+      "x": 1540,
+      "y": 170,
       "config": {
-        "output_field": "CumulativeRevenue",
+        "output_field": "CumulativeWeighted",
         "is_new_field": true,
         "output_type": "float",
         "values_for_rows_not_exist": "0",
         "group_by_fields": [],
-        "expression": "[Row-1:CumulativeRevenue] + [WeightedPipelineValue]"
+        "expression": "[Row-1:CumulativeWeighted] + [WeightedPipeline]"
       }
     },
     {
       "id": "node_sp_out",
       "type": "output_data",
-      "name": "Export Pipeline Report",
-      "x": 1780,
-      "y": 130,
+      "name": "Export Pipeline Forecast",
+      "x": 1720,
+      "y": 170,
       "config": {
-        "filename": "sales_pipeline_report",
-        "format": "xlsx",
+        "filename": "sales_pipeline_forecast",
+        "format": "csv",
         "write_mode": "overwrite"
       }
     },
     {
       "id": "node_sp_browse",
       "type": "browse",
-      "name": "Preview Ranked Reps",
-      "x": 1780,
-      "y": 260,
+      "name": "Browse Forecast Profile",
+      "x": 1720,
+      "y": 280,
       "config": {}
     }
   ],
@@ -261,19 +252,19 @@
       "id": "csp7",
       "source": "node_sp_sort",
       "sourceHandle": "O",
-      "target": "node_sp_cumulative",
+      "target": "node_sp_multirow",
       "targetHandle": "I"
     },
     {
       "id": "csp8",
-      "source": "node_sp_cumulative",
+      "source": "node_sp_multirow",
       "sourceHandle": "O",
       "target": "node_sp_out",
       "targetHandle": "I"
     },
     {
       "id": "csp9",
-      "source": "node_sp_cumulative",
+      "source": "node_sp_multirow",
       "sourceHandle": "O",
       "target": "node_sp_browse",
       "targetHandle": "I"

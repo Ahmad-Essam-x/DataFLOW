@@ -1,0 +1,358 @@
+{
+  "name": "Workforce & Budget Multi-Join Reconciliation",
+  "description": "Combines 3 distinct operational tables simultaneously using Join Multiple: merges employee payroll with departmental budget caps and operating expense ledgers, evaluates fiscal variances, and isolates over-budget departments.",
+  "category": "finance",
+  "tags": [
+    "finance",
+    "join_multiple",
+    "multijoin",
+    "budget",
+    "variance",
+    "workforce"
+  ],
+  "difficulty": "advanced",
+  "containers": [
+    {
+      "id": "container_mj_1",
+      "title": "Multi-Stream Fiscal Ledger Reconciliation",
+      "x": 60,
+      "y": 60,
+      "width": 1780,
+      "height": 450,
+      "color": "rgba(139, 92, 246, 0.08)",
+      "headerColor": "#7c3aed",
+      "collapsed": false,
+      "disabled": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_mj_1",
+      "text": "### Multi-Table Reconciliation Architecture\n- **Inputs 1, 2, 3**: Ingests Employee Compensation, Department Budgets, and Operating Expenses.\n- **Join Multiple**: Unifies all 3 streams in a single multi-way join on `Department`.\n- **Formula**: Calculates Total Compensation `[BaseSalary] * (1.0 + [BonusPct])` and Total Operating Spend.\n- **Summarize & Filter**: Aggregates by Department and flags fiscal budget variances.",
+      "x": 60,
+      "y": 530,
+      "width": 520,
+      "height": 150,
+      "color": "#7c3aed"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_mj_emp",
+      "type": "input_data",
+      "name": "Input 1: Employees (CSV)",
+      "x": 100,
+      "y": 140,
+      "config": {
+        "file_path": "employee_performance.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_mj_dept",
+      "type": "input_data",
+      "name": "Input 2: Budgets (CSV)",
+      "x": 100,
+      "y": 260,
+      "config": {
+        "file_path": "department_budgets.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_mj_exp",
+      "type": "input_data",
+      "name": "Input 3: OpEx (CSV)",
+      "x": 100,
+      "y": 380,
+      "config": {
+        "file_path": "department_operating_expenses.csv",
+        "file_type": "csv",
+        "delimiter": ",",
+        "has_header": true
+      }
+    },
+    {
+      "id": "node_mj_join",
+      "type": "join_multiple",
+      "name": "Join Multiple (3 Tables)",
+      "x": 380,
+      "y": 240,
+      "config": {
+        "join_mode": "specific_fields",
+        "join_keys": [
+          {
+            "1": "Department",
+            "2": "Department",
+            "3": "Department"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_mj_select",
+      "type": "select",
+      "name": "Clean Joined Schema",
+      "x": 580,
+      "y": 240,
+      "config": {
+        "fields": [
+          {
+            "original": "Department",
+            "keep": true,
+            "rename": "Department",
+            "type": "string"
+          },
+          {
+            "original": "EmployeeID",
+            "keep": true,
+            "rename": "EmployeeID",
+            "type": "string"
+          },
+          {
+            "original": "EmployeeName",
+            "keep": true,
+            "rename": "EmployeeName",
+            "type": "string"
+          },
+          {
+            "original": "BaseSalary",
+            "keep": true,
+            "rename": "BaseSalary",
+            "type": "float"
+          },
+          {
+            "original": "BonusPct",
+            "keep": true,
+            "rename": "BonusPct",
+            "type": "float"
+          },
+          {
+            "original": "BudgetCap",
+            "keep": true,
+            "rename": "BudgetCap",
+            "type": "float"
+          },
+          {
+            "original": "DepartmentHead",
+            "keep": true,
+            "rename": "DepartmentHead",
+            "type": "string"
+          },
+          {
+            "original": "SoftwareSpend",
+            "keep": true,
+            "rename": "SoftwareSpend",
+            "type": "float"
+          },
+          {
+            "original": "TravelSpend",
+            "keep": true,
+            "rename": "TravelSpend",
+            "type": "float"
+          },
+          {
+            "original": "EquipmentSpend",
+            "keep": true,
+            "rename": "EquipmentSpend",
+            "type": "float"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_mj_formula",
+      "type": "formula",
+      "name": "Compute Total Compensation",
+      "x": 780,
+      "y": 240,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "TotalComp",
+            "type": "float",
+            "expression": "[BaseSalary] * (1.0 + [BonusPct])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_mj_sum",
+      "type": "summarize",
+      "name": "Aggregate by Department",
+      "x": 980,
+      "y": 240,
+      "config": {
+        "actions": [
+          {
+            "field": "Department",
+            "action": "GroupBy",
+            "output_name": "Department"
+          },
+          {
+            "field": "DepartmentHead",
+            "action": "First",
+            "output_name": "DepartmentHead"
+          },
+          {
+            "field": "BudgetCap",
+            "action": "First",
+            "output_name": "BudgetCap"
+          },
+          {
+            "field": "SoftwareSpend",
+            "action": "First",
+            "output_name": "SoftwareSpend"
+          },
+          {
+            "field": "TravelSpend",
+            "action": "First",
+            "output_name": "TravelSpend"
+          },
+          {
+            "field": "EmployeeID",
+            "action": "Count",
+            "output_name": "Headcount"
+          },
+          {
+            "field": "TotalComp",
+            "action": "Sum",
+            "output_name": "TotalPayroll"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_mj_variance",
+      "type": "formula",
+      "name": "Calculate Budget Variance",
+      "x": 1180,
+      "y": 240,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "TotalExpenditure",
+            "type": "float",
+            "expression": "[TotalPayroll] + [SoftwareSpend] + [TravelSpend]"
+          },
+          {
+            "output_field": "BudgetVariance",
+            "type": "float",
+            "expression": "[TotalExpenditure] - [BudgetCap]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_mj_sort",
+      "type": "sort",
+      "name": "Rank by Total Spend",
+      "x": 1380,
+      "y": 240,
+      "config": {
+        "sort_by": [
+          {
+            "column": "TotalExpenditure",
+            "ascending": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_mj_out",
+      "type": "output_data",
+      "name": "Export Fiscal Reconciliation",
+      "x": 1580,
+      "y": 200,
+      "config": {
+        "filename": "department_fiscal_reconciliation",
+        "format": "csv",
+        "write_mode": "overwrite"
+      }
+    },
+    {
+      "id": "node_mj_browse",
+      "type": "browse",
+      "name": "Browse Reconciled Budget Profile",
+      "x": 1580,
+      "y": 320,
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "cmj1",
+      "source": "node_mj_emp",
+      "sourceHandle": "O",
+      "target": "node_mj_join",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj2",
+      "source": "node_mj_dept",
+      "sourceHandle": "O",
+      "target": "node_mj_join",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj3",
+      "source": "node_mj_exp",
+      "sourceHandle": "O",
+      "target": "node_mj_join",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj4",
+      "source": "node_mj_join",
+      "sourceHandle": "J",
+      "target": "node_mj_select",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj5",
+      "source": "node_mj_select",
+      "sourceHandle": "O",
+      "target": "node_mj_formula",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj6",
+      "source": "node_mj_formula",
+      "sourceHandle": "O",
+      "target": "node_mj_sum",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj7",
+      "source": "node_mj_sum",
+      "sourceHandle": "O",
+      "target": "node_mj_variance",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj8",
+      "source": "node_mj_variance",
+      "sourceHandle": "O",
+      "target": "node_mj_sort",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj9",
+      "source": "node_mj_sort",
+      "sourceHandle": "O",
+      "target": "node_mj_out",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cmj10",
+      "source": "node_mj_sort",
+      "sourceHandle": "O",
+      "target": "node_mj_browse",
+      "targetHandle": "I"
+    }
+  ]
+}

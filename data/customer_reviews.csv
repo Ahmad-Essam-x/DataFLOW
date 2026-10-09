@@ -1,0 +1,41 @@
+ReviewID,CustomerName,ProductName,StarRating,ReviewText,ReviewDate
+REV-3001,Client B 1,ErgoWireless Mouse,1,Stopped working after only three days. Laser sensor doesn't track and plastic feels flimsy.,2024-10-20
+REV-3002,Client C 2,4K Ultra Monitor,4,  Great color calibration right out of the box. Stand could be sturdier but overall very pleased.  ,2024-12-07
+REV-3003,Client D 3,NoiseCancel Pro Headphones,5,Best noise cancellation on the market. Blocks airplane hum completely. Very comfortable.,2024-02-03
+REV-3004,Client E 4,SmartDock Thunderbolt,2,  Constantly disconnects dual monitors on sleep resume. Firmware update did not resolve.  ,2024-01-05
+REV-3005,Client F 5,Mechanical Keyboard RGB,4,Crisp tactile switches and pleasant keycap profile. Software is a bit clunky.,2024-01-24
+REV-3006,Client G 6,USB-C Multiport Hub,1,  Overheats severely when charging while driving external HDMI display. Not recommended.  ,2024-01-27
+REV-3007,Client H 7,Executive Leather Sleeve,5,Exquisite stitching and snug fit. Protects laptop nicely in briefcase.,2024-01-02
+REV-3008,Client I 8,Webcam 4K Streaming,3,"  Decent image quality in good lighting, but low-light performance is noisy. Autofocus hunts.  ",2024-02-22
+REV-3009,Client J 9,Compact Power Adapter 100W,5,Tiny footprint yet charges laptop and phone simultaneously without getting too hot.,2024-07-05
+REV-3010,Client A 10,UltraBook Pro 15,5,"  Absolutely stellar device! Lightweight, battery lasts over 12 hours, screen is gorgeous.  ",2024-01-01
+REV-3011,Client B 11,ErgoWireless Mouse,1,Stopped working after only three days. Laser sensor doesn't track and plastic feels flimsy.,2024-03-02
+REV-3012,Client C 12,4K Ultra Monitor,4,  Great color calibration right out of the box. Stand could be sturdier but overall very pleased.  ,2024-05-12
+REV-3013,Client D 13,NoiseCancel Pro Headphones,5,Best noise cancellation on the market. Blocks airplane hum completely. Very comfortable.,2024-10-06
+REV-3014,Client E 14,SmartDock Thunderbolt,2,  Constantly disconnects dual monitors on sleep resume. Firmware update did not resolve.  ,2024-07-04
+REV-3015,Client F 15,Mechanical Keyboard RGB,4,Crisp tactile switches and pleasant keycap profile. Software is a bit clunky.,2024-07-11
+REV-3016,Client G 16,USB-C Multiport Hub,1,  Overheats severely when charging while driving external HDMI display. Not recommended.  ,2024-08-27
+REV-3017,Client H 17,Executive Leather Sleeve,5,Exquisite stitching and snug fit. Protects laptop nicely in briefcase.,2024-01-06
+REV-3018,Client I 18,Webcam 4K Streaming,3,"  Decent image quality in good lighting, but low-light performance is noisy. Autofocus hunts.  ",2024-08-05
+REV-3019,Client J 19,Compact Power Adapter 100W,5,Tiny footprint yet charges laptop and phone simultaneously without getting too hot.,2024-04-02
+REV-3020,Client A 20,UltraBook Pro 15,5,"  Absolutely stellar device! Lightweight, battery lasts over 12 hours, screen is gorgeous.  ",2024-06-22
+REV-3021,Client B 21,ErgoWireless Mouse,1,Stopped working after only three days. Laser sensor doesn't track and plastic feels flimsy.,2024-11-16
+REV-3022,Client C 22,4K Ultra Monitor,4,  Great color calibration right out of the box. Stand could be sturdier but overall very pleased.  ,2024-01-09
+REV-3023,Client D 23,NoiseCancel Pro Headphones,5,Best noise cancellation on the market. Blocks airplane hum completely. Very comfortable.,2024-12-27
+REV-3024,Client E 24,SmartDock Thunderbolt,2,  Constantly disconnects dual monitors on sleep resume. Firmware update did not resolve.  ,2024-06-16
+REV-3025,Client F 25,Mechanical Keyboard RGB,4,Crisp tactile switches and pleasant keycap profile. Software is a bit clunky.,2024-03-20
+REV-3026,Client G 26,USB-C Multiport Hub,1,  Overheats severely when charging while driving external HDMI display. Not recommended.  ,2024-12-27
+REV-3027,Client H 27,Executive Leather Sleeve,5,Exquisite stitching and snug fit. Protects laptop nicely in briefcase.,2024-04-19
+REV-3028,Client I 28,Webcam 4K Streaming,3,"  Decent image quality in good lighting, but low-light performance is noisy. Autofocus hunts.  ",2024-10-03
+REV-3029,Client J 29,Compact Power Adapter 100W,5,Tiny footprint yet charges laptop and phone simultaneously without getting too hot.,2024-03-20
+REV-3030,Client A 30,UltraBook Pro 15,5,"  Absolutely stellar device! Lightweight, battery lasts over 12 hours, screen is gorgeous.  ",2024-07-20
+REV-3031,Client B 31,ErgoWireless Mouse,1,Stopped working after only three days. Laser sensor doesn't track and plastic feels flimsy.,2024-09-01
+REV-3032,Client C 32,4K Ultra Monitor,4,  Great color calibration right out of the box. Stand could be sturdier but overall very pleased.  ,2024-08-07
+REV-3033,Client D 33,NoiseCancel Pro Headphones,5,Best noise cancellation on the market. Blocks airplane hum completely. Very comfortable.,2024-02-08
+REV-3034,Client E 34,SmartDock Thunderbolt,2,  Constantly disconnects dual monitors on sleep resume. Firmware update did not resolve.  ,2024-01-11
+REV-3035,Client F 35,Mechanical Keyboard RGB,4,Crisp tactile switches and pleasant keycap profile. Software is a bit clunky.,2024-12-25
+REV-3036,Client G 36,USB-C Multiport Hub,1,  Overheats severely when charging while driving external HDMI display. Not recommended.  ,2024-09-18
+REV-3037,Client H 37,Executive Leather Sleeve,5,Exquisite stitching and snug fit. Protects laptop nicely in briefcase.,2024-07-10
+REV-3038,Client I 38,Webcam 4K Streaming,3,"  Decent image quality in good lighting, but low-light performance is noisy. Autofocus hunts.  ",2024-03-07
+REV-3039,Client J 39,Compact Power Adapter 100W,5,Tiny footprint yet charges laptop and phone simultaneously without getting too hot.,2024-12-16
+REV-3040,Client A 40,UltraBook Pro 15,5,"  Absolutely stellar device! Lightweight, battery lasts over 12 hours, screen is gorgeous.  ",2024-10-16

@@ -2,17 +2,17 @@
   "name": "spotify analytics",
   "description": "",
   "metadata": {
-    "saved_file": "C:/Users/Ahmed Gad/Documents/antigravity/quick-noether/workflows/spotify analytics.json",
-    "created_at": "2026-09-30T02:23:08",
-    "updated_at": "2026-09-30T02:23:08",
+    "created_at": "2026-10-05T02:13:36",
+    "updated_at": "2026-10-06T02:48:47",
     "version": "2.1.0",
     "author": "Ahmed Gad",
-    "description": ""
+    "description": "",
+    "saved_file": "C:/Users/Ahmed Gad/Documents/antigravity/quick-noether/workflows/spotify analytics.json"
   },
   "viewport": {
-    "zoom": 1.22,
-    "panX": -14.329001536098076,
-    "panY": -450.50943977590964
+    "zoom": 0.91,
+    "panX": -225.3224872080864,
+    "panY": -256.22149718589986
   },
   "nodes": [
     {
@@ -22,39 +22,6 @@
       "x": 208,
       "y": 432,
       "config": {
-        "file_path": "81779747_spotify_history.csv",
-        "original_file_name": "spotify_history.csv",
-        "file_type": "csv",
-        "delimiter": ",",
-        "has_header": true,
-        "start_row": 1,
-        "columns": [
-          "spotify_track_uri",
-          "ts",
-          "platform",
-          "ms_played",
-          "track_name",
-          "artist_name",
-          "album_name",
-          "reason_start",
-          "reason_end",
-          "shuffle",
-          "skipped"
-        ],
-        "row_count": 149860,
-        "preview_columns": [
-          "spotify_track_uri",
-          "ts",
-          "platform",
-          "ms_played",
-          "track_name",
-          "artist_name",
-          "album_name",
-          "reason_start",
-          "reason_end",
-          "shuffle",
-          "skipped"
-        ],
         "column_meta": [
           {
             "alteryx_type": "String",
@@ -122,10 +89,44 @@
             "name": "skipped",
             "type": "boolean"
           }
-        ]
+        ],
+        "columns": [
+          "spotify_track_uri",
+          "ts",
+          "platform",
+          "ms_played",
+          "track_name",
+          "artist_name",
+          "album_name",
+          "reason_start",
+          "reason_end",
+          "shuffle",
+          "skipped"
+        ],
+        "delimiter": ",",
+        "file_path": "dfe9af57_spotify_history.csv",
+        "file_type": "csv",
+        "has_header": true,
+        "original_file_name": "spotify_history.csv",
+        "preview_columns": [
+          "spotify_track_uri",
+          "ts",
+          "platform",
+          "ms_played",
+          "track_name",
+          "artist_name",
+          "album_name",
+          "reason_start",
+          "reason_end",
+          "shuffle",
+          "skipped"
+        ],
+        "row_count": 149860,
+        "start_row": 1
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_1790588516905_531",
@@ -136,14 +137,15 @@
       "config": {
         "formulas": [
           {
-            "output_field": "ms_played",
             "expression": "[ms_played]/1000/60/60",
+            "output_field": "ms_played",
             "type": "float"
           }
         ]
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_1790723818197_215",
@@ -154,94 +156,95 @@
       "config": {
         "fields": [
           {
+            "isMissing": false,
+            "keep": true,
             "original": "spotify_track_uri",
-            "keep": true,
             "rename": "spotify_track_uri",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "ts",
-            "keep": true,
             "rename": "ts",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "platform",
-            "keep": true,
             "rename": "platform",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "ms_played",
-            "keep": true,
             "rename": "Hrs played",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "track_name",
-            "keep": true,
             "rename": "track_name",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "artist_name",
-            "keep": true,
             "rename": "artist_name",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "album_name",
-            "keep": true,
             "rename": "album_name",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "reason_start",
-            "keep": true,
             "rename": "reason_start",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "reason_end",
-            "keep": true,
             "rename": "reason_end",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
+            "isMissing": false,
+            "keep": true,
             "original": "shuffle",
-            "keep": true,
             "rename": "shuffle",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
-            "original": "skipped",
+            "isMissing": false,
             "keep": true,
+            "original": "skipped",
             "rename": "skipped",
-            "type": "none",
-            "isMissing": false
+            "type": "none"
           },
           {
-            "original": "*Unknown",
+            "isUnknown": true,
             "keep": false,
+            "original": "*Unknown",
             "rename": "*Unknown",
-            "type": "none",
-            "isUnknown": true
+            "type": "none"
           }
         ],
         "select_unknown": false
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_1790723940348_926",
@@ -252,24 +255,25 @@
       "config": {
         "actions": [
           {
-            "field": "artist_name",
             "action": "GroupBy",
+            "field": "artist_name",
             "output_name": "artist_name"
           },
           {
-            "field": "reason_end",
             "action": "GroupBy",
+            "field": "reason_end",
             "output_name": "reason_end"
           },
           {
-            "field": "reason_end",
             "action": "Count",
+            "field": "reason_end",
             "output_name": "Count_reason_end"
           }
         ]
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_1790723998551_700",
@@ -280,29 +284,30 @@
       "config": {
         "actions": [
           {
-            "field": "platform",
             "action": "GroupBy",
+            "field": "platform",
             "output_name": "platform"
           },
           {
-            "field": "artist_name",
             "action": "GroupBy",
+            "field": "artist_name",
             "output_name": "artist_name"
           },
           {
-            "field": "reason_start",
             "action": "GroupBy",
+            "field": "reason_start",
             "output_name": "reason_start"
           },
           {
-            "field": "reason_start",
             "action": "Count",
+            "field": "reason_start",
             "output_name": "Count_reason_start"
           }
         ]
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_1790724076907_407",
@@ -318,11 +323,12 @@
             "value": "fwdbtn"
           }
         ],
-        "mode": "basic",
-        "logical_op": "AND"
+        "logical_op": "AND",
+        "mode": "basic"
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
       "id": "node_1790724102979_934",
@@ -333,8 +339,375 @@
       "config": {
         "sort_by": [
           {
-            "column": "Count_reason_end",
-            "ascending": false
+            "ascending": false,
+            "column": "Count_reason_end"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_1791243980141_440",
+      "type": "join",
+      "name": "Join",
+      "x": 896,
+      "y": 544,
+      "config": {
+        "ignore_case": true,
+        "join_keys": [
+          {
+            "left_key": "artist_name",
+            "right_key": "artist_name"
+          }
+        ],
+        "select_fields": [
+          {
+            "field": "Right_artist_name",
+            "source": "R",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "Right_artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_end",
+            "source": "R",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "reason_end",
+            "type": "none",
+            "isMissing": true
+          },
+          {
+            "field": "Count_reason_end",
+            "source": "R",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Count_reason_end",
+            "type": "none",
+            "isMissing": true
+          },
+          {
+            "field": "artist_name",
+            "source": "L",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_end",
+            "source": "L",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_end",
+            "source": "L",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "platform",
+            "source": "R",
+            "original": "platform",
+            "selected": true,
+            "rename": "platform",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_start",
+            "source": "R",
+            "original": "reason_start",
+            "selected": true,
+            "rename": "reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_start",
+            "source": "R",
+            "original": "Count_reason_start",
+            "selected": true,
+            "rename": "Count_reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "*Unknown",
+            "original": "*Unknown",
+            "source": "Dynamic",
+            "selected": true,
+            "rename": "*Unknown",
+            "type": "none",
+            "isUnknown": true
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1791244015651_788",
+      "type": "join",
+      "name": "Join",
+      "x": 1104,
+      "y": 560,
+      "config": {
+        "ignore_case": true,
+        "join_keys": [
+          {
+            "left_key": "artist_name",
+            "right_key": "artist_name"
+          }
+        ],
+        "select_fields": [
+          {
+            "field": "artist_name",
+            "source": "L",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_end",
+            "source": "L",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_end",
+            "source": "L",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_artist_name",
+            "source": "R",
+            "original": "Right_artist_name",
+            "selected": true,
+            "rename": "Right_artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_artist_name",
+            "source": "R",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "Right_artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_reason_end",
+            "source": "R",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "Right_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_Count_reason_end",
+            "source": "R",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Right_Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "platform",
+            "source": "R",
+            "original": "platform",
+            "selected": true,
+            "rename": "platform",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_start",
+            "source": "R",
+            "original": "reason_start",
+            "selected": true,
+            "rename": "reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_start",
+            "source": "R",
+            "original": "Count_reason_start",
+            "selected": true,
+            "rename": "Count_reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "*Unknown",
+            "original": "*Unknown",
+            "source": "Dynamic",
+            "selected": true,
+            "rename": "*Unknown",
+            "type": "none",
+            "isUnknown": true
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "node_1791244064488_990",
+      "type": "join",
+      "name": "Join",
+      "x": 1232,
+      "y": 464,
+      "config": {
+        "ignore_case": true,
+        "join_keys": [
+          {
+            "left_key": "artist_name",
+            "right_key": "artist_name"
+          }
+        ],
+        "select_fields": [
+          {
+            "field": "artist_name",
+            "source": "L",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_end",
+            "source": "L",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_end",
+            "source": "L",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_artist_name",
+            "source": "R",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "Right_artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_reason_end",
+            "source": "R",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "Right_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_Count_reason_end",
+            "source": "R",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Right_Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_artist_name",
+            "source": "R",
+            "original": "Right_artist_name",
+            "selected": true,
+            "rename": "Right_artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_reason_end",
+            "source": "R",
+            "original": "Right_reason_end",
+            "selected": true,
+            "rename": "Right_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_Count_reason_end",
+            "source": "R",
+            "original": "Right_Count_reason_end",
+            "selected": true,
+            "rename": "Right_Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "platform",
+            "source": "R",
+            "original": "platform",
+            "selected": true,
+            "rename": "platform",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_start",
+            "source": "R",
+            "original": "reason_start",
+            "selected": true,
+            "rename": "reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_start",
+            "source": "R",
+            "original": "Count_reason_start",
+            "selected": true,
+            "rename": "Count_reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "*Unknown",
+            "original": "*Unknown",
+            "source": "Dynamic",
+            "selected": true,
+            "rename": "*Unknown",
+            "type": "none",
+            "isUnknown": true
           }
         ]
       },
@@ -384,6 +757,48 @@
       "sourceHandle": "T",
       "target": "node_1790724102979_934",
       "targetHandle": "I"
+    },
+    {
+      "id": "conn_1791243984768_518",
+      "source": "node_1790723998551_700",
+      "sourceHandle": "O",
+      "target": "node_1791243980141_440",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_1791243986542_794",
+      "source": "node_1790723940348_926",
+      "sourceHandle": "O",
+      "target": "node_1791243980141_440",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_1791244017839_639",
+      "source": "node_1790723940348_926",
+      "sourceHandle": "O",
+      "target": "node_1791244015651_788",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_1791244019389_973",
+      "source": "node_1791243980141_440",
+      "sourceHandle": "J",
+      "target": "node_1791244015651_788",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_1791244067970_703",
+      "source": "node_1790723940348_926",
+      "sourceHandle": "O",
+      "target": "node_1791244064488_990",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_1791244069229_833",
+      "source": "node_1791244015651_788",
+      "sourceHandle": "J",
+      "target": "node_1791244064488_990",
+      "targetHandle": "R"
     }
   ],
   "containers": [],

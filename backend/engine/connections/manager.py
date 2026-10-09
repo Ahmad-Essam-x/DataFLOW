@@ -137,13 +137,7 @@ class ConnectionManager:
         self._save_all(all_conns)
         self._delete_secret(conn_id)
 
-    def get_driver(self, conn_id: str) -> BaseDriver:
-        """Factory — returns the appropriate driver with credentials injected."""
-        conn = self.get_connection(conn_id)
-        if not conn:
-            raise ValueError(f"Connection '{conn_id}' not found.")
-
-        password = self._get_secret(conn_id)
+    def _create_driver_from_dict(self, conn: Dict[str, Any], password: Optional[str] = None) -> BaseDriver:
         conn_type = conn.get("type", "").lower()
 
         if conn_type == "duckdb":
@@ -154,17 +148,50 @@ class ConnectionManager:
             from .drivers.sqlite_driver import SQLiteDriver
             return SQLiteDriver(file_path=conn.get("database") or ":memory:")
 
-        if conn_type in ("postgresql", "snowflake"):
+        if conn_type in ("postgresql", "snowflake", "mysql"):
             from .drivers.sqlalchemy_driver import SQLAlchemyDriver
             return SQLAlchemyDriver(conn=conn, password=password)
 
         raise ValueError(f"No driver registered for connection type '{conn_type}'.")
 
+    def get_driver(self, conn_id: str) -> BaseDriver:
+        """Factory — returns the appropriate driver with credentials injected."""
+        conn = self.get_connection(conn_id)
+        if not conn:
+            raise ValueError(f"Connection '{conn_id}' not found.")
+
+        password = self._get_secret(conn_id)
+        return self._create_driver_from_dict(conn, password=password)
+
     def test_connection(self, conn_id: str) -> Dict[str, Any]:
-        """Tests connectivity. Returns {"success": bool, "error": str | None}."""
+        """Tests connectivity. Returns {"success": bool, "error": str | None, "table_count": int}."""
         try:
             driver = self.get_driver(conn_id)
             ok = driver.test()
-            return {"success": ok, "error": None}
+            table_count = 0
+            if ok:
+                try:
+                    tables = driver.list_tables()
+                    table_count = len(tables)
+                except Exception:
+                    table_count = 0
+            return {"success": ok, "error": None if ok else "Connection test query failed.", "table_count": table_count}
         except Exception as exc:
-            return {"success": False, "error": str(exc)}
+            return {"success": False, "error": str(exc), "table_count": 0}
+
+    def test_draft_connection(self, conn: Dict[str, Any], password: Optional[str] = None) -> Dict[str, Any]:
+        """Tests connectivity for an unsaved draft connection dict without persisting."""
+        try:
+            driver = self._create_driver_from_dict(conn, password=password)
+            ok = driver.test()
+            table_count = 0
+            if ok:
+                try:
+                    tables = driver.list_tables()
+                    table_count = len(tables)
+                except Exception:
+                    table_count = 0
+            return {"success": ok, "error": None if ok else "Connection test query failed.", "table_count": table_count}
+        except Exception as exc:
+            return {"success": False, "error": str(exc), "table_count": 0}
+

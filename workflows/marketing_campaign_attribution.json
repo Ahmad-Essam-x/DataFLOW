@@ -1,6 +1,16 @@
 {
   "name": "Marketing Attribution & Survey Matrix",
   "description": "Unions web and mobile survey streams, replaces campaign codes with friendly names, selects key attributes, unpivots quarterly ratings with Transpose, samples records, and pivots into a Regional cross-tab matrix.",
+  "category": "marketing",
+  "tags": [
+    "marketing",
+    "union",
+    "find_replace",
+    "transpose",
+    "crosstab",
+    "multi_field"
+  ],
+  "difficulty": "intermediate",
   "containers": [
     {
       "id": "container_mkt_1",

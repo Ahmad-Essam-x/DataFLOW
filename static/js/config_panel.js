@@ -289,6 +289,12 @@ export class ConfigPanel {
       case 'llm_process':
         this.renderLLMProcessConfig(toolBody, node, upstreamCols);
         break;
+      case 'schema_fit':
+        this.renderSchemaFitConfig(toolBody, node);
+        break;
+      case 'llm_override':
+        this.renderLLMOverrideConfig(toolBody, node);
+        break;
       default:
         toolBody.innerHTML = `<p class="form-hint">No configuration options for this tool.</p>`;
     }
@@ -486,37 +492,75 @@ export class ConfigPanel {
       case 'multi_row_formula': {
         const upstream = getUpstream('I');
         const cfg = node.config || {};
-        if (cfg.create_new_field || cfg.new_field) {
-          const colName = (cfg.new_field_name || cfg.field_name || 'NewField').trim();
-          if (colName && !upstream.columns.includes(colName)) {
-            return {
-              columns: [...upstream.columns, colName],
-              columnMeta: [...upstream.columnMeta, normalizeMeta(colName, cfg.type || 'float')]
-            };
+        const isNew = cfg.is_new_field !== undefined ? Boolean(cfg.is_new_field) : (cfg.create_new_field !== undefined ? Boolean(cfg.create_new_field) : (cfg.new_field !== undefined ? Boolean(cfg.new_field) : true));
+        const colName = (cfg.output_field || cfg.new_field_name || cfg.field_name || cfg.field || 'NewField').trim();
+        const colType = cfg.output_type || cfg.type || 'float';
+        const cols = [...upstream.columns];
+        const meta = [...upstream.columnMeta];
+        if (colName) {
+          if (isNew) {
+            const existingIdx = cols.indexOf(colName);
+            if (existingIdx !== -1) {
+              meta[existingIdx] = normalizeMeta(colName, colType);
+            } else {
+              cols.push(colName);
+              meta.push(normalizeMeta(colName, colType));
+            }
+          } else {
+            const existingIdx = cols.indexOf(colName);
+            if (existingIdx !== -1 && colType && colType !== 'none') {
+              meta[existingIdx] = normalizeMeta(colName, colType);
+            }
           }
         }
-        return upstream;
+        return { columns: cols, columnMeta: meta };
       }
 
       case 'multi_field_formula': {
         const upstream = getUpstream('I');
         const cfg = node.config || {};
-        if (cfg.output_new_fields) {
-          const prefix = cfg.prefix || '';
-          const suffix = cfg.suffix || '';
-          const selCols = Array.isArray(cfg.fields) ? cfg.fields : upstream.columns;
-          const cols = [...upstream.columns];
-          const meta = [...upstream.columnMeta];
+        const isCreateNew = cfg.output_mode === 'create_new' || Boolean(cfg.output_new_fields);
+        const prefix = cfg.output_prefix !== undefined ? cfg.output_prefix : (cfg.prefix || '');
+        const suffix = cfg.output_suffix !== undefined ? cfg.output_suffix : (cfg.suffix || '');
+        const configuredFields = Array.isArray(cfg.selected_fields) && cfg.selected_fields.length > 0
+          ? cfg.selected_fields
+          : (Array.isArray(cfg.fields) && cfg.fields.length > 0 ? cfg.fields : upstream.columns);
+        const typeFilter = (cfg.field_type_filter || 'all').toLowerCase();
+
+        const selCols = configuredFields.filter(c => {
+          if (!upstream.columns.includes(c)) return false;
+          if (typeFilter === 'all') return true;
+          const m = upstream.columnMeta.find(meta => meta.name === c);
+          const cat = m ? m.type : 'unknown';
+          if (typeFilter === 'numeric') return cat === 'numeric';
+          if (typeFilter === 'text') return cat === 'string';
+          if (typeFilter === 'datetime') return cat === 'datetime' || cat === 'date';
+          if (typeFilter === 'boolean') return cat === 'bool';
+          return true;
+        });
+
+        const cols = [...upstream.columns];
+        const meta = [...upstream.columnMeta];
+        const colType = cfg.output_type || cfg.type || 'none';
+
+        if (isCreateNew) {
           selCols.forEach(c => {
             const newName = `${prefix}${c}${suffix}`;
             if (newName !== c && !cols.includes(newName)) {
               cols.push(newName);
-              meta.push(normalizeMeta(newName, cfg.type || 'string'));
+              const origM = upstream.columnMeta.find(m => m.name === c);
+              meta.push(normalizeMeta(newName, (colType && colType !== 'none') ? colType : (origM ? origM.type : 'string')));
             }
           });
-          return { columns: cols, columnMeta: meta };
+        } else if (colType && colType !== 'none') {
+          selCols.forEach(c => {
+            const existingIdx = cols.indexOf(c);
+            if (existingIdx !== -1) {
+              meta[existingIdx] = normalizeMeta(c, colType);
+            }
+          });
         }
-        return upstream;
+        return { columns: cols, columnMeta: meta };
       }
 
       case 'record_id': {
@@ -542,12 +586,13 @@ export class ConfigPanel {
         }
       }
 
+      case 'datetime':
       case 'date_time': {
         const upstream = getUpstream('I');
         const cfg = node.config || {};
-        let outCol = (cfg.output_column || cfg.column_name || '').trim();
+        let outCol = (cfg.output_column || cfg.column_name || cfg.output_field || '').trim();
         if (!outCol) {
-          const colName = cfg.column || (upstream.columns[0] || 'DateTime');
+          const colName = cfg.column || cfg.field || (upstream.columns[0] || 'DateTime');
           outCol = (cfg.conversion_type === 'date_to_string') ? `${colName}_String` : `${colName}_DateTime`;
         }
         const isDateOnly = (cfg.format_template || '').toLowerCase().includes('date') && !(cfg.format_template || '').toLowerCase().includes('time');
@@ -558,6 +603,9 @@ export class ConfigPanel {
         if (!cols.includes(outCol)) {
           cols.push(outCol);
           meta.push(dtMeta);
+        } else {
+          const idx = cols.indexOf(outCol);
+          meta[idx] = dtMeta;
         }
         return { columns: cols, columnMeta: meta };
       }
@@ -569,7 +617,7 @@ export class ConfigPanel {
           return upstream;
         }
         const numCols = parseInt(cfg.num_columns || cfg.num_fields || 2, 10);
-        const rootName = (cfg.root_name || (cfg.column ? `${cfg.column}_` : 'col_')).trim();
+        const rootName = (cfg.root_name || cfg.column || 'col').trim();
         const cols = [...upstream.columns];
         const meta = [...upstream.columnMeta];
         for (let i = 1; i <= numCols; i++) {
@@ -597,11 +645,36 @@ export class ConfigPanel {
         for (const act of actions) {
           const field = act.field || '';
           const actType = act.action || 'GroupBy';
+          const actLower = actType.toLowerCase();
           const customOut = (act.output_name || '').trim();
           let outName = customOut;
           if (!outName) {
-            if (actType.toLowerCase() === 'groupby') {
+            if (actLower === 'groupby') {
               outName = field;
+            } else if (actLower === 'count') {
+              outName = `Count_${field}`;
+            } else if (['mean', 'average', 'avg'].includes(actLower)) {
+              outName = `Avg_${field}`;
+            } else if (actLower === 'countdistinct') {
+              outName = `Distinct_${field}`;
+            } else if (['countdistinctnonnull', 'count_distinct_non_null'].includes(actLower)) {
+              outName = `DistinctNonNull_${field}`;
+            } else if (['countnull', 'count_null'].includes(actLower)) {
+              outName = `Nulls_${field}`;
+            } else if (['countnonnull', 'count_non_null'].includes(actLower)) {
+              outName = `NonNulls_${field}`;
+            } else if (['countblank', 'count_blank'].includes(actLower)) {
+              outName = `Blank_${field}`;
+            } else if (['countnonblank', 'count_non_blank'].includes(actLower)) {
+              outName = `NonBlank_${field}`;
+            } else if (['concatdistinct', 'concatenate_distinct'].includes(actLower)) {
+              outName = `ConcatDistinct_${field}`;
+            } else if (['concat', 'concatenate'].includes(actLower)) {
+              outName = `Concat_${field}`;
+            } else if (['stddev', 'std_dev'].includes(actLower)) {
+              outName = `StdDev_${field}`;
+            } else if (['variance', 'var'].includes(actLower)) {
+              outName = `Var_${field}`;
             } else {
               outName = `${actType}_${field}`;
             }
@@ -610,7 +683,6 @@ export class ConfigPanel {
 
           let cat = 'string';
           let altType = 'V_WString';
-          const actLower = actType.toLowerCase();
           if (actLower === 'groupby') {
             const origM = upstreamMetaMap.get(field);
             cat = origM ? origM.type : 'string';
@@ -621,7 +693,7 @@ export class ConfigPanel {
           } else if (['sum', 'avg', 'average', 'mean', 'min', 'max', 'stddev', 'variance', 'median', 'percentile'].includes(actLower)) {
             cat = 'numeric';
             altType = 'Double';
-          } else if (actLower === 'concat') {
+          } else if (actLower === 'concat' || actLower === 'concatdistinct') {
             cat = 'string';
             altType = 'V_WString';
           }
@@ -906,7 +978,7 @@ export class ConfigPanel {
       case 'transpose': {
         const upstream = getUpstream('I');
         const cfg = node.config || {};
-        const keyCols = Array.isArray(cfg.key_columns) ? cfg.key_columns.filter(k => upstream.columns.includes(k)) : [];
+        const keyCols = Array.isArray(cfg.key_columns) ? cfg.key_columns.filter(k => upstream.columns.includes(k)) : (Array.isArray(cfg.key_fields) ? cfg.key_fields.filter(k => upstream.columns.includes(k)) : []);
         const nameCol = cfg.name_column || 'Name';
         const valCol = cfg.value_column || 'Value';
         const cols = [...keyCols, nameCol, valCol];
@@ -919,7 +991,7 @@ export class ConfigPanel {
       case 'crosstab': {
         const upstream = getUpstream('I');
         const cfg = node.config || {};
-        const groupCols = Array.isArray(cfg.group_columns) ? cfg.group_columns.filter(k => upstream.columns.includes(k)) : [];
+        const groupCols = Array.isArray(cfg.group_columns) ? cfg.group_columns.filter(k => upstream.columns.includes(k)) : (Array.isArray(cfg.group_by) ? cfg.group_by.filter(k => upstream.columns.includes(k)) : []);
         if (window.appLastResult && window.appLastResult.node_results && window.appLastResult.node_results[node.id]) {
           const res = window.appLastResult.node_results[node.id];
           if (res.columns && res.columns['O']) {
@@ -934,12 +1006,50 @@ export class ConfigPanel {
         const cfg = node.config || {};
         const cols = [...upstream.columns];
         const meta = [...upstream.columnMeta];
-        const outCol = (cfg.output_column || 'AI_Response').trim();
-        if (!cols.includes(outCol)) {
-          cols.push(outCol);
-          meta.push(normalizeMeta(outCol, 'string', 'V_WString'));
+        if (cfg.output_mode === 'json_parse' && Array.isArray(cfg.json_fields) && cfg.json_fields.length > 0) {
+          cfg.json_fields.forEach(jf => {
+            const jname = (typeof jf === 'string' ? jf : jf.name || '').trim();
+            if (jname && !cols.includes(jname)) {
+              cols.push(jname);
+              meta.push(normalizeMeta(jname, 'string', 'V_WString'));
+            }
+          });
+        } else {
+          const outCol = (cfg.output_column || 'AI_Response').trim() || 'AI_Response';
+          if (!cols.includes(outCol)) {
+            cols.push(outCol);
+            meta.push(normalizeMeta(outCol, 'string', 'V_WString'));
+          }
         }
         return { columns: cols, columnMeta: meta };
+      }
+
+      case 'schema_fit': {
+        const port = outputPort || 'D';
+        if (port === 'T') {
+          const tCols = ['Transformation Step', 'Code'];
+          const tMeta = [
+            normalizeMeta('Transformation Step', 'string', 'V_WString'),
+            normalizeMeta('Code', 'string', 'V_WString')
+          ];
+          return { columns: tCols, columnMeta: tMeta };
+        }
+        // Port 'D': Conforms to Target schema
+        const targetUp = getUpstream('T');
+        if (targetUp && targetUp.columns && targetUp.columns.length > 0) {
+          return targetUp;
+        }
+        const sourceUp = getUpstream('S');
+        return sourceUp;
+      }
+
+      case 'llm_override': {
+        const mCols = ['Setting', 'Value'];
+        const mMeta = [
+          normalizeMeta('Setting', 'string', 'V_WString'),
+          normalizeMeta('Value', 'string', 'V_WString')
+        ];
+        return { columns: mCols, columnMeta: mMeta };
       }
 
       default: {
@@ -964,32 +1074,56 @@ export class ConfigPanel {
 
   getUpstreamColumns(nodeId, inputHandle = 'I') {
     const schema = this.getInferredNodeInputSchema(nodeId, inputHandle);
-    if (schema.columns && schema.columns.length > 0) {
-      return schema.columns;
-    }
+    let cols = (schema.columns && Array.isArray(schema.columns)) ? [...schema.columns] : [];
+
+    // Reconcile with actual execution output if available
     const conn = this.canvas && this.canvas.connections ? this.canvas.connections.find(c => c.target === nodeId && (!c.targetHandle || c.targetHandle === inputHandle)) : null;
     if (conn && window.appLastResult && window.appLastResult.node_results) {
       const srcRes = window.appLastResult.node_results[conn.source];
-      if (srcRes && srcRes.columns && srcRes.columns[conn.sourceHandle || 'O']) {
-        return srcRes.columns[conn.sourceHandle || 'O'];
+      const srcPort = conn.sourceHandle || 'O';
+      if (srcRes && srcRes.columns && Array.isArray(srcRes.columns[srcPort])) {
+        const runCols = srcRes.columns[srcPort];
+        if (cols.length === 0) {
+          cols = [...runCols];
+        } else {
+          // Merge runtime columns so dynamic/computed columns from upstream are never lost
+          for (const rc of runCols) {
+            if (!cols.includes(rc)) {
+              cols.push(rc);
+            }
+          }
+        }
       }
     }
-    return [];
+    return cols;
   }
 
   getUpstreamColumnMeta(nodeId, inputHandle = 'I') {
     const schema = this.getInferredNodeInputSchema(nodeId, inputHandle);
-    if (schema.columnMeta && schema.columnMeta.length > 0) {
-      return schema.columnMeta;
-    }
+    let meta = (schema.columnMeta && Array.isArray(schema.columnMeta)) ? [...schema.columnMeta] : [];
+    const metaNames = new Set(meta.map(m => m.name));
+
     const conn = this.canvas && this.canvas.connections ? this.canvas.connections.find(c => c.target === nodeId && (!c.targetHandle || c.targetHandle === inputHandle)) : null;
     if (conn && window.appLastResult && window.appLastResult.node_results) {
       const srcRes = window.appLastResult.node_results[conn.source];
-      if (srcRes && srcRes.column_meta && srcRes.column_meta[conn.sourceHandle || 'O']) {
-        return srcRes.column_meta[conn.sourceHandle || 'O'];
+      const srcPort = conn.sourceHandle || 'O';
+      if (srcRes) {
+        const runCols = (srcRes.columns && srcRes.columns[srcPort]) || [];
+        const runMeta = (srcRes.column_meta && srcRes.column_meta[srcPort]) || [];
+        if (meta.length === 0 && runMeta.length > 0) {
+          meta = [...runMeta];
+        } else {
+          runCols.forEach((rc, idx) => {
+            if (!metaNames.has(rc)) {
+              const m = runMeta[idx] || { name: rc, type: 'unknown', alteryx_type: 'V_WString' };
+              meta.push(m);
+              metaNames.add(rc);
+            }
+          });
+        }
       }
     }
-    return [];
+    return meta;
   }
 
   getMultiUpstreamInputs(nodeId) {
@@ -1125,127 +1259,205 @@ export class ConfigPanel {
     }
 
     container.innerHTML = `
-      <div class="form-group">
-        <label>Input Mode</label>
-        <div class="file-mode-switch">
-          <button type="button" class="file-mode-btn ${!isWildcard ? 'active' : ''}" id="btn-mode-single">Single File</button>
-          <button type="button" class="file-mode-btn ${isWildcard ? 'active' : ''}" id="btn-mode-wildcard">Multi-File Pattern (* / ?)</button>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 700;">Data Source Type</label>
+        <div class="file-mode-switch" style="margin-top: 3px;">
+          <button type="button" class="file-mode-btn ${cfg.source_type !== 'database' ? 'active' : ''}" id="btn-src-mode-file">📁 File / Filesystem</button>
+          <button type="button" class="file-mode-btn ${cfg.source_type === 'database' ? 'active' : ''}" id="btn-src-mode-db">🗄️ Database Connection</button>
         </div>
       </div>
 
-      <div class="form-group" id="cfg-sample-group" style="${isWildcard ? 'display: none;' : ''}">
-        <label>Sample Dataset</label>
-        <select class="form-control" id="cfg-file-select">
-          <option value="">-- Choose Sample Dataset --</option>
-          ${cfg.file_path && !this.sampleDatasets.some(d => d.name === cfg.file_path) ? `<option value="${cfg.file_path}" selected>${cfg.original_file_name || cfg.file_path} (Current File)</option>` : ''}
-          ${this.sampleDatasets.map(d => `<option value="${d.name}" ${cfg.file_path === d.name ? 'selected' : ''}>${d.name} (${d.type.toUpperCase()}, ${d.size_kb} KB)</option>`).join('')}
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label id="cfg-file-path-label">${isWildcard ? 'Multi-File Pattern (Glob)' : 'File Path'}</label>
-        <div style="display: flex; gap: 6px;">
-          <input type="text" class="form-control" id="cfg-file-path" value="${cfg.file_path || ''}" placeholder="${isWildcard ? 'e.g. data/sales_*.csv or orders_2024_??.xlsx' : 'e.g. sales_orders.csv or data/report.xlsx'}" style="flex: 1;">
-          <button type="button" class="btn btn-secondary" id="btn-browse-in-native" style="white-space: nowrap; padding: 6px 10px; gap: 4px;" title="Browse local files with Windows Explorer">🖥️ Browse...</button>
+      <!-- PANE 1: File Source (CSV, TSV, Excel, Parquet, JSON) -->
+      <div id="cfg-pane-file-src" style="${cfg.source_type !== 'database' ? '' : 'display: none;'}">
+        <div class="form-group">
+          <label>Input Mode</label>
+          <div class="file-mode-switch">
+            <button type="button" class="file-mode-btn ${!isWildcard ? 'active' : ''}" id="btn-mode-single">Single File</button>
+            <button type="button" class="file-mode-btn ${isWildcard ? 'active' : ''}" id="btn-mode-wildcard">Multi-File Pattern (* / ?)</button>
+          </div>
         </div>
-        <div id="cfg-wildcard-badge" class="wildcard-match-badge ${isWildcard ? '' : 'hidden'}"></div>
-        <div class="form-hint" id="cfg-file-hint">Use wildcards (* or ?) to automatically stack and union multiple files.</div>
-      </div>
 
-      <div class="form-group" id="cfg-upload-group" style="${isWildcard ? 'display: none;' : ''}">
-        <label>Upload File to Workspace <span style="font-weight: 400; color: var(--text-muted); font-size: 10.5px; margin-left: 6px;">— copies to app data folder; use File Path above to reference files in place</span></label>
-        <input type="file" class="form-control" id="cfg-file-upload" accept=".csv,.xlsx,.xls,.xlsm,.xlsb,.tsv,.txt,.json,.parquet">
-        <div id="cfg-upload-status" class="form-hint" style="margin-top: 4px;">
-          ${cfg.file_path ? `<span style="color: var(--color-success); font-weight: 500;">✓ Connected to <b>${cfg.original_file_name || cfg.file_path}</b>${cfg.row_count ? ` (${Number(cfg.row_count).toLocaleString()} rows)` : ''}${cfg.sheet_name && cfg.sheet_name !== '0' && cfg.sheet_name !== 0 ? ` &bull; Sheet: <b>${cfg.sheet_name}</b>` : ''}</span><a href="#" id="cfg-clear-file" style="margin-left: 8px; color: var(--text-muted); font-size: 10px; text-decoration: none;" title="Remove file connection">× Clear</a>` : '<span style="color: var(--text-muted);">No file connected. Upload a file below or enter a path above.</span>'}
+        <div class="form-group" id="cfg-sample-group" style="${isWildcard ? 'display: none;' : ''}">
+          <label>Sample Dataset</label>
+          <select class="form-control" id="cfg-file-select">
+            <option value="">-- Choose Sample Dataset --</option>
+            ${cfg.file_path && !this.sampleDatasets.some(d => d.name === cfg.file_path) ? `<option value="${cfg.file_path}" selected>${cfg.original_file_name || cfg.file_path} (Current File)</option>` : ''}
+            ${this.sampleDatasets.map(d => `<option value="${d.name}" ${cfg.file_path === d.name ? 'selected' : ''}>${d.name} (${d.type.toUpperCase()}, ${d.size_kb} KB)</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label id="cfg-file-path-label">${isWildcard ? 'Multi-File Pattern (Glob)' : 'File Path'}</label>
+          <div style="display: flex; gap: 6px;">
+            <input type="text" class="form-control" id="cfg-file-path" value="${cfg.file_path || ''}" placeholder="${isWildcard ? 'e.g. data/sales_*.csv or orders_2024_??.xlsx' : 'e.g. sales_orders.csv or data/report.xlsx'}" style="flex: 1;">
+            <button type="button" class="btn btn-secondary" id="btn-browse-in-native" style="white-space: nowrap; padding: 6px 10px; gap: 4px;" title="Browse local files with Windows Explorer">🖥️ Browse...</button>
+          </div>
+          <div id="cfg-wildcard-badge" class="wildcard-match-badge ${isWildcard ? '' : 'hidden'}"></div>
+          <div class="form-hint" id="cfg-file-hint">Use wildcards (* or ?) to automatically stack and union multiple files.</div>
+        </div>
+
+        <div class="form-group" id="cfg-upload-group" style="${isWildcard ? 'display: none;' : ''}">
+          <label>Upload File to Workspace <span style="font-weight: 400; color: var(--text-muted); font-size: 10.5px; margin-left: 6px;">— copies to app data folder; use File Path above to reference files in place</span></label>
+          <input type="file" class="form-control" id="cfg-file-upload" accept=".csv,.xlsx,.xls,.xlsm,.xlsb,.tsv,.txt,.json,.parquet">
+          <div id="cfg-upload-status" class="form-hint" style="margin-top: 4px;">
+            ${cfg.file_path ? `<span style="color: var(--color-success); font-weight: 500;">✓ Connected to <b>${cfg.original_file_name || cfg.file_path}</b>${cfg.row_count ? ` (${Number(cfg.row_count).toLocaleString()} rows)` : ''}${cfg.sheet_name && cfg.sheet_name !== '0' && cfg.sheet_name !== 0 ? ` &bull; Sheet: <b>${cfg.sheet_name}</b>` : ''}</span><a href="#" id="cfg-clear-file" style="margin-left: 8px; color: var(--text-muted); font-size: 10px; text-decoration: none;" title="Remove file connection">× Clear</a>` : '<span style="color: var(--text-muted);">No file connected. Upload a file below or enter a path above.</span>'}
+          </div>
+        </div>
+
+        <div class="form-group" id="cfg-sheet-group" style="${isExcel ? '' : 'display: none;'}">
+          <label style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Excel Sheet</span>
+            <span id="cfg-sheet-refresh" style="font-size: 11px; cursor: pointer; color: var(--accent-primary, #0284c7);" title="Refresh available sheets">↻ Refresh</span>
+          </label>
+          <select class="form-control" id="cfg-sheet-name">
+            <option value="0" ${(!cfg.sheet_name || cfg.sheet_name === 0 || cfg.sheet_name === '0') && !cfg.read_all_sheets ? 'selected' : ''}>First Sheet (Default)</option>
+            <option value="__all__" ${(cfg.read_all_sheets || cfg.sheet_name === '*' || cfg.sheet_name === 'all') ? 'selected' : ''}>★ All Sheets (Union Together)</option>
+            ${cfg.sheet_name && cfg.sheet_name !== 0 && cfg.sheet_name !== '0' && cfg.sheet_name !== '*' && cfg.sheet_name !== '__all__' ? `<option value="${cfg.sheet_name}" selected>${cfg.sheet_name}</option>` : ''}
+          </select>
+          <div class="form-hint" id="cfg-sheet-hint">Select a specific sheet or union all sheets into one table.</div>
+        </div>
+
+        <div class="form-group" id="cfg-csv-options" style="${isExcel ? 'display: none;' : ''}">
+          <label>Delimiter</label>
+          <select class="form-control" id="cfg-delimiter">
+            <option value="," ${(!cfg.delimiter || cfg.delimiter === ',') ? 'selected' : ''}>Comma (,)</option>
+            <option value=";" ${cfg.delimiter === ';' ? 'selected' : ''}>Semicolon (;)</option>
+            <option value="\\t" ${cfg.delimiter === '\\t' || cfg.delimiter === '\t' ? 'selected' : ''}>Tab (\\t)</option>
+            <option value="|" ${cfg.delimiter === '|' ? 'selected' : ''}>Pipe (|)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="cfg-quote-group" style="${isExcel ? 'display: none;' : ''}">
+          <label>Quote Character</label>
+          <input type="text" class="form-control" id="cfg-quote-char" maxlength="1" value="${cfg.quote_char || '"'}">
+        </div>
+
+        <div class="form-group" id="cfg-escape-group" style="${isExcel ? 'display: none;' : ''}">
+          <label>Escape Character</label>
+          <input type="text" class="form-control" id="cfg-escape-char" maxlength="1" value="${cfg.escape_char || ''}" placeholder="None">
+        </div>
+
+        <div class="form-group" id="cfg-encoding-group" style="${isExcel ? 'display: none;' : ''}">
+          <label>Encoding</label>
+          <select class="form-control" id="cfg-encoding">
+            <option value="utf-8" ${(!cfg.encoding || cfg.encoding === 'utf-8') ? 'selected' : ''}>UTF-8</option>
+            <option value="utf-8-sig" ${cfg.encoding === 'utf-8-sig' ? 'selected' : ''}>UTF-8 with BOM</option>
+            <option value="latin1" ${cfg.encoding === 'latin1' ? 'selected' : ''}>Latin-1 (ISO-8859-1)</option>
+            <option value="cp1252" ${cfg.encoding === 'cp1252' ? 'selected' : ''}>Windows-1252</option>
+            <option value="ascii" ${cfg.encoding === 'ascii' ? 'selected' : ''}>ASCII</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="cfg-bad-lines-group" style="${isExcel ? 'display: none;' : ''}">
+          <label>Bad Lines Handling</label>
+          <select class="form-control" id="cfg-bad-lines">
+            <option value="error" ${(!cfg.on_bad_lines || cfg.on_bad_lines === 'error') ? 'selected' : ''}>Error (Fail Execution)</option>
+            <option value="skip" ${cfg.on_bad_lines === 'skip' ? 'selected' : ''}>Skip Bad Lines</option>
+            <option value="warn" ${cfg.on_bad_lines === 'warn' ? 'selected' : ''}>Warn & Skip Bad Lines</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Start Data Import at Row</label>
+          <input type="number" class="form-control" id="cfg-start-row" min="1" value="${cfg.start_row || 1}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-check">
+            <input type="checkbox" id="cfg-has-header" ${cfg.has_header !== false ? 'checked' : ''}>
+            <span>First row contains headers</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-check">
+            <input type="checkbox" id="cfg-trim-headers" ${cfg.trim_headers !== false ? 'checked' : ''}>
+            <span>Trim whitespace from header field names</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Output File Name as Field</label>
+          <select class="form-control" id="cfg-filename-field">
+            <option value="none" ${(!cfg.output_file_name_mode || cfg.output_file_name_mode === 'none') && (!cfg.output_filename_field || cfg.output_filename_field === 'none') ? 'selected' : ''}>No (None)</option>
+            <option value="filename_only" ${cfg.output_file_name_mode === 'filename_only' || cfg.output_filename_field === 'name_only' || cfg.output_filename_field === 'name' || cfg.output_filename_field === 'filename_only' ? 'selected' : ''}>File Name Only (FileName)</option>
+            <option value="full_path" ${cfg.output_file_name_mode === 'full_path' || cfg.output_filename_field === 'full_path' || cfg.output_filename_field === 'path' ? 'selected' : ''}>Full Path (FilePath)</option>
+            <option value="both" ${cfg.output_file_name_mode === 'both' || cfg.output_filename_field === 'both' ? 'selected' : ''}>Both (FileName & FilePath)</option>
+          </select>
+          <div class="form-hint">Appends source file origin to each record, matching Alteryx standard.</div>
         </div>
       </div>
 
-      <div class="form-group" id="cfg-sheet-group" style="${isExcel ? '' : 'display: none;'}">
-        <label style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Excel Sheet</span>
-          <span id="cfg-sheet-refresh" style="font-size: 11px; cursor: pointer; color: var(--accent-primary, #0284c7);" title="Refresh available sheets">↻ Refresh</span>
-        </label>
-        <select class="form-control" id="cfg-sheet-name">
-          <option value="0" ${(!cfg.sheet_name || cfg.sheet_name === 0 || cfg.sheet_name === '0') && !cfg.read_all_sheets ? 'selected' : ''}>First Sheet (Default)</option>
-          <option value="__all__" ${(cfg.read_all_sheets || cfg.sheet_name === '*' || cfg.sheet_name === 'all') ? 'selected' : ''}>★ All Sheets (Union Together)</option>
-          ${cfg.sheet_name && cfg.sheet_name !== 0 && cfg.sheet_name !== '0' && cfg.sheet_name !== '*' && cfg.sheet_name !== '__all__' ? `<option value="${cfg.sheet_name}" selected>${cfg.sheet_name}</option>` : ''}
-        </select>
-        <div class="form-hint" id="cfg-sheet-hint">Select a specific sheet or union all sheets into one table.</div>
+      <!-- PANE 2: Database Source (DuckDB, SQLite, PostgreSQL, Snowflake) -->
+      <div id="cfg-pane-db-src" style="${cfg.source_type === 'database' ? '' : 'display: none;'}">
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="margin: 0; font-weight: 600;">Saved Connection</label>
+            <a href="#" id="cfg-link-manage-conns" style="font-size: 11px; color: var(--color-primary); text-decoration: none; font-weight: 500;">⚙️ Manage Connections...</a>
+          </div>
+          <select class="form-control" id="cfg-db-conn-select">
+            <option value="">-- Choose Connection --</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="cfg-db-mode-switch-group">
+          <label style="font-weight: 600;">Data Selection</label>
+          <div class="file-mode-switch">
+            <button type="button" class="file-mode-btn ${cfg.query_mode !== 'sql' ? 'active' : ''}" id="btn-db-mode-table">📋 Table / View</button>
+            <button type="button" class="file-mode-btn ${cfg.query_mode === 'sql' ? 'active' : ''}" id="btn-db-mode-sql">✍️ Custom SQL Query</button>
+          </div>
+        </div>
+
+        <!-- Mode A: Table Select -->
+        <div id="cfg-db-pane-table" style="${cfg.query_mode !== 'sql' ? '' : 'display: none;'}">
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label style="margin: 0;">Table or View</label>
+              <span id="cfg-btn-refresh-tables" style="font-size: 11px; cursor: pointer; color: var(--color-primary);" title="Refresh Tables">↻ Refresh</span>
+            </div>
+            <select class="form-control" id="cfg-db-table-select">
+              <option value="">-- Choose Table --</option>
+              ${cfg.table ? `<option value="${this.escapeHtml(cfg.table)}" selected>${this.escapeHtml(cfg.table)}</option>` : ''}
+            </select>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-db-preview-table" style="width: 100%; margin-top: 4px; gap: 5px;">
+            <span>👁️ Preview Table (First 100 rows)</span>
+          </button>
+        </div>
+
+        <!-- Mode B: SQL Query -->
+        <div id="cfg-db-pane-sql" style="${cfg.query_mode === 'sql' ? '' : 'display: none;'}">
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label style="margin: 0;">SQL Query</label>
+              <div style="display: flex; gap: 8px;">
+                <span style="font-size: 10.5px; color: var(--text-muted);">Write SELECT query</span>
+              </div>
+            </div>
+            <textarea class="sql-editor-textarea" id="cfg-db-sql-textarea" rows="4" placeholder="SELECT * FROM table_name WHERE ...">${this.escapeHtml(cfg.query || '')}</textarea>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-db-preview-query" style="width: 100%; margin-top: 4px; gap: 5px;">
+            <span>▶ Run Query Preview</span>
+          </button>
+        </div>
+
+        <!-- In-Panel Live Preview Area -->
+        <div id="cfg-db-preview-box" class="inpanel-table-preview" style="display: none; margin-top: 12px;">
+          <div class="inpanel-table-header">
+            <span id="cfg-db-preview-heading">Table Preview</span>
+            <span id="cfg-db-preview-close" style="cursor: pointer; color: var(--text-muted); font-size: 13px;" title="Close Preview">✕</span>
+          </div>
+          <div class="inpanel-table-scroll" id="cfg-db-preview-grid">
+            <!-- Data rows dynamically rendered -->
+          </div>
+        </div>
       </div>
 
-      <div class="form-group" id="cfg-csv-options" style="${isExcel ? 'display: none;' : ''}">
-        <label>Delimiter</label>
-        <select class="form-control" id="cfg-delimiter">
-          <option value="," ${(!cfg.delimiter || cfg.delimiter === ',') ? 'selected' : ''}>Comma (,)</option>
-          <option value=";" ${cfg.delimiter === ';' ? 'selected' : ''}>Semicolon (;)</option>
-          <option value="\\t" ${cfg.delimiter === '\\t' || cfg.delimiter === '\t' ? 'selected' : ''}>Tab (\\t)</option>
-          <option value="|" ${cfg.delimiter === '|' ? 'selected' : ''}>Pipe (|)</option>
-        </select>
-      </div>
-
-      <div class="form-group" id="cfg-quote-group" style="${isExcel ? 'display: none;' : ''}">
-        <label>Quote Character</label>
-        <input type="text" class="form-control" id="cfg-quote-char" maxlength="1" value="${cfg.quote_char || '"'}">
-      </div>
-
-      <div class="form-group" id="cfg-escape-group" style="${isExcel ? 'display: none;' : ''}">
-        <label>Escape Character</label>
-        <input type="text" class="form-control" id="cfg-escape-char" maxlength="1" value="${cfg.escape_char || ''}" placeholder="None">
-      </div>
-
-      <div class="form-group" id="cfg-encoding-group" style="${isExcel ? 'display: none;' : ''}">
-        <label>Encoding</label>
-        <select class="form-control" id="cfg-encoding">
-          <option value="utf-8" ${(!cfg.encoding || cfg.encoding === 'utf-8') ? 'selected' : ''}>UTF-8</option>
-          <option value="utf-8-sig" ${cfg.encoding === 'utf-8-sig' ? 'selected' : ''}>UTF-8 with BOM</option>
-          <option value="latin1" ${cfg.encoding === 'latin1' ? 'selected' : ''}>Latin-1 (ISO-8859-1)</option>
-          <option value="cp1252" ${cfg.encoding === 'cp1252' ? 'selected' : ''}>Windows-1252</option>
-          <option value="ascii" ${cfg.encoding === 'ascii' ? 'selected' : ''}>ASCII</option>
-        </select>
-      </div>
-
-      <div class="form-group" id="cfg-bad-lines-group" style="${isExcel ? 'display: none;' : ''}">
-        <label>Bad Lines Handling</label>
-        <select class="form-control" id="cfg-bad-lines">
-          <option value="error" ${(!cfg.on_bad_lines || cfg.on_bad_lines === 'error') ? 'selected' : ''}>Error (Fail Execution)</option>
-          <option value="skip" ${cfg.on_bad_lines === 'skip' ? 'selected' : ''}>Skip Bad Lines</option>
-          <option value="warn" ${cfg.on_bad_lines === 'warn' ? 'selected' : ''}>Warn & Skip Bad Lines</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Start Data Import at Row</label>
-        <input type="number" class="form-control" id="cfg-start-row" min="1" value="${cfg.start_row || 1}">
-      </div>
-
-      <div class="form-group">
-        <label>Limit Rows (Optional)</label>
-        <input type="number" class="form-control" id="cfg-max-rows" placeholder="All rows" value="${cfg.max_rows || ''}">
-      </div>
-
-      <div class="form-group">
-        <label class="form-check">
-          <input type="checkbox" id="cfg-has-header" ${cfg.has_header !== false ? 'checked' : ''}>
-          <span>First row contains headers</span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label class="form-check">
-          <input type="checkbox" id="cfg-trim-headers" ${cfg.trim_headers !== false ? 'checked' : ''}>
-          <span>Trim whitespace from header field names</span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label>Output File Name as Field</label>
-        <select class="form-control" id="cfg-filename-field">
-          <option value="none" ${(!cfg.output_file_name_mode || cfg.output_file_name_mode === 'none') && (!cfg.output_filename_field || cfg.output_filename_field === 'none') ? 'selected' : ''}>No (None)</option>
-          <option value="filename_only" ${cfg.output_file_name_mode === 'filename_only' || cfg.output_filename_field === 'name_only' || cfg.output_filename_field === 'name' || cfg.output_filename_field === 'filename_only' ? 'selected' : ''}>File Name Only (FileName)</option>
-          <option value="full_path" ${cfg.output_file_name_mode === 'full_path' || cfg.output_filename_field === 'full_path' || cfg.output_filename_field === 'path' ? 'selected' : ''}>Full Path (FilePath)</option>
-          <option value="both" ${cfg.output_file_name_mode === 'both' || cfg.output_filename_field === 'both' ? 'selected' : ''}>Both (FileName & FilePath)</option>
-        </select>
-        <div class="form-hint">Appends source file origin to each record, matching Alteryx standard.</div>
+      <!-- Shared Options -->
+      <div class="form-group" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+        <label>Limit Records to Read (Optional)</label>
+        <input type="number" class="form-control" id="cfg-max-rows" placeholder="All records (Unlimited)" value="${cfg.max_rows || ''}">
+        <div class="form-hint" style="font-size: 11px; color: var(--text-muted);">Restricts the number of rows read from the source for rapid workflow testing.</div>
       </div>
     `;
 
@@ -1582,6 +1794,282 @@ export class ConfigPanel {
       node.config.max_rows = e.target.value ? parseInt(e.target.value) : null;
       this.canvas.onWorkflowChange();
     });
+
+    // ------------------------------------------------------------------
+    // Database Source Handlers
+    // ------------------------------------------------------------------
+    const btnSrcFile = container.querySelector('#btn-src-mode-file');
+    const btnSrcDb = container.querySelector('#btn-src-mode-db');
+    const paneFileSrc = container.querySelector('#cfg-pane-file-src');
+    const paneDbSrc = container.querySelector('#cfg-pane-db-src');
+
+    const dbConnSelect = container.querySelector('#cfg-db-conn-select');
+    const btnDbModeTable = container.querySelector('#btn-db-mode-table');
+    const btnDbModeSql = container.querySelector('#btn-db-mode-sql');
+    const paneDbTable = container.querySelector('#cfg-db-pane-table');
+    const paneDbSql = container.querySelector('#cfg-db-pane-sql');
+    const dbTableSelect = container.querySelector('#cfg-db-table-select');
+    const dbSqlTextarea = container.querySelector('#cfg-db-sql-textarea');
+    const previewBox = container.querySelector('#cfg-db-preview-box');
+    const previewGrid = container.querySelector('#cfg-db-preview-grid');
+    const previewTitle = container.querySelector('#cfg-db-preview-heading');
+    const previewClose = container.querySelector('#cfg-db-preview-close');
+
+    // Switch between File and Database source
+    btnSrcFile?.addEventListener('click', () => {
+      btnSrcFile.classList.add('active');
+      btnSrcDb.classList.remove('active');
+      if (paneFileSrc) paneFileSrc.style.display = '';
+      if (paneDbSrc) paneDbSrc.style.display = 'none';
+      node.config.source_type = 'file';
+      this.canvas.onWorkflowChange();
+    });
+
+    btnSrcDb?.addEventListener('click', () => {
+      btnSrcDb.classList.add('active');
+      btnSrcFile.classList.remove('active');
+      if (paneDbSrc) paneDbSrc.style.display = '';
+      if (paneFileSrc) paneFileSrc.style.display = 'none';
+      node.config.source_type = 'database';
+      loadDbConnections();
+      this.canvas.onWorkflowChange();
+    });
+
+    // Populate database connections dropdown
+    const loadDbConnections = async () => {
+      if (!dbConnSelect) return;
+      try {
+        const res = await fetch('/api/connections');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.connections)) {
+          const conns = json.connections;
+          dbConnSelect.innerHTML = `
+            <option value="">-- Choose Database Connection --</option>
+            ${conns.map(c => `
+              <option value="${c.id}" ${node.config.connection_id === c.id ? 'selected' : ''}>
+                ${this.escapeHtml(c.name)} (${(c.type || 'sqlite').toUpperCase()})
+              </option>
+            `).join('')}
+          `;
+          if (node.config.connection_id) {
+            loadDbTables(node.config.connection_id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load database connections:', err);
+      }
+    };
+
+    // Populate database tables dropdown
+    const loadDbTables = async (connId) => {
+      if (!dbTableSelect || !connId) return;
+      dbTableSelect.innerHTML = '<option value="">Loading tables...</option>';
+      try {
+        const res = await fetch(`/api/connections/${connId}/tables`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.tables)) {
+          if (json.tables.length === 0) {
+            dbTableSelect.innerHTML = '<option value="">No tables found in database</option>';
+          } else {
+            dbTableSelect.innerHTML = `
+              <option value="">-- Choose Table / View --</option>
+              ${json.tables.map(t => `
+                <option value="${this.escapeHtml(t)}" ${node.config.table === t ? 'selected' : ''}>
+                  ${this.escapeHtml(t)}
+                </option>
+              `).join('')}
+            `;
+          }
+        } else {
+          dbTableSelect.innerHTML = `<option value="">Error loading tables: ${this.escapeHtml(json.error || '')}</option>`;
+        }
+      } catch (err) {
+        dbTableSelect.innerHTML = `<option value="">Failed to fetch tables</option>`;
+      }
+    };
+
+    dbConnSelect?.addEventListener('change', (e) => {
+      const connId = e.target.value;
+      node.config.connection_id = connId;
+      if (connId) {
+        loadDbTables(connId);
+      } else {
+        if (dbTableSelect) dbTableSelect.innerHTML = '<option value="">-- Choose Table --</option>';
+      }
+      this.canvas.onWorkflowChange();
+    });
+
+    container.querySelector('#cfg-btn-refresh-tables')?.addEventListener('click', () => {
+      if (node.config.connection_id) {
+        loadDbTables(node.config.connection_id);
+      }
+    });
+
+    // Query Mode Switch (Table vs Custom SQL)
+    btnDbModeTable?.addEventListener('click', () => {
+      btnDbModeTable.classList.add('active');
+      btnDbModeSql.classList.remove('active');
+      if (paneDbTable) paneDbTable.style.display = '';
+      if (paneDbSql) paneDbSql.style.display = 'none';
+      node.config.query_mode = 'table';
+      this.canvas.onWorkflowChange();
+    });
+
+    btnDbModeSql?.addEventListener('click', () => {
+      btnDbModeSql.classList.add('active');
+      btnDbModeTable.classList.remove('active');
+      if (paneDbSql) paneDbSql.style.display = '';
+      if (paneDbTable) paneDbTable.style.display = 'none';
+      node.config.query_mode = 'sql';
+      this.canvas.onWorkflowChange();
+    });
+
+    dbTableSelect?.addEventListener('change', (e) => {
+      node.config.table = e.target.value;
+      this.canvas.onWorkflowChange();
+    });
+
+    dbSqlTextarea?.addEventListener('input', (e) => {
+      node.config.query = e.target.value;
+      this.canvas.onWorkflowChange();
+    });
+
+    // Manage Connections shortcut link
+    container.querySelector('#cfg-link-manage-conns')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.openDatabaseConnectionsModal) {
+        window.openDatabaseConnectionsModal(node.config.connection_id);
+      }
+    });
+
+    // SQL Template Hint Pills
+    container.querySelectorAll('.sql-hint-pill').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.preventDefault();
+        const snippet = pill.getAttribute('data-snippet');
+        const targetTable = node.config.table || 'my_table';
+        const formatted = snippet.replace('{table}', targetTable);
+        if (dbSqlTextarea) {
+          dbSqlTextarea.value = formatted;
+          node.config.query = formatted;
+          this.canvas.onWorkflowChange();
+        }
+      });
+    });
+
+    // In-Panel Preview renderer
+    const renderPreviewTable = (title, columns, rows) => {
+      if (!previewBox || !previewGrid) return;
+      if (previewTitle) previewTitle.textContent = title;
+      previewBox.style.display = 'block';
+
+      if (!rows || rows.length === 0) {
+        previewGrid.innerHTML = `
+          <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">
+            Query returned 0 rows.
+          </div>
+        `;
+        return;
+      }
+
+      previewGrid.innerHTML = `
+        <table class="inpanel-grid">
+          <thead>
+            <tr>${columns.map(c => `<th>${this.escapeHtml(c)}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${rows.slice(0, 100).map(r => `
+              <tr>
+                ${columns.map(c => `<td>${this.escapeHtml(r[c] !== null && r[c] !== undefined ? String(r[c]) : 'null')}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    };
+
+    // Table Preview Button
+    container.querySelector('#btn-db-preview-table')?.addEventListener('click', async () => {
+      const connId = node.config.connection_id;
+      const table = node.config.table;
+      if (!connId) {
+        alert('Please choose a database connection first.');
+        return;
+      }
+      if (!table) {
+        alert('Please select a table to preview.');
+        return;
+      }
+
+      if (previewGrid) previewGrid.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">⏳ Loading preview rows...</div>';
+      if (previewBox) previewBox.style.display = 'block';
+
+      try {
+        const res = await fetch(`/api/connections/${connId}/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ table, limit: 100 })
+        });
+        const json = await res.json();
+        if (json.success) {
+          renderPreviewTable(`Table Preview: ${table} (${json.row_count} rows)`, json.columns, json.rows);
+        } else {
+          previewGrid.innerHTML = `<div style="padding: 12px; color: var(--color-error); font-size: 11px;">Preview failed: ${this.escapeHtml(json.error || 'Unknown error')}</div>`;
+        }
+      } catch (err) {
+        previewGrid.innerHTML = `<div style="padding: 12px; color: var(--color-error); font-size: 11px;">Network error: ${err.message}</div>`;
+      }
+    });
+
+    // Custom SQL Query Preview Button
+    container.querySelector('#btn-db-preview-query')?.addEventListener('click', async () => {
+      const connId = node.config.connection_id;
+      const sql = (dbSqlTextarea ? dbSqlTextarea.value : node.config.query || '').trim();
+      if (!connId) {
+        alert('Please choose a database connection first.');
+        return;
+      }
+      if (!sql) {
+        alert('Please write a SQL query to preview.');
+        return;
+      }
+
+      if (previewGrid) previewGrid.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">⏳ Executing query preview...</div>';
+      if (previewBox) previewBox.style.display = 'block';
+
+      try {
+        const res = await fetch(`/api/connections/${connId}/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql, limit: 100 })
+        });
+        const json = await res.json();
+        if (json.success) {
+          renderPreviewTable(`Query Preview (${json.row_count} rows)`, json.columns, json.rows);
+        } else {
+          previewGrid.innerHTML = `<div style="padding: 12px; color: var(--color-error); font-size: 11px;">Query error: ${this.escapeHtml(json.error || 'Execution failed')}</div>`;
+        }
+      } catch (err) {
+        previewGrid.innerHTML = `<div style="padding: 12px; color: var(--color-error); font-size: 11px;">Network error: ${err.message}</div>`;
+      }
+    });
+
+    // Preview close button
+    previewClose?.addEventListener('click', () => {
+      if (previewBox) previewBox.style.display = 'none';
+    });
+
+    // Refresh connections if updated externally
+    if (window.eventBus) {
+      window.eventBus.on('connections:updated', () => {
+        loadDbConnections();
+      });
+    }
+
+    // Initial load of DB connections if in database mode
+    if (node.config.source_type === 'database') {
+      loadDbConnections();
+    }
 
     // Initial triggers
     if (isWildcard) {
@@ -10425,6 +10913,586 @@ export class ConfigPanel {
     container.querySelector('#cfg-llm-inc-tokens').addEventListener('change', (e) => {
       cfg.include_token_columns = e.target.checked;
       saveChanges();
+    });
+  }
+
+  // ====================================================================
+  // Schema Fit Tool Configuration
+  // ====================================================================
+  renderSchemaFitConfig(container, node) {
+    if (!node.config) node.config = {};
+    const cfg = node.config;
+
+    cfg.max_transformations = cfg.max_transformations !== undefined ? parseInt(cfg.max_transformations, 10) : 5;
+    cfg.only_target_columns = cfg.only_target_columns !== undefined ? !!cfg.only_target_columns : true;
+    cfg.terms_accepted = cfg.terms_accepted !== undefined ? !!cfg.terms_accepted : true;
+    cfg.custom_code = cfg.custom_code || '';
+
+    // Embedded fallback model settings if anchor M is unconnected
+    cfg.provider_type = cfg.provider_type || 'ollama';
+    cfg.connection = cfg.connection || {};
+    if (!cfg.connection.base_url) {
+      if (cfg.provider_type === 'ollama') cfg.connection.base_url = 'http://localhost:11434';
+      else if (cfg.provider_type === 'lm_studio') cfg.connection.base_url = 'http://localhost:1234/v1';
+      else if (cfg.provider_type === 'openai') cfg.connection.base_url = 'https://api.openai.com/v1';
+      else if (cfg.provider_type === 'gemini') cfg.connection.base_url = 'https://generativelanguage.googleapis.com';
+    }
+    cfg.connection.api_key = cfg.connection.api_key || '';
+    cfg.model = cfg.model || (cfg.provider_type === 'ollama' ? 'llama3.2' : (cfg.provider_type === 'gemini' ? 'gemini-2.0-flash' : 'gpt-4o-mini'));
+    cfg.temperature = cfg.temperature !== undefined ? parseFloat(cfg.temperature) : 0.2;
+    cfg.max_tokens = cfg.max_tokens !== undefined ? parseInt(cfg.max_tokens, 10) : 1024;
+
+    const saveChanges = () => {
+      if (this.canvas) this.canvas.onWorkflowChange();
+      if (window.appTabManager) window.appTabManager.markCurrentTabDirty();
+    };
+
+    // Upstream inspection
+    const connList = (this.canvas && this.canvas.connections) ? this.canvas.connections : [];
+    const modelConn = connList.find(c => (c.target === node.id || c.to_node === node.id) && ((c.targetHandle || c.to_port) === 'M'));
+    const targetConn = connList.find(c => (c.target === node.id || c.to_node === node.id) && ((c.targetHandle || c.to_port) === 'T'));
+    const sourceConn = connList.find(c => (c.target === node.id || c.to_node === node.id) && ((c.targetHandle || c.to_port) === 'S'));
+
+    const getNodeName = (nid) => {
+      if (!nid || !this.canvas || !this.canvas.nodes) return '';
+      const n = this.canvas.nodes.find(x => x.id === nid);
+      return n ? (n.name || n.type) : nid;
+    };
+
+    const targetCols = this.getUpstreamColumns(node.id, 'T');
+    const sourceCols = this.getUpstreamColumns(node.id, 'S');
+    const targetMeta = this.getUpstreamColumnMeta(node.id, 'T') || [];
+    const sourceMeta = this.getUpstreamColumnMeta(node.id, 'S') || [];
+
+    // Derive fuzzy schema mapping preview
+    const normalize = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const matchedSourceCols = new Set();
+    const mappingRows = targetCols.map(tCol => {
+      let match = null;
+      let matchType = 'none';
+      if (sourceCols.includes(tCol)) {
+        match = tCol;
+        matchType = 'exact';
+      } else {
+        const tNorm = normalize(tCol);
+        const fuzzy = sourceCols.find(sCol => {
+          const sNorm = normalize(sCol);
+          return sNorm === tNorm || sNorm.includes(tNorm) || tNorm.includes(sNorm);
+        });
+        if (fuzzy) {
+          match = fuzzy;
+          matchType = 'fuzzy';
+        }
+      }
+      if (match) matchedSourceCols.add(match);
+      const tMetaObj = targetMeta.find(m => m.name === tCol);
+      const sMetaObj = match ? sourceMeta.find(m => m.name === match) : null;
+      return {
+        targetCol: tCol,
+        targetType: tMetaObj ? (tMetaObj.alteryx_type || tMetaObj.type || 'String') : 'String',
+        sourceCol: match,
+        sourceType: sMetaObj ? (sMetaObj.alteryx_type || sMetaObj.type || 'String') : '',
+        matchType: matchType
+      };
+    });
+    const extraSourceCols = sourceCols.filter(s => !matchedSourceCols.has(s));
+
+    // Previous run steps if available in results
+    let previousSteps = [];
+    if (window.appLastResult && window.appLastResult.node_results && window.appLastResult.node_results[node.id]) {
+      const res = window.appLastResult.node_results[node.id];
+      if (res.messages) {
+        previousSteps = res.messages;
+      }
+    }
+
+    container.innerHTML = `
+      <div class="schema-fit-config-wrapper" style="display: flex; flex-direction: column; gap: 14px; font-size: 12px;">
+
+        <!-- Intro & Action Bar -->
+        <div class="cfg-section" style="border: 1px solid rgba(139,92,246,0.35); border-radius: 6px; padding: 10px 12px; background: rgba(139,92,246,0.08); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 600; color: #8b5cf6; font-size: 13px;">Schema Fit</span>
+              <span class="badge" style="background: rgba(139,92,246,0.25); color: #c4b5fd; font-size: 10px; padding: 1px 6px; border-radius: 4px;">Public Preview</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="btn-schema-fit-preview" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;" title="Preview transformation steps using available cached data">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                Preview Steps
+              </button>
+              <button type="button" id="btn-schema-fit-standalone" class="btn btn-primary btn-sm" style="background: #8b5cf6; border-color: #7c3aed; font-size: 11px; padding: 3px 10px; display: inline-flex; align-items: center; gap: 4px;" title="Execute this Schema Fit tool standalone">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Run Tool
+              </button>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 11px; color: var(--text-muted, #9ca3af); line-height: 1.4;">
+            Transforms unformatted <strong>Source (S)</strong> data to match the format of reference <strong>Target (T)</strong> data using AI-synthesized Python steps.
+          </p>
+        </div>
+
+        <!-- 5-Anchor Connection Status -->
+        <div class="cfg-section" style="display: flex; flex-direction: column; gap: 6px;">
+          <div class="cfg-section-title" style="font-weight: 600; color: var(--text-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Anchor Status</div>
+          <div style="display: grid; grid-template-columns: 1fr; gap: 6px;">
+            <div style="padding: 6px 10px; border-radius: 4px; border: 1px solid ${modelConn ? 'rgba(34,197,94,0.3)' : 'rgba(156,163,175,0.3)'}; background: ${modelConn ? 'rgba(34,197,94,0.06)' : 'rgba(156,163,175,0.05)'}; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-weight: 500;"><strong>M</strong> (Model):</span>
+              <span style="color: ${modelConn ? '#22c55e' : 'var(--text-muted)'}; font-size: 11px;">
+                ${modelConn ? `✓ Wired to ${this.escapeHtml(getNodeName(modelConn.source || modelConn.from_node))}` : '○ Unconnected (Using local settings below)'}
+              </span>
+            </div>
+            <div style="padding: 6px 10px; border-radius: 4px; border: 1px solid ${targetCols.length > 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}; background: ${targetCols.length > 0 ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)'}; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-weight: 500;"><strong>T</strong> (Target):</span>
+              <span style="color: ${targetCols.length > 0 ? '#22c55e' : '#ef4444'}; font-size: 11px;">
+                ${targetCols.length > 0 ? `✓ ${targetCols.length} columns reference (${this.escapeHtml(getNodeName(targetConn ? (targetConn.source || targetConn.from_node) : ''))})` : '✕ Disconnected (Connect target format data)'}
+              </span>
+            </div>
+            <div style="padding: 6px 10px; border-radius: 4px; border: 1px solid ${sourceCols.length > 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}; background: ${sourceCols.length > 0 ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)'}; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-weight: 500;"><strong>S</strong> (Source):</span>
+              <span style="color: ${sourceCols.length > 0 ? '#22c55e' : '#ef4444'}; font-size: 11px;">
+                ${sourceCols.length > 0 ? `✓ ${sourceCols.length} columns unformatted (${this.escapeHtml(getNodeName(sourceConn ? (sourceConn.source || sourceConn.from_node) : ''))})` : '✕ Disconnected (Connect source data to reshape)'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schema Mapping & Alignment Diff -->
+        <div class="cfg-section" style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="cfg-section-title" style="font-weight: 600; color: var(--text-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Schema Alignment Diff</div>
+            <span style="font-size: 10px; color: var(--text-muted);">${mappingRows.filter(m => m.matchType !== 'none').length} of ${targetCols.length} target fields matched</span>
+          </div>
+
+          ${targetCols.length === 0 && sourceCols.length === 0 ? `
+            <div style="padding: 12px; border: 1px dashed var(--border-color); border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
+              Connect <strong>T</strong> (Target) and <strong>S</strong> (Source) data anchors on the canvas to inspect schema alignment.
+            </div>
+          ` : `
+            <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-surface-elevated, rgba(0,0,0,0.1));">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.03); color: var(--text-muted);">
+                    <th style="padding: 6px 8px;">Target Field (T)</th>
+                    <th style="padding: 6px 8px;">Type</th>
+                    <th style="padding: 6px 8px;">Source Field (S)</th>
+                    <th style="padding: 6px 8px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${mappingRows.map(r => `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                      <td style="padding: 5px 8px; font-weight: 500;">${this.escapeHtml(r.targetCol)}</td>
+                      <td style="padding: 5px 8px; color: var(--text-muted); font-size: 10px;">${this.escapeHtml(r.targetType)}</td>
+                      <td style="padding: 5px 8px;">${r.sourceCol ? this.escapeHtml(r.sourceCol) : '<span style="color: #ef4444; font-style: italic;">Missing in Source</span>'}</td>
+                      <td style="padding: 5px 8px;">
+                        ${r.matchType === 'exact' ? '<span style="color: #22c55e;">● Exact</span>' :
+                          r.matchType === 'fuzzy' ? '<span style="color: #eab308;">● Fuzzy Match</span>' :
+                          '<span style="color: #ef4444;">● Will Initialize NaN</span>'}
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            ${extraSourceCols.length > 0 ? `
+              <div style="font-size: 10px; color: var(--text-muted); line-height: 1.4;">
+                Extra Source fields not in Target: <strong>${extraSourceCols.map(c => this.escapeHtml(c)).join(', ')}</strong>
+                (${cfg.only_target_columns ? 'Will be excluded' : 'Will be retained at end'}).
+              </div>
+            ` : ''}
+          `}
+        </div>
+
+        <!-- Tool Configuration Knobs -->
+        <div class="cfg-section" style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <div class="cfg-section-title" style="font-weight: 600; color: var(--text-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Transformation Settings</div>
+
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+            <label for="cfg-sf-max-transforms" style="font-weight: 500;">Max Number of Transformations</label>
+            <input type="number" id="cfg-sf-max-transforms" class="form-control" min="1" max="20" value="${cfg.max_transformations}" style="width: 120px; font-size: 12px;">
+            <span class="form-hint" style="font-size: 10px; color: var(--text-muted);">
+              Limits the maximum number of requests and correction attempts made to the LLM.
+            </span>
+          </div>
+
+          <div class="form-check" style="display: flex; align-items: flex-start; gap: 8px;">
+            <input type="checkbox" id="cfg-sf-only-target" class="form-check-input" ${cfg.only_target_columns ? 'checked' : ''} style="margin-top: 2px;">
+            <label for="cfg-sf-only-target" style="font-weight: 500; font-size: 11px; cursor: pointer;">
+              Only include target schema columns
+              <span class="form-hint" style="display: block; font-weight: normal; font-size: 10px; color: var(--text-muted);">
+                Excludes columns from your Source data that don't match your Target data.
+              </span>
+            </label>
+          </div>
+
+          <div class="form-check" style="display: flex; align-items: flex-start; gap: 8px;">
+            <input type="checkbox" id="cfg-sf-terms" class="form-check-input" ${cfg.terms_accepted ? 'checked' : ''} style="margin-top: 2px;">
+            <label for="cfg-sf-terms" style="font-size: 11px; cursor: pointer;">
+              Accept Preview Terms and Conditions
+              <span class="form-hint" style="display: block; font-size: 10px; color: var(--text-muted);">
+                AI-assisted tools synthesize Python transformation code based on column metadata.
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Model Connection Settings (if anchor M is unconnected) -->
+        <div class="cfg-section" style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="cfg-section-title" style="font-weight: 600; color: var(--text-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">LLM Connection</div>
+            <span style="font-size: 10px; color: #8b5cf6;">${modelConn ? 'Controlled by Anchor M' : 'Local Node Settings'}</span>
+          </div>
+
+          ${modelConn ? `
+            <div style="padding: 10px 12px; background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.25); border-radius: 6px; font-size: 11px; color: var(--text-color);">
+              Connection parameters are provided dynamically by <strong>${this.escapeHtml(getNodeName(modelConn.source || modelConn.from_node))}</strong> via input anchor <strong>M</strong>.
+            </div>
+          ` : `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label for="cfg-sf-provider" style="font-size: 11px;">Provider</label>
+                <select id="cfg-sf-provider" class="form-control" style="font-size: 11px; padding: 4px 8px;">
+                  <option value="ollama" ${cfg.provider_type === 'ollama' ? 'selected' : ''}>Ollama (Local)</option>
+                  <option value="gemini" ${cfg.provider_type === 'gemini' ? 'selected' : ''}>Google Gemini</option>
+                  <option value="openai" ${cfg.provider_type === 'openai' ? 'selected' : ''}>OpenAI</option>
+                  <option value="lm_studio" ${cfg.provider_type === 'lm_studio' ? 'selected' : ''}>LM Studio / LocalAI</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cfg-sf-model" style="font-size: 11px;">Model</label>
+                <input type="text" id="cfg-sf-model" class="form-control" value="${this.escapeHtml(cfg.model)}" placeholder="e.g. llama3.2, gpt-4o-mini" style="font-size: 11px; padding: 4px 8px;">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cfg-sf-base-url" style="font-size: 11px;">Base URL</label>
+              <input type="text" id="cfg-sf-base-url" class="form-control" value="${this.escapeHtml(cfg.connection.base_url || '')}" placeholder="http://localhost:11434" style="font-size: 11px; padding: 4px 8px;">
+            </div>
+            <div class="form-group">
+              <label for="cfg-sf-api-key" style="font-size: 11px;">API Key</label>
+              <input type="password" id="cfg-sf-api-key" class="form-control" value="${this.escapeHtml(cfg.connection.api_key || '')}" placeholder="Required for Gemini / OpenAI" style="font-size: 11px; padding: 4px 8px;">
+            </div>
+          `}
+        </div>
+
+        <!-- Generated Python Steps & Code Inspector -->
+        <div class="cfg-section" style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="cfg-section-title" style="font-weight: 600; color: var(--text-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Output Transformations & Code (Port T)</div>
+            <button type="button" id="btn-toggle-custom-code" class="btn btn-sm btn-link" style="font-size: 10px; color: #8b5cf6; padding: 0; text-decoration: underline; background: none; border: none; cursor: pointer;">
+              ${cfg.custom_code ? 'Edit Custom Script' : 'Custom Script Override'}
+            </button>
+          </div>
+
+          <div id="sf-steps-container" style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-surface-elevated, rgba(0,0,0,0.1)); font-size: 11px; color: var(--text-muted);">
+              Run workflow or click <strong>Preview Steps</strong> above to view synthesized Python transformations emitted on output anchor <strong>T</strong>.
+            </div>
+          </div>
+
+          <div id="sf-custom-code-box" style="display: ${cfg.custom_code ? 'flex' : 'none'}; flex-direction: column; gap: 4px;">
+            <label for="cfg-sf-custom-code" style="font-size: 11px; font-weight: 500;">Custom Python Script Override (operates on <code>df</code>):</label>
+            <textarea id="cfg-sf-custom-code" class="form-control font-mono" rows="4" style="font-size: 11px; padding: 6px 8px;" placeholder="# e.g. df = df.rename(columns={'old': 'new'})&#10;# df['Revenue'] = df['Revenue'].astype(float)">${this.escapeHtml(cfg.custom_code)}</textarea>
+            <span class="form-hint" style="font-size: 10px; color: var(--text-muted);">
+              When provided, this code executes directly against source data, overriding AI synthesis.
+            </span>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    // Event Bindings
+    container.querySelector('#cfg-sf-max-transforms').addEventListener('change', (e) => {
+      cfg.max_transformations = parseInt(e.target.value, 10) || 5;
+      saveChanges();
+    });
+
+    container.querySelector('#cfg-sf-only-target').addEventListener('change', (e) => {
+      cfg.only_target_columns = e.target.checked;
+      saveChanges();
+    });
+
+    container.querySelector('#cfg-sf-terms').addEventListener('change', (e) => {
+      cfg.terms_accepted = e.target.checked;
+      saveChanges();
+    });
+
+    if (!modelConn) {
+      container.querySelector('#cfg-sf-provider').addEventListener('change', (e) => {
+        cfg.provider_type = e.target.value;
+        if (!cfg.connection) cfg.connection = {};
+        if (cfg.provider_type === 'ollama') cfg.connection.base_url = 'http://localhost:11434';
+        else if (cfg.provider_type === 'lm_studio') cfg.connection.base_url = 'http://localhost:1234/v1';
+        else if (cfg.provider_type === 'openai') cfg.connection.base_url = 'https://api.openai.com/v1';
+        else if (cfg.provider_type === 'gemini') cfg.connection.base_url = 'https://generativelanguage.googleapis.com';
+        const urlInput = container.querySelector('#cfg-sf-base-url');
+        if (urlInput) urlInput.value = cfg.connection.base_url;
+        saveChanges();
+      });
+
+      container.querySelector('#cfg-sf-model').addEventListener('input', (e) => {
+        cfg.model = e.target.value.trim();
+        saveChanges();
+      });
+
+      container.querySelector('#cfg-sf-base-url').addEventListener('input', (e) => {
+        if (!cfg.connection) cfg.connection = {};
+        cfg.connection.base_url = e.target.value.trim();
+        saveChanges();
+      });
+
+      container.querySelector('#cfg-sf-api-key').addEventListener('input', (e) => {
+        if (!cfg.connection) cfg.connection = {};
+        cfg.connection.api_key = e.target.value.trim();
+        saveChanges();
+      });
+    }
+
+    // Toggle custom code override
+    const btnToggleCode = container.querySelector('#btn-toggle-custom-code');
+    const customCodeBox = container.querySelector('#sf-custom-code-box');
+    const customCodeArea = container.querySelector('#cfg-sf-custom-code');
+
+    btnToggleCode.addEventListener('click', () => {
+      const isVisible = customCodeBox.style.display !== 'none';
+      customCodeBox.style.display = isVisible ? 'none' : 'flex';
+      btnToggleCode.textContent = isVisible ? 'Custom Script Override' : 'Hide Custom Script';
+    });
+
+    customCodeArea.addEventListener('input', (e) => {
+      cfg.custom_code = e.target.value;
+      saveChanges();
+    });
+
+    // Run standalone
+    container.querySelector('#btn-schema-fit-standalone').addEventListener('click', () => {
+      if (this.canvas && typeof this.canvas.runSingleNode === 'function') {
+        this.canvas.runSingleNode(node.id);
+      } else if (window.appWorkflowRunner) {
+        window.appWorkflowRunner.runWorkflow();
+      }
+    });
+
+    // Preview steps
+    const btnPreview = container.querySelector('#btn-schema-fit-preview');
+    const stepsContainer = container.querySelector('#sf-steps-container');
+
+    btnPreview.addEventListener('click', async () => {
+      btnPreview.disabled = true;
+      btnPreview.textContent = 'Generating...';
+      stepsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-muted); font-size: 11px;">Synthesizing transformation steps...</div>';
+
+      try {
+        const payload = {
+          config: cfg,
+          target_node_id: targetConn ? (targetConn.source || targetConn.from_node) : null,
+          target_port: targetConn ? (targetConn.sourceHandle || targetConn.from_port || 'O') : 'O',
+          source_node_id: sourceConn ? (sourceConn.source || sourceConn.from_node) : null,
+          source_port: sourceConn ? (sourceConn.sourceHandle || sourceConn.from_port || 'O') : 'O',
+          model_node_id: modelConn ? (modelConn.source || modelConn.from_node) : null,
+          model_port: modelConn ? (modelConn.sourceHandle || modelConn.from_port || 'M') : 'M',
+        };
+
+        const res = await fetch('/api/ai/schema-fit/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success && data.steps && data.steps.length > 0) {
+          stepsContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              ${data.steps.map((s, idx) => `
+                <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; background: var(--bg-surface-elevated, rgba(0,0,0,0.15));">
+                  <div style="font-weight: 600; color: #8b5cf6; font-size: 11px; margin-bottom: 4px;">
+                    Step ${idx + 1}: ${this.escapeHtml(s['Transformation Step'] || s.step || '')}
+                  </div>
+                  <pre style="margin: 0; padding: 6px 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-family: monospace; font-size: 10px; color: #a5f3fc; overflow-x: auto; white-space: pre-wrap;">${this.escapeHtml(s['Code'] || s.code || '')}</pre>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          stepsContainer.innerHTML = `
+            <div style="padding: 8px 10px; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; background: rgba(239,68,68,0.06); color: #ef4444; font-size: 11px;">
+              ${this.escapeHtml(data.message || data.error || 'No preview available. Ensure upstream Target and Source nodes have run.')}
+            </div>
+          `;
+        }
+      } catch (err) {
+        stepsContainer.innerHTML = `
+          <div style="padding: 8px 10px; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; background: rgba(239,68,68,0.06); color: #ef4444; font-size: 11px;">
+            Preview request failed: ${this.escapeHtml(err.message)}
+          </div>
+        `;
+      } finally {
+        btnPreview.disabled = false;
+        btnPreview.textContent = 'Preview Steps';
+      }
+    });
+  }
+
+  // ====================================================================
+  // LLM Override Tool Configuration
+  // ====================================================================
+  renderLLMOverrideConfig(container, node) {
+    if (!node.config) node.config = {};
+    const cfg = node.config;
+
+    cfg.provider_type = cfg.provider_type || 'ollama';
+    cfg.connection = cfg.connection || {};
+    if (!cfg.connection.base_url) {
+      if (cfg.provider_type === 'ollama') cfg.connection.base_url = 'http://localhost:11434';
+      else if (cfg.provider_type === 'lm_studio') cfg.connection.base_url = 'http://localhost:1234/v1';
+      else if (cfg.provider_type === 'openai') cfg.connection.base_url = 'https://api.openai.com/v1';
+      else if (cfg.provider_type === 'gemini') cfg.connection.base_url = 'https://generativelanguage.googleapis.com';
+    }
+    cfg.connection.api_key = cfg.connection.api_key || '';
+    cfg.model = cfg.model || (cfg.provider_type === 'ollama' ? 'llama3.2' : (cfg.provider_type === 'gemini' ? 'gemini-2.0-flash' : 'gpt-4o-mini'));
+    cfg.temperature = cfg.temperature !== undefined ? parseFloat(cfg.temperature) : 0.3;
+    cfg.max_tokens = cfg.max_tokens !== undefined ? parseInt(cfg.max_tokens, 10) : 1024;
+    cfg.top_p = cfg.top_p !== undefined ? parseFloat(cfg.top_p) : 1.0;
+    cfg.timeout_seconds = cfg.timeout_seconds !== undefined ? parseFloat(cfg.timeout_seconds) : 30.0;
+
+    const saveChanges = () => {
+      if (this.canvas) this.canvas.onWorkflowChange();
+      if (window.appTabManager) window.appTabManager.markCurrentTabDirty();
+    };
+
+    container.innerHTML = `
+      <div class="llm-override-config-wrapper" style="display: flex; flex-direction: column; gap: 14px; font-size: 12px;">
+
+        <!-- Header -->
+        <div class="cfg-section" style="border: 1px solid rgba(139,92,246,0.35); border-radius: 6px; padding: 10px 12px; background: rgba(139,92,246,0.08); display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-weight: 600; color: #8b5cf6; font-size: 13px;">LLM Override</span>
+            <span class="badge" style="background: rgba(139,92,246,0.25); color: #c4b5fd; font-size: 10px; padding: 1px 6px; border-radius: 4px;">AI Connection</span>
+          </div>
+          <p style="margin: 0; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+            Centralizes LLM connection parameters. Connect its <strong>M</strong> output anchor to the <strong>M</strong> input anchor of <strong>Schema Fit</strong> or other AI tools to override model settings.
+          </p>
+        </div>
+
+        <!-- Connection Settings -->
+        <div class="cfg-section" style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="form-group">
+            <label for="cfg-lo-provider" style="font-weight: 500;">Provider</label>
+            <select id="cfg-lo-provider" class="form-control" style="font-size: 12px;">
+              <option value="ollama" ${cfg.provider_type === 'ollama' ? 'selected' : ''}>Ollama (Local / Open-Source)</option>
+              <option value="gemini" ${cfg.provider_type === 'gemini' ? 'selected' : ''}>Google Gemini</option>
+              <option value="openai" ${cfg.provider_type === 'openai' ? 'selected' : ''}>OpenAI (Official)</option>
+              <option value="lm_studio" ${cfg.provider_type === 'lm_studio' ? 'selected' : ''}>LM Studio / LocalAI (OpenAI-compatible)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="cfg-lo-model" style="font-weight: 500;">Model Name</label>
+            <input type="text" id="cfg-lo-model" class="form-control" value="${this.escapeHtml(cfg.model)}" placeholder="e.g. llama3.2, gpt-4o-mini, gemini-2.0-flash" style="font-size: 12px;">
+          </div>
+
+          <div class="form-group">
+            <label for="cfg-lo-base-url" style="font-weight: 500;">Base URL</label>
+            <input type="text" id="cfg-lo-base-url" class="form-control" value="${this.escapeHtml(cfg.connection.base_url || '')}" placeholder="http://localhost:11434" style="font-size: 12px;">
+          </div>
+
+          <div class="form-group">
+            <label for="cfg-lo-api-key" style="font-weight: 500;">API Key</label>
+            <input type="password" id="cfg-lo-api-key" class="form-control" value="${this.escapeHtml(cfg.connection.api_key || '')}" placeholder="sk-..." style="font-size: 12px;">
+            <span class="form-hint" style="font-size: 10px; color: var(--text-muted);">Required for cloud providers (Gemini, OpenAI).</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="form-group">
+              <label for="cfg-lo-temp" style="font-weight: 500;">Temperature (${cfg.temperature})</label>
+              <input type="range" id="cfg-lo-temp" min="0" max="1" step="0.05" value="${cfg.temperature}" style="width: 100%;">
+            </div>
+            <div class="form-group">
+              <label for="cfg-lo-max-tokens" style="font-weight: 500;">Max Tokens</label>
+              <input type="number" id="cfg-lo-max-tokens" class="form-control" min="128" max="8192" value="${cfg.max_tokens}" style="font-size: 12px;">
+            </div>
+          </div>
+
+          <div style="margin-top: 4px;">
+            <button type="button" id="btn-lo-test-conn" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              Test Connection
+            </button>
+            <span id="lo-test-status" style="margin-left: 8px; font-size: 11px;"></span>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    // Event Bindings
+    container.querySelector('#cfg-lo-provider').addEventListener('change', (e) => {
+      cfg.provider_type = e.target.value;
+      if (!cfg.connection) cfg.connection = {};
+      if (cfg.provider_type === 'ollama') cfg.connection.base_url = 'http://localhost:11434';
+      else if (cfg.provider_type === 'lm_studio') cfg.connection.base_url = 'http://localhost:1234/v1';
+      else if (cfg.provider_type === 'openai') cfg.connection.base_url = 'https://api.openai.com/v1';
+      else if (cfg.provider_type === 'gemini') cfg.connection.base_url = 'https://generativelanguage.googleapis.com';
+      container.querySelector('#cfg-lo-base-url').value = cfg.connection.base_url;
+      saveChanges();
+    });
+
+    container.querySelector('#cfg-lo-model').addEventListener('input', (e) => {
+      cfg.model = e.target.value.trim();
+      saveChanges();
+    });
+
+    container.querySelector('#cfg-lo-base-url').addEventListener('input', (e) => {
+      if (!cfg.connection) cfg.connection = {};
+      cfg.connection.base_url = e.target.value.trim();
+      saveChanges();
+    });
+
+    container.querySelector('#cfg-lo-api-key').addEventListener('input', (e) => {
+      if (!cfg.connection) cfg.connection = {};
+      cfg.connection.api_key = e.target.value.trim();
+      saveChanges();
+    });
+
+    const tempSlider = container.querySelector('#cfg-lo-temp');
+    tempSlider.addEventListener('input', (e) => {
+      cfg.temperature = parseFloat(e.target.value);
+      tempSlider.previousElementSibling.textContent = `Temperature (${cfg.temperature})`;
+      saveChanges();
+    });
+
+    container.querySelector('#cfg-lo-max-tokens').addEventListener('change', (e) => {
+      cfg.max_tokens = parseInt(e.target.value, 10) || 1024;
+      saveChanges();
+    });
+
+    const btnTest = container.querySelector('#btn-lo-test-conn');
+    const statusText = container.querySelector('#lo-test-status');
+
+    btnTest.addEventListener('click', async () => {
+      btnTest.disabled = true;
+      statusText.innerHTML = '<span style="color: var(--text-muted);">Testing connection...</span>';
+      try {
+        const res = await fetch('/api/ai/test-connection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider_type: cfg.provider_type,
+            connection: cfg.connection || {}
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusText.innerHTML = `<span style="color: #22c55e;">✓ Connection successful! (${data.models_available || 0} models available)</span>`;
+        } else {
+          statusText.innerHTML = `<span style="color: #ef4444;">✕ ${this.escapeHtml(data.message || 'Connection failed')}</span>`;
+        }
+      } catch (err) {
+        statusText.innerHTML = `<span style="color: #ef4444;">✕ Error: ${this.escapeHtml(err.message)}</span>`;
+      } finally {
+        btnTest.disabled = false;
+      }
     });
   }
 

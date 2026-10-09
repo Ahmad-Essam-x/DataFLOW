@@ -1,50 +1,38 @@
 {
-  "name": "Data Quality Audit",
-  "description": "Profiles a dataset for nulls, type inconsistencies, duplicates, and outliers. Separates clean records from flagged ones and produces a quality audit summary report.",
+  "name": "Data Quality Audit & Hygiene Scorecard",
+  "description": "Profiles uncurated customer records for nulls, irregular text casing, whitespace padding, and duplicate emails. Separates clean records from flagged accounts and produces an executive audit scorecard.",
   "category": "data_quality",
   "tags": [
-    "data quality",
+    "data_quality",
     "profiling",
+    "clean",
+    "unique",
     "nulls",
-    "duplicates",
-    "audit",
-    "validation"
+    "audit"
   ],
   "difficulty": "beginner",
   "containers": [
     {
       "id": "ctr_dq1",
-      "title": "Step 1 - Ingest & Type Inference",
+      "title": "Data Cleansing & Duplicate Isolation",
       "x": 60,
       "y": 60,
-      "width": 480,
-      "height": 300,
-      "color": "rgba(16,185,129,0.07)",
+      "width": 860,
+      "height": 380,
+      "color": "rgba(16, 185, 129, 0.08)",
       "headerColor": "#10b981",
       "collapsed": false,
       "disabled": false
     },
     {
       "id": "ctr_dq2",
-      "title": "Step 2 - Flag Quality Issues",
-      "x": 590,
+      "title": "Validation Gate & Quality Scorecard",
+      "x": 960,
       "y": 60,
-      "width": 460,
-      "height": 300,
-      "color": "rgba(245,158,11,0.07)",
+      "width": 880,
+      "height": 380,
+      "color": "rgba(245, 158, 11, 0.08)",
       "headerColor": "#f59e0b",
-      "collapsed": false,
-      "disabled": false
-    },
-    {
-      "id": "ctr_dq3",
-      "title": "Step 3 - Separate & Report",
-      "x": 1100,
-      "y": 60,
-      "width": 720,
-      "height": 300,
-      "color": "rgba(16,185,129,0.07)",
-      "headerColor": "#10b981",
       "collapsed": false,
       "disabled": false
     }
@@ -52,11 +40,11 @@
   "comments": [
     {
       "id": "comment_dq1",
-      "text": "### Data Quality Audit Pipeline\n- **Auto Field**: Detects and corrects data types automatically\n- **Formula**: Adds `HasNullKey`, `IsDuplicate` flag columns\n- **Unique**: Separates duplicate records from unique ones\n- **Filter**: Routes flagged records to review queue\n- **Summarize**: Counts issues by type for the audit summary\n\n> Replace `KeyColumn` in the filter conditions with your actual primary key column name.",
+      "text": "### Data Quality Assurance Pipeline\n- **Auto Field**: Detects optimal column data types.\n- **Data Clean**: Strips whitespace padding and standardizes State casing.\n- **Unique**: Isolates duplicate customer accounts sharing the same email address.\n- **Formula**: Flags incomplete accounts missing Income or Phone credentials.\n- **Filter**: Routes validated records to clean storage and flags errors for audit.",
       "x": 60,
-      "y": 380,
+      "y": 470,
       "width": 500,
-      "height": 180,
+      "height": 160,
       "color": "#10b981"
     }
   ],
@@ -64,11 +52,11 @@
     {
       "id": "node_dq_in",
       "type": "input_data",
-      "name": "Input Dataset (CSV or Excel)",
+      "name": "Input Raw Accounts (CSV)",
       "x": 100,
       "y": 170,
       "config": {
-        "file_path": "your_data.csv",
+        "file_path": "dirty_customer_data.csv",
         "file_type": "csv",
         "delimiter": ",",
         "has_header": true
@@ -78,88 +66,90 @@
       "id": "node_dq_af",
       "type": "auto_field",
       "name": "Auto Detect Types",
-      "x": 300,
+      "x": 280,
       "y": 170,
       "config": {
         "fields": []
       }
     },
     {
-      "id": "node_dq_formula",
-      "type": "formula",
-      "name": "Flag Null & Issue Records",
-      "x": 630,
+      "id": "node_dq_clean",
+      "type": "clean",
+      "name": "Clean Strings & State",
+      "x": 460,
       "y": 170,
       "config": {
-        "formulas": [
-          {
-            "output_field": "QualityScore",
-            "type": "integer",
-            "expression": "1"
-          },
-          {
-            "output_field": "IssueFlag",
-            "type": "string",
-            "expression": "\"OK\""
-          }
-        ]
+        "columns": [
+          "FullName",
+          "Email",
+          "State"
+        ],
+        "trim_whitespace": true,
+        "case_transformation": "title",
+        "remove_empty_rows": false
       }
     },
     {
       "id": "node_dq_unique",
       "type": "unique",
-      "name": "Identify Duplicates",
-      "x": 840,
+      "name": "Isolate Duplicate Emails",
+      "x": 660,
       "y": 170,
       "config": {
-        "columns": []
+        "columns": [
+          "Email"
+        ]
+      }
+    },
+    {
+      "id": "node_dq_formula",
+      "type": "formula",
+      "name": "Evaluate Completeness",
+      "x": 1000,
+      "y": 170,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "QualityStatus",
+            "type": "string",
+            "expression": "IF(IsNull([AnnualIncome]) OR IsNull([PhoneNumber]), \"Incomplete\", \"Verified\")"
+          }
+        ]
       }
     },
     {
       "id": "node_dq_filter",
       "type": "filter",
-      "name": "Separate Clean Records",
-      "x": 1140,
+      "name": "Route Verified vs Incomplete",
+      "x": 1200,
       "y": 170,
       "config": {
         "mode": "basic",
         "logical_op": "AND",
         "conditions": [
           {
-            "column": "IssueFlag",
-            "operator": "=",
-            "value": "OK"
+            "column": "QualityStatus",
+            "operator": "==",
+            "value": "Verified"
           }
         ]
       }
     },
     {
-      "id": "node_dq_out_clean",
-      "type": "output_data",
-      "name": "Export Clean Records",
-      "x": 1360,
-      "y": 120,
-      "config": {
-        "filename": "clean_records",
-        "format": "csv",
-        "write_mode": "overwrite"
-      }
-    },
-    {
-      "id": "node_dq_summarize",
+      "id": "node_dq_sum",
       "type": "summarize",
-      "name": "Audit Summary by Issue Type",
-      "x": 1360,
-      "y": 260,
+      "name": "Quality Audit Scorecard",
+      "x": 1400,
+      "y": 280,
       "config": {
         "actions": [
           {
-            "field": "IssueFlag",
+            "field": "QualityStatus",
             "action": "GroupBy",
-            "output_name": "IssueType"
+            "output_name": "QualityStatus"
           },
           {
-            "field": "IssueFlag",
+            "field": "CustomerID",
             "action": "Count",
             "output_name": "RecordCount"
           }
@@ -167,23 +157,38 @@
       }
     },
     {
-      "id": "node_dq_out_report",
-      "type": "output_data",
-      "name": "Export Quality Report",
-      "x": 1580,
-      "y": 260,
+      "id": "node_dq_sort",
+      "type": "sort",
+      "name": "Sort Scorecard",
+      "x": 1600,
+      "y": 280,
       "config": {
-        "filename": "data_quality_audit_report",
-        "format": "xlsx",
+        "sort_by": [
+          {
+            "column": "RecordCount",
+            "ascending": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_dq_out",
+      "type": "output_data",
+      "name": "Export Verified Accounts",
+      "x": 1420,
+      "y": 140,
+      "config": {
+        "filename": "verified_customer_accounts",
+        "format": "csv",
         "write_mode": "overwrite"
       }
     },
     {
       "id": "node_dq_browse",
       "type": "browse",
-      "name": "Preview Quality Summary",
-      "x": 1580,
-      "y": 370,
+      "name": "Browse Clean Dataset",
+      "x": 1620,
+      "y": 140,
       "config": {}
     }
   ],
@@ -199,12 +204,12 @@
       "id": "cdq2",
       "source": "node_dq_af",
       "sourceHandle": "O",
-      "target": "node_dq_formula",
+      "target": "node_dq_clean",
       "targetHandle": "I"
     },
     {
       "id": "cdq3",
-      "source": "node_dq_formula",
+      "source": "node_dq_clean",
       "sourceHandle": "O",
       "target": "node_dq_unique",
       "targetHandle": "I"
@@ -213,35 +218,42 @@
       "id": "cdq4",
       "source": "node_dq_unique",
       "sourceHandle": "U",
-      "target": "node_dq_filter",
+      "target": "node_dq_formula",
       "targetHandle": "I"
     },
     {
       "id": "cdq5",
-      "source": "node_dq_filter",
-      "sourceHandle": "T",
-      "target": "node_dq_out_clean",
+      "source": "node_dq_formula",
+      "sourceHandle": "O",
+      "target": "node_dq_filter",
       "targetHandle": "I"
     },
     {
       "id": "cdq6",
       "source": "node_dq_filter",
-      "sourceHandle": "F",
-      "target": "node_dq_summarize",
+      "sourceHandle": "T",
+      "target": "node_dq_out",
       "targetHandle": "I"
     },
     {
       "id": "cdq7",
-      "source": "node_dq_summarize",
+      "source": "node_dq_out",
       "sourceHandle": "O",
-      "target": "node_dq_out_report",
+      "target": "node_dq_browse",
       "targetHandle": "I"
     },
     {
       "id": "cdq8",
-      "source": "node_dq_summarize",
+      "source": "node_dq_formula",
       "sourceHandle": "O",
-      "target": "node_dq_browse",
+      "target": "node_dq_sum",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cdq9",
+      "source": "node_dq_sum",
+      "sourceHandle": "O",
+      "target": "node_dq_sort",
       "targetHandle": "I"
     }
   ]

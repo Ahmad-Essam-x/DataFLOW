@@ -1,6 +1,15 @@
 {
   "name": "Customer Sales Analysis",
   "description": "Cleans customer records, standardizes order dates with DateTime parsing, calculates net revenues and margins, filters high-value orders, and summarizes regional performance.",
+  "category": "sales",
+  "tags": [
+    "sales",
+    "revenue",
+    "datetime",
+    "summarize",
+    "kpi"
+  ],
+  "difficulty": "beginner",
   "containers": [
     {
       "id": "container_sales_1",
@@ -21,7 +30,7 @@
       "text": "### Executive Sales KPIs\n- Auto Field optimizes incoming types automatically.\n- Data Clean trims whitespace and title-cases region names.\n- DateTime normalizes dates into ISO format.\n- Formula calculates Net Revenue after discounts.\n- High-value transactions (> $500) are aggregated by Region and Segment.\n- Multi-Row Formula calculates running cumulative revenues across segments.",
       "x": 60,
       "y": 460,
-      "width": 420,
+      "width": 440,
       "height": 140,
       "color": "#eab308"
     }

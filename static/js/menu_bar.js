@@ -274,6 +274,12 @@ class MenuBar {
   }
 
   handleAction(action) {
+    if (action === 'options:database-connections') {
+      if (window.openDatabaseConnectionsModal) {
+        window.openDatabaseConnectionsModal();
+        return;
+      }
+    }
     if (window.app && typeof window.app.executeCommand === 'function') {
       window.app.executeCommand(action);
     } else {

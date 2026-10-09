@@ -296,7 +296,7 @@ class Canvas {
         this.draggingNode.y = newY;
         this.updateNodeElementPosition(this.draggingNode);
       }
-      this.renderWires();
+      this.renderWires(false);
     } else if (this.draggingContainer) {
       const mouse = this.getCanvasCoords(clientX, clientY);
       const newX = this.snapCoord(mouse.x - this.dragOffset.x);
@@ -321,7 +321,7 @@ class Canvas {
           this.updateNodeElementPosition(n);
         }
       });
-      this.renderWires();
+      this.renderWires(false);
     } else if (this.draggingComment) {
       const mouse = this.getCanvasCoords(clientX, clientY);
       this.draggingComment.x = this.snapCoord(mouse.x - this.dragOffset.x);
@@ -791,7 +791,7 @@ class Canvas {
           }
         }
 
-        this.renderWires();
+        this.renderWires(false);
         return;
       }
 
@@ -826,7 +826,7 @@ class Canvas {
           }
         });
 
-        this.renderWires();
+        this.renderWires(false);
         return;
       }
 
@@ -845,7 +845,7 @@ class Canvas {
           }
         }
         this.updateContainerEnclosedNodes(this.resizingContainer);
-        this.renderWires();
+        this.renderWires(false);
         return;
       }
 
@@ -3711,6 +3711,11 @@ class Canvas {
 
     switch (node.type) {
       case 'input_data': {
+        if (cfg.source_type === 'database') {
+          if (cfg.table) return trunc(`DB: ${cfg.table}`);
+          if (cfg.query) return trunc(`SQL: ${cfg.query.replace(/\s+/g, ' ').trim()}`);
+          return 'DB Source';
+        }
         // Strip 8-hex UUID prefix added by the upload handler (e.g. "2a172b8e_file.csv")
         let name = basename(cfg.file_path || cfg.filename || '');
         name = name.replace(/^[0-9a-f]{8}_/i, '');
@@ -4069,6 +4074,11 @@ class Canvas {
     if (nodeType === 'append_fields') {
       return portName === 'T' ? 'Target (T): Primary stream to receive appended fields' : 'Source (S): Source fields stream to duplicate across target';
     }
+    if (nodeType === 'schema_fit') {
+      if (portName === 'M') return 'Model (M): Connect LLM Override tool for AI connection settings';
+      if (portName === 'T') return 'Target (T): Reference dataset defining desired output schema & columns';
+      if (portName === 'S') return 'Source (S): Unformatted incoming dataset to reshape';
+    }
     return `Input Port (${portName})`;
   }
 
@@ -4089,6 +4099,13 @@ class Canvas {
     }
     if (nodeType === 'find_replace') {
       return 'Output (O): Replaced or appended data stream';
+    }
+    if (nodeType === 'schema_fit') {
+      if (portName === 'T') return 'Transformations (T): Step-by-step Python code used to transform data';
+      if (portName === 'D') return 'Data (D): Transformed Source data matching Target schema';
+    }
+    if (nodeType === 'llm_override') {
+      if (portName === 'M') return 'Model (M): Model connection settings for downstream AI tools';
     }
     return `Output Port (${portName})`;
   }
@@ -4304,8 +4321,13 @@ class Canvas {
     });
   }
 
-  renderWires() {
-    this._scheduleWireRender();
+  renderWires(immediate = true) {
+    if (immediate) {
+      this._wireRafPending = false;
+      this._doRenderWires();
+    } else {
+      this._scheduleWireRender();
+    }
   }
 
   _doRenderWires() {

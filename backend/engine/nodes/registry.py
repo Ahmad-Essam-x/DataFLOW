@@ -302,6 +302,26 @@ TOOL_METADATA: List[Dict[str, Any]] = [
         "description": "Process each record through an LLM with a configurable prompt"
     },
     {
+        "type": "schema_fit",
+        "name": "Schema Fit",
+        "category": "ai",
+        "color": "#8b5cf6",
+        "icon": "sparkles",
+        "inputs": ["M", "T", "S"],
+        "outputs": ["T", "D"],
+        "description": "Transform Source data to match Target schema using AI-generated Python steps"
+    },
+    {
+        "type": "llm_override",
+        "name": "LLM Override",
+        "category": "ai",
+        "color": "#8b5cf6",
+        "icon": "cpu",
+        "inputs": [],
+        "outputs": ["M"],
+        "description": "Configure and pass LLM connection settings to AI tools"
+    },
+    {
         "type": "tool_container",
         "name": "Tool Container",
         "category": "documentation",

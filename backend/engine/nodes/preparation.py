@@ -36,7 +36,7 @@ class SelectNode(BaseNode):
         elif "select_unknown" in self.config:
             select_unknown = bool(self.config["select_unknown"])
         else:
-            select_unknown = False
+            select_unknown = True
 
         out_df = pd.DataFrame()
         processed_orig_cols = set()
@@ -968,9 +968,9 @@ class MultiRowFormulaNode(BaseNode):
         out_df = df.copy()
         config = self.config or {}
 
-        output_field = str(config.get("output_field", "")).strip() or "New_Field"
-        is_new_field = config.get("is_new_field", True)
-        output_type = str(config.get("output_type", "none")).strip().lower()
+        output_field = str(config.get("output_field") or config.get("new_field_name") or config.get("field_name") or config.get("field") or "").strip() or "New_Field"
+        is_new_field = config.get("is_new_field", True) if "is_new_field" in config else (config.get("create_new_field", True) or config.get("new_field", True))
+        output_type = str(config.get("output_type") or config.get("type") or "none").strip().lower()
         boundary_mode = str(config.get("values_for_rows_not_exist", "null")).strip().lower()
         group_by = config.get("group_by_fields") or config.get("group_by", [])
         if isinstance(group_by, str) and group_by:
@@ -1179,10 +1179,10 @@ class MultiFieldFormulaNode(BaseNode):
 
         selected_fields = config.get("selected_fields") or config.get("fields") or []
         type_filter = str(config.get("field_type_filter", "all")).strip().lower()
-        output_mode = str(config.get("output_mode", "update")).strip().lower()
-        output_prefix = str(config.get("output_prefix", "") or "")
-        output_suffix = str(config.get("output_suffix", "") or "")
-        output_type = str(config.get("output_type", "none")).strip().lower()
+        output_mode = str(config.get("output_mode", "create_new" if config.get("output_new_fields") else "update")).strip().lower()
+        output_prefix = str(config.get("output_prefix") or config.get("prefix") or "")
+        output_suffix = str(config.get("output_suffix") or config.get("suffix") or "")
+        output_type = str(config.get("output_type") or config.get("type") or "none").strip().lower()
         expr = str(config.get("expression", "")).strip()
 
         if not expr:

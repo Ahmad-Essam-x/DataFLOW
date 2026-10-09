@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for Template Library API routes.
 """
 import json
@@ -150,3 +150,71 @@ class TestDeleteTemplate:
             pytest.skip("No curated templates")
         res = client.delete(f"/api/templates/{curated[0]['file']}")
         assert res.status_code == 404
+
+
+class TestTemplateToolCoverage:
+    """Verifies that the curated templates cover 100% of all engine tool types."""
+
+    def test_all_nine_curated_templates_present(self, client):
+        res = client.get("/api/templates")
+        assert res.status_code == 200
+        data = json.loads(res.data)
+        curated_files = [t["file"] for t in data.get("templates", []) if not t["is_user"]]
+        expected = [
+            "customer_rfm_segmentation.json",
+            "customer_sentiment_analysis.json",
+            "data_quality_audit.json",
+            "inventory_supplier_reconciliation.json",
+            "invoice_data_extraction.json",
+            "marketing_campaign_attribution.json",
+            "multijoin_expense_reconciliation.json",
+            "sales_customer_enrichment.json",
+            "sales_pipeline_report.json"
+        ]
+        for exp in expected:
+            assert exp in curated_files, f"Expected curated template '{exp}' was not found in template list"
+
+    def test_complete_engine_tool_coverage(self, client):
+        from backend.engine.nodes.registry import NODE_REGISTRY
+        registered_types = set(NODE_REGISTRY.keys()) - {"schema_fit", "llm_override"}
+
+        res = client.get("/api/templates")
+        data = json.loads(res.data)
+        curated = [t for t in data.get("templates", []) if not t["is_user"]]
+
+        covered_types = set()
+        for tpl in curated:
+            r = client.get(f"/api/templates/{tpl['file']}")
+            assert r.status_code == 200
+            wf_data = json.loads(r.data)
+            for node in wf_data.get("nodes", []):
+                covered_types.add(node.get("type"))
+
+        missing = registered_types - covered_types
+        assert not missing, f"The following engine tools are not covered by any curated template: {missing}"
+
+
+class TestTemplateExecution:
+    """Verifies that every single curated template executes with 100% success."""
+
+    def test_execute_all_curated_templates(self, client):
+        from backend.app import executor
+
+        res = client.get("/api/templates")
+        data = json.loads(res.data)
+        curated = [t for t in data.get("templates", []) if not t["is_user"]]
+
+        for tpl in curated:
+            r = client.get(f"/api/templates/{tpl['file']}")
+            wf_data = json.loads(r.data)
+            ctx = executor.get_run_context(f"test_run_{tpl['id']}")
+            result = ctx.run(wf_data)
+
+            errors = [
+                f"{nid}: {nr.get('error')}"
+                for nid, nr in result.node_results.items()
+                if nr.get("status") == "error"
+            ]
+            assert not errors, f"Template '{tpl['file']}' failed execution with errors: {errors}"
+            assert result.success is True, f"Template '{tpl['file']}' execution was not marked success: {result.error}"
+

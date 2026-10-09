@@ -55,9 +55,12 @@ def can_use_duckdb(active_nodes: List[Dict[str, Any]]) -> bool:
     for node in active_nodes:
         if node["type"] not in _COMPILABLE_TYPES:
             return False
-        # Reject Excel inputs upfront — fall back to pandas
+        # Reject Excel inputs and database inputs upfront — fall back to pandas AMP engine
         if node["type"] == "input_data":
-            fp = node.get("config", {}).get("file_path", "")
+            cfg = node.get("config", {})
+            if cfg.get("source_type") == "database":
+                return False
+            fp = cfg.get("file_path", "")
             if detect_format(fp) == "excel":
                 return False
 

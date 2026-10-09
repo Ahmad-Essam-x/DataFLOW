@@ -427,6 +427,12 @@ class ResultsPanel {
   }
 
   getPortDisplayLabel(port) {
+    const node = (window.appCanvas && window.appCanvas.nodes) ? window.appCanvas.nodes.find(n => n.id === this.currentNodeId) : null;
+    const nodeType = node ? node.type : '';
+    if (nodeType === 'schema_fit') {
+      if (port === 'T') return 'Transformations (T)';
+      if (port === 'D') return 'Data (D)';
+    }
     switch (port) {
       case 'T': return 'True (T)';
       case 'F': return 'False (F)';
@@ -435,6 +441,7 @@ class ResultsPanel {
       case 'R': return 'Right Unmatched (R)';
       case 'U': return 'Unique (U)';
       case 'D': return 'Duplicates (D)';
+      case 'M': return 'Model (M)';
       default: return `Output (${port})`;
     }
   }
@@ -610,7 +617,7 @@ class ResultsPanel {
                 </div>
                 <div class="th-content">
                   <div class="th-title-row">
-                    <span class="th-name" title="${this.escapeHtml(c.name)} (Click to select column, right-click for options)">${inputPillHtml}${this.escapeHtml(c.name)}</span>
+                    <span class="th-name" title="${this.escapeHtml(c.name)} (Click to select column, right-click for options)">${this.escapeHtml(c.name)}</span>
                     <div class="th-actions">
                       <button type="button" class="th-lineage-btn" data-col="${this.escapeAttr(c.name)}" title="Inspect Column Lineage (${this.escapeAttr(c.name)})">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -629,7 +636,10 @@ class ResultsPanel {
                       </button>
                     </div>
                   </div>
-                  <span class="th-dtype">${this.formatAlteryxTypeBadge(c.dtype)}</span>
+                  <div class="th-subtitle-row">
+                    ${inputPillHtml}
+                    <span class="th-dtype">${this.formatAlteryxTypeBadge(c.dtype)}</span>
+                  </div>
                 </div>
                 ${hist.length > 0 ? `
                   <div class="col-hist-sparkline" title="Distribution for ${this.escapeHtml(c.name)}">

@@ -78,11 +78,22 @@ def delete_connection(conn_id: str):
 # Test / List tables / Preview
 # ------------------------------------------------------------------
 
+@bp.route("/api/connections/test", methods=["POST"])
+def test_draft_connection():
+    """Test connectivity for unsaved/draft connection parameters."""
+    body = request.get_json(force=True) or {}
+    conn = body.get("connection", body)
+    password = body.get("password") or conn.get("password")
+    result = _mgr().test_draft_connection(conn, password=password)
+    status = 200 if result["success"] else 400
+    return jsonify(result), status
+
+
 @bp.route("/api/connections/<conn_id>/test", methods=["POST"])
 def test_connection(conn_id: str):
     result = _mgr().test_connection(conn_id)
     status = 200 if result["success"] else 400
-    return jsonify({"success": result["success"], "error": result["error"]}), status
+    return jsonify(result), status
 
 
 @bp.route("/api/connections/<conn_id>/tables", methods=["GET"])

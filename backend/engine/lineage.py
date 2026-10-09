@@ -313,7 +313,7 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
             if not cols and cfg.get("data") and isinstance(cfg["data"], list) and len(cfg["data"]) > 0 and isinstance(cfg["data"][0], dict):
                 cols = list(cfg["data"][0].keys())
             if isinstance(cols, list):
-                src_path = cfg.get("path") or cfg.get("filename") or ""
+                src_path = cfg.get("file_path") or cfg.get("path") or cfg.get("filename") or ""
                 base_file = os.path.basename(src_path) if src_path else ""
                 for c in cols:
                     c_str = str(c)
@@ -357,14 +357,34 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                     }
 
         elif ntype == "select":
-            fields = cfg.get("fields") or []
+            fields = cfg.get("fields") or cfg.get("columns") or []
             if fields:
+                unknown_item = next(
+                    (f for f in fields if (f.get("original") == "*Unknown" or f.get("name") == "*Unknown" or f.get("field") == "*Unknown")),
+                    None
+                )
+                if unknown_item is not None:
+                    select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                elif "select_unknown" in cfg:
+                    select_unknown = bool(cfg["select_unknown"])
+                else:
+                    select_unknown = True
+
+                configured_origs = set()
                 for f in fields:
-                    if not f.get("selected", True):
+                    orig = f.get("original") or f.get("name") or f.get("field")
+                    if not orig or orig == "*Unknown":
                         continue
-                    orig = f.get("name")
-                    renamed = f.get("rename") or orig
-                    is_renamed = bool(f.get("rename") and f.get("rename") != orig)
+                    configured_origs.add(orig)
+
+                    keep = f.get("keep") if "keep" in f else f.get("selected", True)
+                    if not keep:
+                        continue
+
+                    renamed = (f.get("rename") or orig).strip()
+                    if not renamed:
+                        renamed = orig
+                    is_renamed = bool(renamed != orig)
 
                     up_info = primary_up.get(orig) or primary_up.get(renamed)
                     sources = list(up_info["sources"]) if up_info else ([(primary_up_id, orig)] if primary_up_id else [])
@@ -413,6 +433,28 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                         "root_origins": root_origins,
                         "derivation_tree": derivation_tree
                     }
+
+                # Forward dynamic unknown columns if select_unknown is True
+                if select_unknown:
+                    for orig, up_info in primary_up.items():
+                        if orig not in configured_origs and orig not in node_result:
+                            current_hop = {
+                                "node_id": nid,
+                                "node_name": nname,
+                                "node_type": ntype,
+                                "action": "Pass-through (Dynamic)",
+                                "column": orig,
+                                "detail": f"Dynamic unknown column kept: '{orig}'"
+                            }
+                            clean_hops = _clean_and_order_hops(up_info.get("hops", []), current_hop, topo_order)
+                            node_result[orig] = {
+                                "sources": list(up_info.get("sources", [])),
+                                "category": up_info.get("category", "passthrough"),
+                                "hops": clean_hops,
+                                "ancestor_node_ids": list(dict.fromkeys(up_info.get("ancestor_node_ids", []) + [nid])),
+                                "root_origins": list(up_info.get("root_origins", [])),
+                                "derivation_tree": up_info.get("derivation_tree")
+                            }
             else:
                 for c, info in primary_up.items():
                     current_hop = {
@@ -532,8 +574,15 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                     "root_origins": list(info.get("root_origins", [])),
                     "derivation_tree": info.get("derivation_tree")
                 }
-            out_col = str(cfg.get("output_field") or cfg.get("field") or "New_Field").strip()
+            out_col = str(cfg.get("output_field") or cfg.get("new_field_name") or cfg.get("field_name") or cfg.get("field") or "New_Field").strip()
+            is_new = cfg.get("is_new_field", True) if "is_new_field" in cfg else (cfg.get("create_new_field", True) if "create_new_field" in cfg else (cfg.get("new_field", True) if "new_field" in cfg else True))
             expr = str(cfg.get("expression") or "").strip()
+            group_by = cfg.get("group_by_fields") or cfg.get("group_by", [])
+            if isinstance(group_by, str) and group_by:
+                group_by = [group_by]
+            elif not isinstance(group_by, list):
+                group_by = []
+
             if out_col:
                 raw_refs = re.findall(r'\[([^\]]+)\]', expr)
                 sources = []
@@ -544,10 +593,16 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                 clean_refs = []
                 for r in raw_refs:
                     clean_r = re.sub(r'^(?:Row\s*[+-]?\s*\d+\s*:\s*)', '', r, flags=re.IGNORECASE).strip()
-                    if clean_r.lower() == out_col.lower():
+                    if clean_r.lower() == out_col.lower() and is_new:
                         continue
                     if clean_r not in clean_refs:
                         clean_refs.append(clean_r)
+
+                for g in group_by:
+                    if g not in clean_refs and g != out_col:
+                        clean_refs.append(g)
+
+                for clean_r in clean_refs:
                     up_c = node_result.get(clean_r) or primary_up.get(clean_r)
                     if up_c:
                         sources.extend(up_c.get("sources", []))
@@ -612,9 +667,9 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                     "derivation_tree": info.get("derivation_tree")
                 }
             selected_fields = cfg.get("selected_fields") or cfg.get("fields") or []
-            output_mode = str(cfg.get("output_mode", "update")).lower()
-            output_prefix = str(cfg.get("output_prefix", "") or "")
-            output_suffix = str(cfg.get("output_suffix", "") or "")
+            output_mode = str(cfg.get("output_mode", "create_new" if cfg.get("output_new_fields") else "update")).lower()
+            output_prefix = str(cfg.get("output_prefix") or cfg.get("prefix") or "")
+            output_suffix = str(cfg.get("output_suffix") or cfg.get("suffix") or "")
             expr = str(cfg.get("expression") or "").strip()
 
             target_fields = [f for f in selected_fields if f in primary_up] if selected_fields else list(primary_up.keys())
@@ -797,7 +852,7 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                 }
             }
 
-        elif ntype == "datetime":
+        elif ntype in ("datetime", "date_time"):
             for c, info in primary_up.items():
                 node_result[c] = {
                     "sources": list(info.get("sources", [])),
@@ -807,9 +862,10 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                     "root_origins": list(info.get("root_origins", [])),
                     "derivation_tree": info.get("derivation_tree")
                 }
-            col = cfg.get("field") or cfg.get("column")
-            out_col = cfg.get("output_field") or (f"{col}_DateTime" if col else "DateTime_Out")
-            mode = cfg.get("mode", "parse")
+            col = cfg.get("field") or cfg.get("column") or (list(primary_up.keys())[0] if primary_up else None)
+            mode = cfg.get("conversion_type") or cfg.get("mode", "parse")
+            default_out = f"{col}_DateTime" if mode != "date_to_string" else f"{col}_String"
+            out_col = cfg.get("output_column") or cfg.get("output_field") or (default_out if col else "DateTime_Out")
             up_info = primary_up.get(col, {}) if col else {}
             sources = list(up_info.get("sources", [(primary_up_id, col)] if (primary_up_id and col) else []))
             prior_hops = list(up_info.get("hops", []))
@@ -821,9 +877,9 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                 "node_id": nid,
                 "node_name": nname,
                 "node_type": ntype,
-                "action": f"Date/Time ({mode.title()})",
+                "action": f"Date/Time ({str(mode).title()})",
                 "column": out_col,
-                "detail": f"{mode.title()} from [{col}]" if col else "Date conversion",
+                "detail": f"{str(mode).title()} from [{col}]" if col else "Date conversion",
                 "inputs": [col] if col else []
             }
             clean_hops = _clean_and_order_hops(prior_hops, hop, topo_order)
@@ -835,7 +891,7 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                 "root_origins": _merge_root_origins(root_origins),
                 "derivation_tree": {
                     "node_id": nid, "node_name": nname, "node_type": ntype, "column": out_col,
-                    "action": f"Date/Time ({mode.title()})", "detail": hop["detail"],
+                    "action": f"Date/Time ({str(mode).title()})", "detail": hop["detail"],
                     "inputs": [up_tree] if up_tree else []
                 }
             }
@@ -861,9 +917,10 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                 root_origins = list(up_info.get("root_origins", []))
                 up_tree = up_info.get("derivation_tree")
                 delims = cfg.get("delimiters", ",")
+                root_name = str(cfg.get("root_name") or "").strip()
 
                 for i in range(1, num_cols + 1):
-                    new_col = f"{col}_{i}"
+                    new_col = f"{root_name}{i}" if root_name else f"{col}_{i}"
                     hop = {
                         "node_id": nid,
                         "node_name": nname,
@@ -926,6 +983,9 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                         )
 
         elif ntype == "join":
+            base_joined: Dict[str, Any] = {}
+            col_sources: Dict[str, str] = {}
+
             for pred in node_preds:
                 up_rich = rich_lineage.get(pred["source"], {})
                 is_right = pred.get("target_port") in ("R", "Right")
@@ -939,10 +999,12 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                         "detail": f"Joined from {pred['source']}"
                     }
                     up_tree = info.get("derivation_tree")
-                    if is_right and c in node_result:
+                    if is_right and c in base_joined:
                         right_c = f"Right_{c}"
+                        while right_c in base_joined:
+                            right_c = f"Right_{right_c}"
                         right_hop = {**hop, "column": right_c}
-                        node_result[right_c] = {
+                        base_joined[right_c] = {
                             "sources": list(info.get("sources", [])),
                             "category": "joined",
                             "hops": _clean_and_order_hops(info.get("hops", []), right_hop, topo_order),
@@ -954,8 +1016,9 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                                 "inputs": [up_tree] if up_tree else []
                             }
                         }
-                    elif c not in node_result:
-                        node_result[c] = {
+                        col_sources[right_c] = "R"
+                    elif c not in base_joined:
+                        base_joined[c] = {
                             "sources": list(info.get("sources", [])),
                             "category": "joined" if is_right else info.get("category", "passthrough"),
                             "hops": _clean_and_order_hops(info.get("hops", []), hop, topo_order),
@@ -968,17 +1031,559 @@ def compute_rich_lineage(workflow: Dict[str, Any], target_node_id: Optional[str]
                                 "inputs": [up_tree] if up_tree else []
                             }
                         }
+                        col_sources[c] = "R" if is_right else "L"
                     else:
                         for s in info.get("sources", []):
-                            if s not in node_result[c]["sources"]:
-                                node_result[c]["sources"].append(s)
+                            if s not in base_joined[c]["sources"]:
+                                base_joined[c]["sources"].append(s)
                         for a in info.get("ancestor_node_ids", []):
-                            if a not in node_result[c]["ancestor_node_ids"]:
-                                node_result[c]["ancestor_node_ids"].append(a)
-                        node_result[c]["root_origins"] = _merge_root_origins(
-                            node_result[c].get("root_origins", []),
+                            if a not in base_joined[c]["ancestor_node_ids"]:
+                                base_joined[c]["ancestor_node_ids"].append(a)
+                        base_joined[c]["root_origins"] = _merge_root_origins(
+                            base_joined[c].get("root_origins", []),
                             info.get("root_origins", [])
                         )
+
+            select_fields = cfg.get("select_fields") or cfg.get("fields")
+            if select_fields and isinstance(select_fields, list):
+                unknown_item = next(
+                    (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown" or sf.get("name") == "*Unknown")),
+                    None
+                )
+                if unknown_item is not None:
+                    select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                elif "select_unknown" in cfg:
+                    select_unknown = bool(cfg["select_unknown"])
+                else:
+                    select_unknown = False
+
+                configured_cols = set()
+                available_cols = list(base_joined.keys())
+
+                for sf in select_fields:
+                    orig = sf.get("original") or sf.get("field") or sf.get("name")
+                    if not orig or orig == "*Unknown":
+                        continue
+
+                    sf_source = sf.get("source")
+                    matched_col = None
+                    if sf_source == "R":
+                        if orig in base_joined and col_sources.get(orig) == "R":
+                            matched_col = orig
+                        elif f"Right_{orig}" in base_joined:
+                            matched_col = f"Right_{orig}"
+                    elif sf_source == "L":
+                        if orig in base_joined and col_sources.get(orig) == "L":
+                            matched_col = orig
+                    if not matched_col:
+                        if orig in base_joined:
+                            matched_col = orig
+                        elif f"Right_{orig}" in base_joined:
+                            matched_col = f"Right_{orig}"
+
+                    if not matched_col or matched_col not in base_joined:
+                        continue
+
+                    configured_cols.add(matched_col)
+                    keep = sf.get("keep") if "keep" in sf else sf.get("selected", True)
+                    if not keep:
+                        continue
+
+                    renamed = (sf.get("rename") or matched_col).strip()
+                    if not renamed:
+                        renamed = matched_col
+                    is_renamed = bool(renamed != matched_col)
+
+                    base_info = base_joined[matched_col]
+                    if is_renamed:
+                        rename_hop = {
+                            "node_id": nid, "node_name": nname, "node_type": ntype,
+                            "action": "Renamed in Join", "column": renamed,
+                            "detail": f"Renamed from '{matched_col}' to '{renamed}'"
+                        }
+                        clean_hops = _clean_and_order_hops(base_info.get("hops", []), rename_hop, topo_order)
+                        tree = {
+                            "node_id": nid, "node_name": nname, "node_type": ntype, "column": renamed,
+                            "action": "Renamed in Join", "detail": f"Renamed from '{matched_col}' to '{renamed}'",
+                            "inputs": [base_info.get("derivation_tree")] if base_info.get("derivation_tree") else []
+                        }
+                        node_result[renamed] = {
+                            "sources": list(base_info.get("sources", [])),
+                            "category": "renamed",
+                            "hops": clean_hops,
+                            "ancestor_node_ids": list(base_info.get("ancestor_node_ids", [])),
+                            "root_origins": list(base_info.get("root_origins", [])),
+                            "derivation_tree": tree
+                        }
+                    else:
+                        node_result[matched_col] = base_info
+
+                if select_unknown:
+                    for c in available_cols:
+                        if c not in configured_cols and c not in node_result:
+                            node_result[c] = base_joined[c]
+            else:
+                node_result = base_joined
+
+        elif ntype == "join_multiple":
+            input_ups = [rich_lineage.get(p["source"], {}) for p in node_preds]
+            raw_joined: Dict[str, Any] = {}
+            col_sources_multi: Dict[str, int] = {}
+            occupied = set()
+
+            for in_idx, up_dict in enumerate(input_ups, 1):
+                src_nid = node_preds[in_idx - 1]["source"] if in_idx - 1 < len(node_preds) else f"Input_{in_idx}"
+                for c, info in up_dict.items():
+                    target_name = c
+                    if target_name in occupied:
+                        cand = f"Input{in_idx}_{c}"
+                        while cand in occupied:
+                            cand = f"Input{in_idx}_{cand}"
+                        target_name = cand
+                    occupied.add(target_name)
+
+                    hop = {
+                        "node_id": nid,
+                        "node_name": nname,
+                        "node_type": ntype,
+                        "action": f"Multi-Join (Input {in_idx})",
+                        "column": target_name,
+                        "detail": f"Joined from {src_nid}" + (f" (as '{target_name}')" if target_name != c else "")
+                    }
+                    raw_joined[target_name] = {
+                        "sources": list(info.get("sources", [(src_nid, c)])),
+                        "category": "joined" if in_idx > 1 else info.get("category", "passthrough"),
+                        "hops": _clean_and_order_hops(info.get("hops", []), hop, topo_order),
+                        "ancestor_node_ids": list(dict.fromkeys(info.get("ancestor_node_ids", []) + [nid])),
+                        "root_origins": list(info.get("root_origins", [])),
+                        "derivation_tree": {
+                            "node_id": nid, "node_name": nname, "node_type": ntype, "column": target_name,
+                            "action": f"Multi-Join (Input {in_idx})", "detail": f"Joined from {src_nid}",
+                            "inputs": [info.get("derivation_tree")] if info.get("derivation_tree") else []
+                        }
+                    }
+                    col_sources_multi[target_name] = in_idx
+
+            select_fields = cfg.get("select_fields") or cfg.get("fields")
+            if select_fields and isinstance(select_fields, list):
+                unknown_item = next(
+                    (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown" or sf.get("name") == "*Unknown")),
+                    None
+                )
+                if unknown_item is not None:
+                    select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                elif "select_unknown" in cfg:
+                    select_unknown = bool(cfg["select_unknown"])
+                else:
+                    select_unknown = False
+
+                configured_cols = set()
+                available_cols = list(raw_joined.keys())
+
+                for sf in select_fields:
+                    orig = sf.get("original") or sf.get("field") or sf.get("name")
+                    if not orig or orig == "*Unknown":
+                        continue
+                    sf_src = sf.get("source")
+                    matched_col = None
+                    if sf_src is not None:
+                        cand = f"Input{sf_src}_{orig}"
+                        if cand in raw_joined:
+                            matched_col = cand
+                    if not matched_col:
+                        if orig in raw_joined:
+                            matched_col = orig
+
+                    if not matched_col or matched_col not in raw_joined:
+                        continue
+
+                    configured_cols.add(matched_col)
+                    keep = sf.get("keep") if "keep" in sf else sf.get("selected", True)
+                    if not keep:
+                        continue
+
+                    renamed = (sf.get("rename") or matched_col).strip() or matched_col
+                    is_renamed = bool(renamed != matched_col)
+                    base_info = raw_joined[matched_col]
+
+                    if is_renamed:
+                        rename_hop = {
+                            "node_id": nid, "node_name": nname, "node_type": ntype,
+                            "action": "Renamed in Join Multiple", "column": renamed,
+                            "detail": f"Renamed from '{matched_col}' to '{renamed}'"
+                        }
+                        node_result[renamed] = {
+                            "sources": list(base_info.get("sources", [])),
+                            "category": "renamed",
+                            "hops": _clean_and_order_hops(base_info.get("hops", []), rename_hop, topo_order),
+                            "ancestor_node_ids": list(base_info.get("ancestor_node_ids", [])),
+                            "root_origins": list(base_info.get("root_origins", [])),
+                            "derivation_tree": {
+                                "node_id": nid, "node_name": nname, "node_type": ntype, "column": renamed,
+                                "action": "Renamed in Join Multiple", "detail": f"Renamed from '{matched_col}' to '{renamed}'",
+                                "inputs": [base_info.get("derivation_tree")] if base_info.get("derivation_tree") else []
+                            }
+                        }
+                    else:
+                        node_result[matched_col] = base_info
+
+                if select_unknown:
+                    for c in available_cols:
+                        if c not in configured_cols and c not in node_result:
+                            node_result[c] = raw_joined[c]
+            else:
+                node_result = raw_joined
+
+        elif ntype == "append_fields":
+            t_up = {}
+            s_up = {}
+            t_id = None
+            s_id = None
+            for pred in node_preds:
+                t_port = pred.get("target_port") or "T"
+                if t_port in ("S", "Source"):
+                    s_up = rich_lineage.get(pred["source"], {})
+                    s_id = pred["source"]
+                else:
+                    t_up = rich_lineage.get(pred["source"], {})
+                    t_id = pred["source"]
+            if not s_up and len(node_preds) > 1 and not s_id:
+                s_id = node_preds[1]["source"]
+                s_up = rich_lineage.get(s_id, {})
+            if not t_up and node_preds:
+                t_id = node_preds[0]["source"]
+                t_up = rich_lineage.get(t_id, {})
+
+            prefix = cfg.get("source_prefix", "Source_")
+            raw_appended = {}
+            for c, info in t_up.items():
+                raw_appended[c] = info
+            for c, info in s_up.items():
+                out_name = f"{prefix}{c}" if c in raw_appended else c
+                hop = {
+                    "node_id": nid, "node_name": nname, "node_type": ntype,
+                    "action": "Appended Field (Cartesian)", "column": out_name,
+                    "detail": f"Appended from {s_id or 'Source'}"
+                }
+                raw_appended[out_name] = {
+                    "sources": list(info.get("sources", [(s_id, c)] if s_id else [])),
+                    "category": "joined",
+                    "hops": _clean_and_order_hops(info.get("hops", []), hop, topo_order),
+                    "ancestor_node_ids": list(dict.fromkeys(info.get("ancestor_node_ids", []) + [nid])),
+                    "root_origins": list(info.get("root_origins", [])),
+                    "derivation_tree": {
+                        "node_id": nid, "node_name": nname, "node_type": ntype, "column": out_name,
+                        "action": "Appended Field (Cartesian)", "detail": hop["detail"],
+                        "inputs": [info.get("derivation_tree")] if info.get("derivation_tree") else []
+                    }
+                }
+
+            select_fields = cfg.get("select_fields") or cfg.get("fields")
+            if select_fields and isinstance(select_fields, list):
+                unknown_item = next(
+                    (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown" or sf.get("name") == "*Unknown")),
+                    None
+                )
+                if unknown_item is not None:
+                    select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                elif "select_unknown" in cfg:
+                    select_unknown = bool(cfg["select_unknown"])
+                else:
+                    select_unknown = False
+
+                configured_cols = set()
+                available_cols = list(raw_appended.keys())
+                for sf in select_fields:
+                    orig = sf.get("original") or sf.get("field") or sf.get("name")
+                    if not orig or orig == "*Unknown":
+                        continue
+                    matched_col = orig if orig in raw_appended else (f"{prefix}{orig}" if f"{prefix}{orig}" in raw_appended else None)
+                    if not matched_col:
+                        continue
+                    configured_cols.add(matched_col)
+                    keep = sf.get("keep") if "keep" in sf else sf.get("selected", True)
+                    if not keep:
+                        continue
+                    renamed = (sf.get("rename") or matched_col).strip() or matched_col
+                    is_renamed = bool(renamed != matched_col)
+                    base_info = raw_appended[matched_col]
+                    if is_renamed:
+                        rename_hop = {
+                            "node_id": nid, "node_name": nname, "node_type": ntype,
+                            "action": "Renamed in Append Fields", "column": renamed,
+                            "detail": f"Renamed from '{matched_col}' to '{renamed}'"
+                        }
+                        node_result[renamed] = {
+                            "sources": list(base_info.get("sources", [])),
+                            "category": "renamed",
+                            "hops": _clean_and_order_hops(base_info.get("hops", []), rename_hop, topo_order),
+                            "ancestor_node_ids": list(base_info.get("ancestor_node_ids", [])),
+                            "root_origins": list(base_info.get("root_origins", [])),
+                            "derivation_tree": {
+                                "node_id": nid, "node_name": nname, "node_type": ntype, "column": renamed,
+                                "action": "Renamed in Append Fields", "detail": f"Renamed from '{matched_col}' to '{renamed}'",
+                                "inputs": [base_info.get("derivation_tree")] if base_info.get("derivation_tree") else []
+                            }
+                        }
+                    else:
+                        node_result[matched_col] = base_info
+
+                if select_unknown:
+                    for c in available_cols:
+                        if c not in configured_cols and c not in node_result:
+                            node_result[c] = raw_appended[c]
+            else:
+                node_result = raw_appended
+
+        elif ntype == "find_replace":
+            f_up = {}
+            r_up = {}
+            f_id = None
+            r_id = None
+            for pred in node_preds:
+                t_port = pred.get("target_port") or "F"
+                if t_port in ("R", "Replace"):
+                    r_up = rich_lineage.get(pred["source"], {})
+                    r_id = pred["source"]
+                else:
+                    f_up = rich_lineage.get(pred["source"], {})
+                    f_id = pred["source"]
+            if not r_up and len(node_preds) > 1 and not r_id:
+                r_id = node_preds[1]["source"]
+                r_up = rich_lineage.get(r_id, {})
+            if not f_up and node_preds:
+                f_id = node_preds[0]["source"]
+                f_up = rich_lineage.get(f_id, {})
+
+            for c, info in f_up.items():
+                node_result[c] = {
+                    "sources": list(info.get("sources", [])),
+                    "category": info.get("category", "passthrough"),
+                    "hops": list(info.get("hops", [])),
+                    "ancestor_node_ids": list(info.get("ancestor_node_ids", [])),
+                    "root_origins": list(info.get("root_origins", [])),
+                    "derivation_tree": info.get("derivation_tree")
+                }
+
+            action = cfg.get("action", "replace")
+            find_field = cfg.get("find_field")
+            if action == "replace" and find_field and find_field in node_result:
+                rep_field = cfg.get("replace_with_field")
+                rep_info = r_up.get(rep_field, {}) if rep_field else {}
+                orig_info = node_result[find_field]
+                sources = list(orig_info.get("sources", [])) + list(rep_info.get("sources", [(r_id, rep_field)] if (r_id and rep_field) else []))
+                hop = {
+                    "node_id": nid, "node_name": nname, "node_type": ntype,
+                    "action": "Find & Replace", "column": find_field,
+                    "detail": f"Replaced values from [{rep_field}] in {r_id}" if rep_field else "Find & Replace"
+                }
+                clean_hops = _clean_and_order_hops(orig_info.get("hops", []) + rep_info.get("hops", []), hop, topo_order)
+                tree = {
+                    "node_id": nid, "node_name": nname, "node_type": ntype, "column": find_field,
+                    "action": "Find & Replace", "detail": hop["detail"],
+                    "inputs": [t for t in [orig_info.get("derivation_tree"), rep_info.get("derivation_tree")] if t]
+                }
+                node_result[find_field] = {
+                    "sources": list(dict.fromkeys(sources)),
+                    "category": "calculated",
+                    "hops": clean_hops,
+                    "ancestor_node_ids": list(dict.fromkeys(orig_info.get("ancestor_node_ids", []) + rep_info.get("ancestor_node_ids", []) + [nid])),
+                    "root_origins": _merge_root_origins(orig_info.get("root_origins", []), rep_info.get("root_origins", [])),
+                    "derivation_tree": tree
+                }
+            elif action == "append":
+                append_cols = cfg.get("append_fields", [])
+                for col in append_cols:
+                    rep_info = r_up.get(col, {})
+                    target_col = col if col not in node_result else f"{col}_R"
+                    hop = {
+                        "node_id": nid, "node_name": nname, "node_type": ntype,
+                        "action": "Find & Append Field", "column": target_col,
+                        "detail": f"Appended from [{col}] in {r_id}"
+                    }
+                    clean_hops = _clean_and_order_hops(rep_info.get("hops", []), hop, topo_order)
+                    tree = {
+                        "node_id": nid, "node_name": nname, "node_type": ntype, "column": target_col,
+                        "action": "Find & Append Field", "detail": hop["detail"],
+                        "inputs": [rep_info.get("derivation_tree")] if rep_info.get("derivation_tree") else []
+                    }
+                    node_result[target_col] = {
+                        "sources": list(rep_info.get("sources", [(r_id, col)] if r_id else [])),
+                        "category": "joined",
+                        "hops": clean_hops,
+                        "ancestor_node_ids": list(dict.fromkeys(rep_info.get("ancestor_node_ids", []) + [nid])),
+                        "root_origins": list(rep_info.get("root_origins", [])),
+                        "derivation_tree": tree
+                    }
+
+        elif ntype == "transpose":
+            key_fields = cfg.get("key_columns") or cfg.get("key_fields", [])
+            data_fields = cfg.get("data_columns") or cfg.get("data_fields", [])
+            name_col = cfg.get("name_column", "Name")
+            value_col = cfg.get("value_column", "Value")
+
+            for k in key_fields:
+                if k in primary_up:
+                    node_result[k] = {
+                        "sources": list(primary_up[k].get("sources", [])),
+                        "category": "passthrough",
+                        "hops": list(primary_up[k].get("hops", [])),
+                        "ancestor_node_ids": list(primary_up[k].get("ancestor_node_ids", [])),
+                        "root_origins": list(primary_up[k].get("root_origins", [])),
+                        "derivation_tree": primary_up[k].get("derivation_tree")
+                    }
+
+            data_cols = [d for d in data_fields if d in primary_up] if data_fields else [c for c in primary_up if c not in key_fields]
+            data_sources = []
+            data_origins = []
+            data_trees = []
+            for d in data_cols:
+                info = primary_up.get(d, {})
+                data_sources.extend(info.get("sources", [(primary_up_id, d)] if primary_up_id else []))
+                data_origins.extend(info.get("root_origins", []))
+                if info.get("derivation_tree"):
+                    data_trees.append(info.get("derivation_tree"))
+
+            for out_c, act_name, desc in [(name_col, "Transposed Name", "Transposed column name from data fields"),
+                                          (value_col, "Transposed Value", "Transposed column values from data fields")]:
+                hop = {
+                    "node_id": nid, "node_name": nname, "node_type": ntype,
+                    "action": act_name, "column": out_c, "detail": desc,
+                    "inputs": data_cols
+                }
+                clean_hops = _clean_and_order_hops([], hop, topo_order)
+                tree = {
+                    "node_id": nid, "node_name": nname, "node_type": ntype, "column": out_c,
+                    "action": act_name, "detail": desc, "inputs": data_trees
+                }
+                node_result[out_c] = {
+                    "sources": list(dict.fromkeys(data_sources)) if data_sources else ([(primary_up_id, "*")] if primary_up_id else [(nid, out_c)]),
+                    "category": "calculated",
+                    "hops": clean_hops,
+                    "ancestor_node_ids": list(dict.fromkeys([primary_up_id, nid] if primary_up_id else [nid])),
+                    "root_origins": _merge_root_origins(data_origins),
+                    "derivation_tree": tree
+                }
+
+        elif ntype == "crosstab":
+            group_by = cfg.get("group_by", [])
+            if isinstance(group_by, str):
+                group_by = [group_by]
+            elif not isinstance(group_by, list):
+                group_by = []
+            header_field = cfg.get("header_field")
+            value_field = cfg.get("value_field")
+
+            for g in group_by:
+                if g in primary_up:
+                    node_result[g] = {
+                        "sources": list(primary_up[g].get("sources", [])),
+                        "category": "passthrough",
+                        "hops": list(primary_up[g].get("hops", [])),
+                        "ancestor_node_ids": list(primary_up[g].get("ancestor_node_ids", [])),
+                        "root_origins": list(primary_up[g].get("root_origins", [])),
+                        "derivation_tree": primary_up[g].get("derivation_tree")
+                    }
+
+            pivot_sources = []
+            pivot_origins = []
+            pivot_trees = []
+            for col_ref in [header_field, value_field]:
+                if col_ref and col_ref in primary_up:
+                    info = primary_up[col_ref]
+                    pivot_sources.extend(info.get("sources", []))
+                    pivot_origins.extend(info.get("root_origins", []))
+                    if info.get("derivation_tree"):
+                        pivot_trees.append(info.get("derivation_tree"))
+
+            known_cols = cfg.get("preview_columns") or cfg.get("columns") or []
+            for col in known_cols:
+                if col not in node_result:
+                    hop = {
+                        "node_id": nid, "node_name": nname, "node_type": ntype,
+                        "action": "CrossTab Pivot", "column": col,
+                        "detail": f"Pivoted from header [{header_field}] and value [{value_field}]",
+                        "inputs": [c for c in [header_field, value_field] if c]
+                    }
+                    clean_hops = _clean_and_order_hops([], hop, topo_order)
+                    tree = {
+                        "node_id": nid, "node_name": nname, "node_type": ntype, "column": col,
+                        "action": "CrossTab Pivot", "detail": hop["detail"], "inputs": pivot_trees
+                    }
+                    node_result[col] = {
+                        "sources": list(dict.fromkeys(pivot_sources)) if pivot_sources else ([(primary_up_id, "*")] if primary_up_id else [(nid, col)]),
+                        "category": "calculated",
+                        "hops": clean_hops,
+                        "ancestor_node_ids": list(dict.fromkeys([primary_up_id, nid] if primary_up_id else [nid])),
+                        "root_origins": _merge_root_origins(pivot_origins),
+                        "derivation_tree": tree
+                    }
+
+        elif ntype == "llm_process":
+            for c, info in primary_up.items():
+                node_result[c] = {
+                    "sources": list(info.get("sources", [])),
+                    "category": info.get("category", "passthrough"),
+                    "hops": list(info.get("hops", [])),
+                    "ancestor_node_ids": list(info.get("ancestor_node_ids", [])),
+                    "root_origins": list(info.get("root_origins", [])),
+                    "derivation_tree": info.get("derivation_tree")
+                }
+
+            user_template = str(cfg.get("user_prompt_template") or cfg.get("prompt_template") or cfg.get("prompt") or "")
+            ref_cols = []
+            if user_template:
+                ref_cols.extend(re.findall(r'\{\{\[([^\]]+)\]\}\}', user_template))
+                for col_m in re.findall(r'\[([^\]]+)\]', user_template):
+                    if col_m in primary_up and col_m not in ref_cols:
+                        ref_cols.append(col_m)
+            if cfg.get("system_prompt_source") == "column" and cfg.get("system_prompt_column"):
+                sys_col = str(cfg.get("system_prompt_column"))
+                if sys_col in primary_up and sys_col not in ref_cols:
+                    ref_cols.append(sys_col)
+
+            input_sources = []
+            input_origins = []
+            input_trees = []
+            for rc in ref_cols:
+                if rc in primary_up:
+                    info = primary_up[rc]
+                    input_sources.extend(info.get("sources", [(primary_up_id, rc)] if primary_up_id else []))
+                    input_origins.extend(info.get("root_origins", []))
+                    if info.get("derivation_tree"):
+                        input_trees.append(info.get("derivation_tree"))
+
+            out_cols = []
+            output_mode = cfg.get("output_mode", "single")
+            if output_mode == "json_parse" and isinstance(cfg.get("json_fields"), list) and cfg.get("json_fields"):
+                for jf in cfg.get("json_fields", []):
+                    jname = (jf.get("name") if isinstance(jf, dict) else str(jf)).strip()
+                    if jname:
+                        out_cols.append(jname)
+            if not out_cols:
+                out_col = str(cfg.get("output_column") or "AI_Response").strip() or "AI_Response"
+                out_cols.append(out_col)
+
+            for oc in out_cols:
+                hop = {
+                    "node_id": nid, "node_name": nname, "node_type": ntype,
+                    "action": "AI LLM Process", "column": oc,
+                    "detail": f"Generated via LLM using prompt referencing: {', '.join(ref_cols) if ref_cols else 'no variables'}",
+                    "inputs": ref_cols
+                }
+                clean_hops = _clean_and_order_hops([], hop, topo_order)
+                tree = {
+                    "node_id": nid, "node_name": nname, "node_type": ntype, "column": oc,
+                    "action": "AI LLM Process", "detail": hop["detail"], "inputs": input_trees
+                }
+                node_result[oc] = {
+                    "sources": list(dict.fromkeys(input_sources)) if input_sources else ([(primary_up_id, "*")] if primary_up_id else [(nid, oc)]),
+                    "category": "calculated",
+                    "hops": clean_hops,
+                    "ancestor_node_ids": list(dict.fromkeys([primary_up_id, nid] if primary_up_id else [nid])),
+                    "root_origins": _merge_root_origins(input_origins),
+                    "derivation_tree": tree
+                }
 
         else:
             # Default pass-through
@@ -1096,14 +1701,31 @@ def compute_downstream_impact(
             cfg = node.get("config", {})
 
             matched_usage = None
-            col_pattern = rf'\[{re.escape(col)}\]'
+
+            # Determine which column names entering nid derive from (source_node_id, col)
+            relevant_cols = {col}
+            pred_conns = [c for c in connections if (c.get("target") or c.get("to_node")) == nid]
+            for pconn in pred_conns:
+                pid = pconn.get("source") or pconn.get("from_node")
+                if pid == source_node_id:
+                    relevant_cols.add(col)
+                if pid in rich_upstream:
+                    for out_c, out_info in rich_upstream[pid].items():
+                        srcs = out_info.get("sources", [])
+                        if (source_node_id, col) in srcs or (source_node_id, "*") in srcs:
+                            relevant_cols.add(out_c)
+                        for ro in out_info.get("root_origins", []):
+                            if ro.get("node_id") == source_node_id and (col in ro.get("columns", []) or "*" in ro.get("columns", [])):
+                                relevant_cols.add(out_c)
+
+            col_pattern = r'\[(?:' + '|'.join(re.escape(c) for c in relevant_cols) + r')\]'
 
             if ntype == "filter":
                 expr = cfg.get("expression") or ""
-                if re.search(col_pattern, expr, re.IGNORECASE) or cfg.get("field") == col:
+                if re.search(col_pattern, expr, re.IGNORECASE) or any(cfg.get("field") == c for c in relevant_cols):
                     matched_usage = {
                         "usage": "Filter condition",
-                        "detail": expr or f"Filtered on [{col}]"
+                        "detail": expr or f"Filtered on [{', '.join(relevant_cols)}]"
                     }
 
             elif ntype in ("formula", "multi_row_formula"):
@@ -1118,34 +1740,44 @@ def compute_downstream_impact(
                         }
                         break
                 if not matched_usage and ntype == "multi_row_formula":
-                    expr = cfg.get("expression") or ""
-                    row_pattern = rf'\[(?:Row\s*[+-]?\s*\d+\s*:\s*)?{re.escape(col)}\]'
-                    if re.search(row_pattern, expr, re.IGNORECASE):
-                        out_col = cfg.get("output_field") or cfg.get("field") or "New_Field"
+                    group_by = cfg.get("group_by_fields") or cfg.get("group_by") or []
+                    if isinstance(group_by, str):
+                        group_by = [group_by]
+                    if any(c in group_by for c in relevant_cols):
                         matched_usage = {
-                            "usage": "Multi-Row Calculation",
-                            "detail": f"{out_col} = {expr}"
+                            "usage": "Multi-Row Grouping",
+                            "detail": f"Group key for Multi-Row Formula calculation"
                         }
+                    else:
+                        expr = cfg.get("expression") or ""
+                        row_pattern = rf'\[(?:Row\s*[+-]?\s*\d+\s*:\s*)?(?:' + '|'.join(re.escape(c) for c in relevant_cols) + r')\]'
+                        if re.search(row_pattern, expr, re.IGNORECASE) or re.search(col_pattern, expr, re.IGNORECASE):
+                            out_col = cfg.get("output_field") or cfg.get("new_field_name") or cfg.get("field_name") or cfg.get("field") or "New_Field"
+                            matched_usage = {
+                                "usage": "Multi-Row Calculation",
+                                "detail": f"{out_col} = {expr}"
+                            }
 
             elif ntype == "multi_field_formula":
                 selected_fields = cfg.get("selected_fields") or cfg.get("fields") or []
                 expr = cfg.get("expression") or ""
-                if (not selected_fields or col in selected_fields) and (re.search(col_pattern, expr, re.IGNORECASE) or "_CurrentField" in expr):
+                if (not selected_fields or any(c in selected_fields for c in relevant_cols)) and (re.search(col_pattern, expr, re.IGNORECASE) or "_CurrentField" in expr or not expr):
                     matched_usage = {
                         "usage": "Multi-Field Calculation",
-                        "detail": expr or f"Formula applied to [{col}]"
+                        "detail": expr or f"Formula applied to [{', '.join(relevant_cols)}]"
                     }
 
-            elif ntype == "datetime":
-                if cfg.get("field") == col or cfg.get("column") == col:
-                    out_col = cfg.get("output_field") or f"{col}_DateTime"
+            elif ntype in ("datetime", "date_time"):
+                if any(cfg.get("field") == c or cfg.get("column") == c for c in relevant_cols):
+                    out_col = cfg.get("output_column") or cfg.get("output_field") or f"{col}_DateTime"
+                    mode = cfg.get("conversion_type") or cfg.get("mode", "parse")
                     matched_usage = {
                         "usage": "DateTime Conversion",
-                        "detail": f"{cfg.get('mode', 'parse').title()} from [{col}] -> {out_col}"
+                        "detail": f"{str(mode).title()} from [{col}] -> {out_col}"
                     }
 
             elif ntype == "text_to_columns":
-                if cfg.get("column") == col:
+                if any(cfg.get("column") == c for c in relevant_cols):
                     matched_usage = {
                         "usage": "Text Split",
                         "detail": f"Split [{col}] into {cfg.get('num_columns', 2)} columns"
@@ -1155,58 +1787,282 @@ def compute_downstream_impact(
                 group_by = cfg.get("group_by", [])
                 if isinstance(group_by, str):
                     group_by = [group_by]
-                if col in group_by:
+                if any(c in group_by for c in relevant_cols):
                     matched_usage = {
                         "usage": "Record ID Grouping",
                         "detail": f"Group key for RecordID generation"
                     }
 
             elif ntype == "select":
-                fields = cfg.get("fields") or []
-                for f in fields:
-                    if f.get("name") == col:
-                        if not f.get("selected", True):
-                            matched_usage = {"usage": "Dropped in Select", "detail": f"Field '{col}' deselected"}
-                        elif f.get("rename"):
-                            matched_usage = {"usage": "Renamed in Select", "detail": f"Renamed to '{f.get('rename')}'"}
-                        else:
-                            matched_usage = {"usage": "Selected field", "detail": f"Kept in schema"}
+                fields = cfg.get("fields") or cfg.get("columns") or []
+                unknown_item = next(
+                    (f for f in fields if (f.get("original") == "*Unknown" or f.get("name") == "*Unknown" or f.get("field") == "*Unknown")),
+                    None
+                )
+                if unknown_item is not None:
+                    select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                elif "select_unknown" in cfg:
+                    select_unknown = bool(cfg["select_unknown"])
+                else:
+                    select_unknown = True
+
+                found_field = None
+                matched_c = None
+                ordered_cols = [col] + [c for c in relevant_cols if c != col]
+                for c in ordered_cols:
+                    for f in fields:
+                        orig = f.get("original") or f.get("name") or f.get("field")
+                        if orig == c:
+                            found_field = f
+                            matched_c = c
+                            break
+                    if found_field is not None:
                         break
+
+                if found_field is not None:
+                    keep = found_field.get("keep") if "keep" in found_field else found_field.get("selected", True)
+                    rename = (found_field.get("rename") or "").strip()
+                    if not keep:
+                        matched_usage = {"usage": "Dropped in Select", "detail": f"Field '{matched_c}' deselected"}
+                    elif rename and rename != matched_c:
+                        matched_usage = {"usage": "Renamed in Select", "detail": f"Renamed to '{rename}'"}
+                    else:
+                        matched_usage = {"usage": "Selected field", "detail": f"Kept in schema"}
+                elif fields:
+                    if not select_unknown:
+                        matched_usage = {"usage": "Dropped in Select", "detail": f"Field dropped (*Unknown unchecked)"}
+                    else:
+                        matched_usage = {"usage": "Selected field (Dynamic)", "detail": f"Field kept via *Unknown"}
+                else:
+                    matched_usage = {"usage": "Selected field", "detail": "All fields selected"}
 
             elif ntype == "summarize":
                 actions = cfg.get("actions") or []
-                for a in actions:
-                    if a.get("field") == col:
-                        action_type = a.get("action", "GroupBy")
-                        out_name = _get_summarize_out_name(a)
-                        matched_usage = {
-                            "usage": f"Aggregation ({action_type})",
-                            "detail": f"{action_type} of [{col}] -> {out_name}"
-                        }
-                        break
+                matching_acts = [a for a in actions if a.get("field") in relevant_cols]
+                if matching_acts:
+                    act_names = list(dict.fromkeys(a.get("action", "GroupBy") for a in matching_acts))
+                    act_descs = [f"{a.get('action', 'GroupBy')} of [{a.get('field')}] -> {_get_summarize_out_name(a)}" for a in matching_acts]
+                    matched_usage = {
+                        "usage": f"Aggregation ({', '.join(act_names)})",
+                        "detail": f"Used in {len(matching_acts)} aggregation(s): {'; '.join(act_descs)}"
+                    }
 
             elif ntype == "join":
-                l_fields = cfg.get("left_fields") or []
-                r_fields = cfg.get("right_fields") or []
+                l_fields = list(cfg.get("left_fields") or [])
+                r_fields = list(cfg.get("right_fields") or [])
                 join_keys = cfg.get("join_keys") or []
                 for jk in join_keys:
                     if jk.get("left_key"): l_fields.append(jk.get("left_key"))
                     if jk.get("right_key"): r_fields.append(jk.get("right_key"))
-                if col in l_fields or col in r_fields:
+                l_keys = cfg.get("left_keys") or []
+                r_keys = cfg.get("right_keys") or []
+                l_fields.extend(l_keys)
+                r_fields.extend(r_keys)
+
+                if any(c in l_fields or c in r_fields for c in relevant_cols):
                     matched_usage = {
                         "usage": "Join key",
                         "detail": f"Used as join key match"
                     }
+                else:
+                    select_fields = cfg.get("select_fields") or cfg.get("fields") or []
+                    unknown_item = next(
+                        (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown" or sf.get("name") == "*Unknown")),
+                        None
+                    )
+                    if unknown_item is not None:
+                        select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                    elif "select_unknown" in cfg:
+                        select_unknown = bool(cfg["select_unknown"])
+                    else:
+                        select_unknown = False
 
-            elif ntype in ("sort", "unique", "clean", "sample"):
-                sort_fields = [f.get("field") for f in (cfg.get("fields") or [])]
+                    found_sf = None
+                    matched_c = None
+                    ordered_cols = [col] + [c for c in relevant_cols if c != col]
+                    for c in ordered_cols:
+                        for sf in select_fields:
+                            sf_name = sf.get("field") or sf.get("original") or sf.get("name")
+                            if sf_name == c or sf_name == f"Right_{c}":
+                                found_sf = sf
+                                matched_c = c
+                                break
+                        if found_sf is not None:
+                            break
+
+                    if found_sf is not None:
+                        keep = found_sf.get("keep") if "keep" in found_sf else found_sf.get("selected", True)
+                        rename = found_sf.get("rename")
+                        if not keep:
+                            matched_usage = {"usage": "Dropped in Join", "detail": f"Field '{matched_c}' deselected in Join"}
+                        elif rename and rename != matched_c:
+                            matched_usage = {"usage": "Renamed in Join", "detail": f"Renamed to '{rename}' in Join"}
+                        else:
+                            matched_usage = {"usage": "Joined field", "detail": f"Output in joined stream"}
+                    elif select_fields:
+                        if not select_unknown:
+                            matched_usage = {"usage": "Dropped in Join", "detail": f"Field dropped (*Unknown unchecked in Join)"}
+                        else:
+                            matched_usage = {"usage": "Joined field (Dynamic)", "detail": f"Field kept via *Unknown in Join"}
+                    else:
+                        matched_usage = {"usage": "Joined field", "detail": f"Output in joined stream"}
+
+            elif ntype == "join_multiple":
+                join_keys = cfg.get("join_keys") or []
+                key_fields = []
+                for jk in join_keys:
+                    if isinstance(jk, dict):
+                        key_fields.extend(jk.values())
+                    elif isinstance(jk, (list, tuple)):
+                        key_fields.extend(jk)
+                input_keys = cfg.get("input_keys") or []
+                for ik in input_keys:
+                    if isinstance(ik, list):
+                        key_fields.extend(ik)
+                    elif isinstance(ik, str):
+                        key_fields.append(ik)
+                if any(c in key_fields for c in relevant_cols):
+                    matched_usage = {
+                        "usage": "Multi-Join key",
+                        "detail": f"Used as join key match across multiple inputs"
+                    }
+                else:
+                    select_fields = cfg.get("select_fields") or cfg.get("fields") or []
+                    unknown_item = next(
+                        (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown" or sf.get("name") == "*Unknown")),
+                        None
+                    )
+                    if unknown_item is not None:
+                        select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                    elif "select_unknown" in cfg:
+                        select_unknown = bool(cfg["select_unknown"])
+                    else:
+                        select_unknown = False
+
+                    found_sf = None
+                    matched_c = None
+                    ordered_cols = [col] + [c for c in relevant_cols if c != col]
+                    for c in ordered_cols:
+                        for sf in select_fields:
+                            sf_name = sf.get("field") or sf.get("original") or sf.get("name")
+                            if sf_name == c or sf_name.endswith(f"_{c}"):
+                                found_sf = sf
+                                matched_c = c
+                                break
+                        if found_sf is not None:
+                            break
+
+                    if found_sf is not None:
+                        keep = found_sf.get("keep") if "keep" in found_sf else found_sf.get("selected", True)
+                        if not keep:
+                            matched_usage = {"usage": "Dropped in Join Multiple", "detail": f"Field '{matched_c}' deselected in Multi-Join"}
+                        else:
+                            matched_usage = {"usage": "Multi-Joined field", "detail": f"Output in multi-join stream"}
+                    elif select_fields:
+                        if not select_unknown:
+                            matched_usage = {"usage": "Dropped in Join Multiple", "detail": f"Field dropped (*Unknown unchecked in Multi-Join)"}
+                        else:
+                            matched_usage = {"usage": "Multi-Joined field (Dynamic)", "detail": f"Field kept via *Unknown in Multi-Join"}
+                    else:
+                        matched_usage = {"usage": "Multi-Joined field", "detail": f"Output in multi-join stream"}
+
+            elif ntype == "append_fields":
+                select_fields = cfg.get("select_fields") or cfg.get("fields") or []
+                prefix = cfg.get("source_prefix", "Source_")
+                unknown_item = next(
+                    (sf for sf in select_fields if (sf.get("field") == "*Unknown" or sf.get("original") == "*Unknown" or sf.get("name") == "*Unknown")),
+                    None
+                )
+                if unknown_item is not None:
+                    select_unknown = unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True)
+                elif "select_unknown" in cfg:
+                    select_unknown = bool(cfg["select_unknown"])
+                else:
+                    select_unknown = False
+
+                found_sf = None
+                matched_c = None
+                ordered_cols = [col] + [c for c in relevant_cols if c != col]
+                for c in ordered_cols:
+                    for sf in select_fields:
+                        sf_name = sf.get("field") or sf.get("original") or sf.get("name")
+                        if sf_name == c or sf_name == f"{prefix}{c}":
+                            found_sf = sf
+                            matched_c = c
+                            break
+                    if found_sf is not None:
+                        break
+
+                if found_sf is not None:
+                    keep = found_sf.get("keep") if "keep" in found_sf else found_sf.get("selected", True)
+                    if not keep:
+                        matched_usage = {"usage": "Dropped in Append Fields", "detail": f"Field '{matched_c}' deselected in Append Fields"}
+                    else:
+                        matched_usage = {"usage": "Appended Cartesian field", "detail": f"Retained in Cartesian join output"}
+                elif select_fields:
+                    if not select_unknown:
+                        matched_usage = {"usage": "Dropped in Append Fields", "detail": f"Field dropped (*Unknown unchecked in Append Fields)"}
+                    else:
+                        matched_usage = {"usage": "Appended Cartesian field (Dynamic)", "detail": f"Field kept via *Unknown in Append Fields"}
+                else:
+                    matched_usage = {
+                        "usage": "Appended Cartesian field",
+                        "detail": f"Passed through Cartesian product"
+                    }
+
+            elif ntype == "find_replace":
+                if any(cfg.get("find_field") == c for c in relevant_cols):
+                    matched_usage = {"usage": "Find Field", "detail": f"Target column for find and replace"}
+                elif any(cfg.get("find_value_field") == c for c in relevant_cols):
+                    matched_usage = {"usage": "Find Value Field", "detail": f"Key to search for in Find stream"}
+                elif any(cfg.get("replace_with_field") == c for c in relevant_cols):
+                    matched_usage = {"usage": "Replace Value Field", "detail": f"Replacement text field"}
+                elif any(c in (cfg.get("append_fields") or []) for c in relevant_cols):
+                    matched_usage = {"usage": "Appended Field", "detail": f"Field appended from reference table"}
+
+            elif ntype == "transpose":
+                key_fields = cfg.get("key_fields") or cfg.get("key_columns") or []
+                data_fields = cfg.get("data_fields") or cfg.get("data_columns") or []
+                if any(c in key_fields for c in relevant_cols):
+                    matched_usage = {"usage": "Transpose Key Field", "detail": f"Key retained across transposition"}
+                elif any(c in data_fields for c in relevant_cols):
+                    matched_usage = {"usage": "Transpose Data Field", "detail": f"Pivoted into Name/Value rows"}
+
+            elif ntype == "crosstab":
+                group_by = cfg.get("group_by") or cfg.get("group_columns") or []
+                if isinstance(group_by, str): group_by = [group_by]
+                if any(c in group_by for c in relevant_cols):
+                    matched_usage = {"usage": "CrossTab Group By", "detail": f"Group key in Cross Tab"}
+                elif any(cfg.get("header_field") == c for c in relevant_cols):
+                    matched_usage = {"usage": "CrossTab Header Field", "detail": f"Values pivoted into column headers"}
+                elif any(cfg.get("value_field") == c for c in relevant_cols):
+                    matched_usage = {"usage": "CrossTab Value Field", "detail": f"Values aggregated in pivot cells"}
+
+            elif ntype == "llm_process":
+                user_template = str(cfg.get("user_prompt_template") or cfg.get("prompt_template") or cfg.get("prompt") or "")
+                sys_col = str(cfg.get("system_prompt_column") or "") if cfg.get("system_prompt_source") == "column" else ""
+                ref_cols = set(re.findall(r'\{\{\[([^\]]+)\]\}\}', user_template)) | set(re.findall(r'\[([^\]]+)\]', user_template))
+                if sys_col:
+                    ref_cols.add(sys_col)
+                if any(c in ref_cols for c in relevant_cols):
+                    out_col = cfg.get("output_column") or "AI_Response"
+                    matched_usage = {
+                        "usage": "LLM Prompt Variable",
+                        "detail": f"Referenced in LLM prompt template to generate [{out_col}]"
+                    }
+
+            elif ntype in ("sort", "unique", "clean", "sample", "auto_field", "browse"):
+                sort_fields = [f.get("field") for f in (cfg.get("fields") or []) if isinstance(f, dict)]
                 clean_cols = cfg.get("columns") or []
                 group_cols = cfg.get("group_by") or []
+                fields_list = [f if isinstance(f, str) else (f.get("field") or f.get("name")) for f in (cfg.get("fields") or [])]
                 if isinstance(group_cols, str): group_cols = [group_cols]
-                if col in sort_fields or col in clean_cols or col in group_cols or cfg.get("field") == col or cfg.get("column") == col:
+                if (any(c in sort_fields or c in clean_cols or c in group_cols or c in fields_list
+                        or cfg.get("field") == c or cfg.get("column") == c for c in relevant_cols)
+                        or ntype in ("auto_field", "browse")):
                     matched_usage = {
-                        "usage": f"{ntype.title()} operation",
-                        "detail": f"Used in {ntype} configuration"
+                        "usage": f"{ntype.replace('_', ' ').title()} operation",
+                        "detail": f"Processed by {ntype.replace('_', ' ').title()} tool"
                     }
 
             elif ntype in ("output_data", "output"):
@@ -1214,6 +2070,19 @@ def compute_downstream_impact(
                     "usage": "Exported to destination",
                     "detail": cfg.get("path") or cfg.get("filename") or "Final output sink"
                 }
+
+            if not matched_usage and nid in rich_upstream:
+                derives = any(
+                    (source_node_id, col) in cinfo.get("sources", []) or
+                    any(ro.get("node_id") == source_node_id and (col in ro.get("columns", []) or "*" in ro.get("columns", []))
+                        for ro in cinfo.get("root_origins", []))
+                    for cinfo in rich_upstream[nid].values()
+                )
+                if derives:
+                    matched_usage = {
+                        "usage": f"{ntype.replace('_', ' ').title()} stream",
+                        "detail": f"Carries data derived from [{col}]"
+                    }
 
             if matched_usage:
                 impacted_node_set.add(nid)

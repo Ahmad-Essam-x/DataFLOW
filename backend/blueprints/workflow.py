@@ -353,7 +353,7 @@ def get_template(filename):
 
     for search_dir in [ext.WORKFLOW_TEMPLATES_DIR, ext.WORKFLOW_TEMPLATES_USER_DIR]:
         path = os.path.join(search_dir, safe_name)
-        if is_safe_path(path, [ext.WORKFLOW_TEMPLATES_DIR]) and os.path.isfile(path):
+        if is_safe_path(path, [ext.WORKFLOW_TEMPLATES_DIR, ext.WORKFLOW_TEMPLATES_USER_DIR]) and os.path.isfile(path):
             with open(path, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
             return jsonify(data)

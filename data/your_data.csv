@@ -1,0 +1,83 @@
+CustomerID,FullName,Email,PhoneNumber,PostalCode,State,SignupDate,AnnualIncome,CreditScore
+CUST-1001,Customer Name 1,user_1@domain.com,555-960-6390,86820,ca,2023-10-01,74326.71,790
+CUST-1002,  Customer Name 2  ,user_2@domain.com,555-558-9322,77221,IL,2023-02-01,45497.37,667
+CUST-1003,Customer Name 3,  user_3@domain.com  ,555-905-3433,15311,IL,2023-01-01,122406.48,783
+CUST-1004,  Customer Name 4  ,user_4@domain.com,555-352-9666,35658,TX,2023-12-01,99223.58,634
+CUST-1005,Customer Name 5,user_5@domain.com,555-604-4556,13890,ca,2023-05-01,138239.24,652
+CUST-1006,  Customer Name 6  ,  user_6@domain.com  ,555-487-9792,83969,fl,2023-10-01,41830.42,632
+CUST-1007,Customer Name 7,user_7@domain.com,555-191-6486,33483,ca,2023-12-01,59243.85,587
+CUST-1008,  Customer Name 8  ,user_8@domain.com,,90077,NY,2023-04-01,38610.79,629
+CUST-1009,Customer Name 9,  user_9@domain.com  ,555-101-2021,87189,ny,2023-10-01,104564.84,583
+CUST-1010,  Customer Name 10  ,user_10@domain.com,555-921-7873,81211,CA,2023-10-01,,769
+CUST-1011,Customer Name 11,user_11@domain.com,555-962-8629,11016,  TX  ,2023-05-01,132299.18,787
+CUST-1012,  Customer Name 12  ,  user_12@domain.com  ,555-978-5887,22185,fl,2023-12-01,113468.61,767
+CUST-1013,Customer Name 13,user_13@domain.com,555-140-6276,61214,NY,2023-09-01,91983.09,650
+CUST-1014,  Customer Name 14  ,user_14@domain.com,555-228-3027,12695,  TX  ,2023-11-01,79457.16,660
+CUST-1015,Customer Name 15,  user_15@domain.com  ,555-518-6892,13561,ca,2023-10-01,109690.91,620
+CUST-1016,  Customer Name 16  ,user_16@domain.com,,18392,  TX  ,2023-12-01,131070.77,741
+CUST-1017,Customer Name 17,user_17@domain.com,555-602-3454,87373,  TX  ,2023-05-01,45018.06,678
+CUST-1018,  Customer Name 18  ,  user_18@domain.com  ,555-825-9154,80592,TX,2023-05-01,97086.27,754
+CUST-1019,Customer Name 19,user_19@domain.com,555-868-2028,16910,ca,2023-11-01,109890.7,716
+CUST-1020,  Customer Name 20  ,user_20@domain.com,555-306-6134,97897,TX,2023-07-01,,631
+CUST-1021,Customer Name 21,  user_21@domain.com  ,555-833-8574,81910,FL,2023-07-01,94143.94,766
+CUST-1022,  Customer Name 22  ,user_22@domain.com,555-895-3693,79163,FL,2023-11-01,107952.42,707
+CUST-1023,Customer Name 23,user_23@domain.com,555-447-6592,54262,NY,2023-01-01,119781.22,700
+CUST-1024,  Customer Name 24  ,  user_24@domain.com  ,,16776,FL,2023-09-01,103007.46,582
+CUST-1025,Customer Name 25,user_25@domain.com,555-555-6530,13748,NY,2023-03-01,35729.97,813
+CUST-1026,  Customer Name 26  ,user_26@domain.com,555-926-2495,78840,FL,2023-01-01,70449.59,641
+CUST-1027,Customer Name 27,  user_27@domain.com  ,555-663-2291,62733,ca,2023-02-01,137037.12,710
+CUST-1028,  Customer Name 28  ,user_28@domain.com,555-724-1698,36736,CA,2023-02-01,66592.22,799
+CUST-1029,Customer Name 29,user_29@domain.com,555-835-8392,65680,TX,2023-02-01,40405.27,632
+CUST-1030,  Customer Name 30  ,  user_30@domain.com  ,555-783-6791,36309,ca,2023-04-01,,762
+CUST-1031,Customer Name 31,user_31@domain.com,555-222-9958,47157,  TX  ,2023-05-01,114970.06,695
+CUST-1032,  Customer Name 32  ,user_32@domain.com,,99045,NY,2023-09-01,138259.43,703
+CUST-1033,Customer Name 33,  user_33@domain.com  ,555-563-1659,12811,FL,2023-03-01,88360.87,669
+CUST-1034,  Customer Name 34  ,user_34@domain.com,555-246-3911,77270,FL,2023-09-01,88769.77,740
+CUST-1035,Customer Name 35,user_35@domain.com,555-650-3385,21111,NY,2023-11-01,76745.06,799
+CUST-1036,  Customer Name 36  ,  user_36@domain.com  ,555-250-6534,95981,TX,2023-07-01,112197.69,723
+CUST-1037,Customer Name 37,user_37@domain.com,555-671-3049,41616,IL,2023-05-01,120808.33,739
+CUST-1038,  Customer Name 38  ,user_38@domain.com,555-108-8400,52642,TX,2023-04-01,101475.65,731
+CUST-1039,Customer Name 39,  user_39@domain.com  ,555-772-2648,42711,FL,2023-06-01,77473.35,683
+CUST-1040,  Customer Name 40  ,user_40@domain.com,,71267,TX,2023-09-01,,678
+CUST-1041,Customer Name 41,user_41@domain.com,555-995-5973,87505,ny,2023-03-01,137234.7,787
+CUST-1042,  Customer Name 42  ,  user_42@domain.com  ,555-260-6699,33328,IL,2023-04-01,139418.03,707
+CUST-1043,Customer Name 43,user_43@domain.com,555-294-5496,80271,NY,2023-12-01,113137.9,766
+CUST-1044,  Customer Name 44  ,user_44@domain.com,555-474-2045,16893,ny,2023-06-01,73610.16,688
+CUST-1045,Customer Name 45,  user_45@domain.com  ,555-875-4354,40746,CA,2023-05-01,86107.93,609
+CUST-1046,  Customer Name 46  ,user_46@domain.com,555-978-6600,50764,TX,2023-04-01,102735.85,614
+CUST-1047,Customer Name 47,user_47@domain.com,555-611-9208,66491,IL,2023-06-01,115698.17,678
+CUST-1048,  Customer Name 48  ,  user_48@domain.com  ,,43828,  TX  ,2023-01-01,113510.47,625
+CUST-1049,Customer Name 49,user_49@domain.com,555-198-1699,64240,FL,2023-05-01,136498.76,739
+CUST-1050,  Customer Name 50  ,user_50@domain.com,555-260-4327,95314,CA,2023-09-01,,813
+CUST-1051,Customer Name 51,  user_51@domain.com  ,555-669-6442,61885,  TX  ,2023-02-01,133296.25,611
+CUST-1052,  Customer Name 52  ,user_52@domain.com,555-762-4009,66958,CA,2023-10-01,105470.07,596
+CUST-1053,Customer Name 53,user_53@domain.com,555-492-8343,64748,ca,2023-10-01,124110.33,678
+CUST-1054,  Customer Name 54  ,  user_54@domain.com  ,555-507-9716,98891,ca,2023-09-01,61901.73,615
+CUST-1055,Customer Name 55,user_55@domain.com,555-420-7655,80031,TX,2023-07-01,118820.99,722
+CUST-1056,  Customer Name 56  ,user_56@domain.com,,88657,ca,2023-06-01,74436.21,630
+CUST-1057,Customer Name 57,  user_57@domain.com  ,555-674-2148,32677,ny,2023-01-01,83887.79,759
+CUST-1058,  Customer Name 58  ,user_58@domain.com,555-882-3491,90135,IL,2023-12-01,39077.65,815
+CUST-1059,Customer Name 59,user_59@domain.com,555-202-6315,64021,FL,2023-03-01,136351.44,634
+CUST-1060,  Customer Name 60  ,  user_60@domain.com  ,555-919-7799,27019,TX,2023-01-01,,699
+CUST-1061,Customer Name 61,user_61@domain.com,555-703-6177,35945,IL,2023-10-01,63437.39,696
+CUST-1062,  Customer Name 62  ,user_62@domain.com,555-226-8560,84740,NY,2023-10-01,43491.66,701
+CUST-1063,Customer Name 63,  user_63@domain.com  ,555-901-8805,15237,fl,2023-08-01,51425.89,816
+CUST-1064,  Customer Name 64  ,user_64@domain.com,,13343,ca,2023-05-01,64393.06,601
+CUST-1065,Customer Name 65,user_65@domain.com,555-175-5249,77215,TX,2023-05-01,111654.13,665
+CUST-1066,  Customer Name 66  ,  user_66@domain.com  ,555-319-6188,54078,NY,2023-04-01,36511.32,776
+CUST-1067,Customer Name 67,user_67@domain.com,555-317-7617,45247,IL,2023-07-01,84788.25,679
+CUST-1068,  Customer Name 68  ,user_68@domain.com,555-833-5452,36646,ny,2023-05-01,53186.2,679
+CUST-1069,Customer Name 69,  user_69@domain.com  ,555-322-7905,19823,NY,2023-08-01,39756.92,648
+CUST-1070,  Customer Name 70  ,user_70@domain.com,555-615-3839,67679,ca,2023-02-01,,799
+CUST-1071,Customer Name 71,user_71@domain.com,555-574-1851,28071,CA,2023-03-01,96506.44,703
+CUST-1072,  Customer Name 72  ,  user_72@domain.com  ,,80588,TX,2023-11-01,48492.54,680
+CUST-1073,Customer Name 73,user_73@domain.com,555-676-6536,79449,CA,2023-03-01,100723.67,614
+CUST-1074,  Customer Name 74  ,user_74@domain.com,555-189-9967,98668,CA,2023-03-01,70338.19,684
+CUST-1075,Customer Name 75,  user_75@domain.com  ,555-925-8668,48513,  TX  ,2023-04-01,87083.93,796
+CUST-1076,  Customer Name 76  ,user_76@domain.com,555-860-9867,54425,IL,2023-09-01,119365.5,731
+CUST-1077,Customer Name 77,user_77@domain.com,555-788-2122,95999,FL,2023-02-01,119717.65,810
+CUST-1078,  Customer Name 78  ,  user_78@domain.com  ,555-762-8357,42479,IL,2023-12-01,95957.12,692
+CUST-1079,Customer Name 79,user_79@domain.com,555-378-3914,31352,NY,2023-01-01,106383.7,641
+CUST-1080,  Customer Name 80  ,user_80@domain.com,,51555,fl,2023-06-01,,720
+CUST-1001,Customer Name 1,user_1@domain.com,555-960-6390,86820,ca,2023-10-01,74326.71,790
+CUST-1002,  Customer Name 2  ,user_2@domain.com,555-558-9322,77221,IL,2023-02-01,45497.37,667

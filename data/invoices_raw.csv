@@ -1,0 +1,31 @@
+InvoiceID,InvoiceText,VendorHint,ReceivedDate
+INV-RAW-001,"  Invoice INV-2024-204 from Global Office Logistics covering ergonomic desk furniture and ergonomic chairs. Balance: $1,280.50. Remit before 2024-10-31.  ",Global Office Logistics,2024-10-25
+INV-RAW-002,"  CyberShield Security Inc billing ref SEC-8891 for annual endpoint protection license renewals. Total payable: $5,600.00 due on 2024-12-01.  ",CyberShield Security Inc,2024-10-20
+INV-RAW-003,  Billing statement EXP-4402 by Metro Couriers Express for express document delivery services. Amount $420.75 payable by 2024-11-05.  ,Metro Couriers Express,2024-10-17
+INV-RAW-004,"  Precision Tooling Works invoice PTW-9912 for warehouse replacement conveyor parts and maintenance. Total: $2,150.00 due 2024-11-20.  ",Precision Tooling Works,2024-10-02
+INV-RAW-005,"  Apex Cloud Services LLC Invoice INV-2024-101 for monthly cloud infrastructure hosting and kubernetes cluster compute. Total due: $3,450.00. Payment terms Net 30. Due date: 2024-11-15.  ",Apex Cloud Services LLC,2024-10-01
+INV-RAW-006,"  Invoice INV-2024-204 from Global Office Logistics covering ergonomic desk furniture and ergonomic chairs. Balance: $1,280.50. Remit before 2024-10-31.  ",Global Office Logistics,2024-10-16
+INV-RAW-007,"  CyberShield Security Inc billing ref SEC-8891 for annual endpoint protection license renewals. Total payable: $5,600.00 due on 2024-12-01.  ",CyberShield Security Inc,2024-10-12
+INV-RAW-008,  Billing statement EXP-4402 by Metro Couriers Express for express document delivery services. Amount $420.75 payable by 2024-11-05.  ,Metro Couriers Express,2024-10-05
+INV-RAW-009,"  Precision Tooling Works invoice PTW-9912 for warehouse replacement conveyor parts and maintenance. Total: $2,150.00 due 2024-11-20.  ",Precision Tooling Works,2024-10-05
+INV-RAW-010,"  Apex Cloud Services LLC Invoice INV-2024-101 for monthly cloud infrastructure hosting and kubernetes cluster compute. Total due: $3,450.00. Payment terms Net 30. Due date: 2024-11-15.  ",Apex Cloud Services LLC,2024-10-27
+INV-RAW-011,"  Invoice INV-2024-204 from Global Office Logistics covering ergonomic desk furniture and ergonomic chairs. Balance: $1,280.50. Remit before 2024-10-31.  ",Global Office Logistics,2024-10-23
+INV-RAW-012,"  CyberShield Security Inc billing ref SEC-8891 for annual endpoint protection license renewals. Total payable: $5,600.00 due on 2024-12-01.  ",CyberShield Security Inc,2024-10-09
+INV-RAW-013,  Billing statement EXP-4402 by Metro Couriers Express for express document delivery services. Amount $420.75 payable by 2024-11-05.  ,Metro Couriers Express,2024-10-09
+INV-RAW-014,"  Precision Tooling Works invoice PTW-9912 for warehouse replacement conveyor parts and maintenance. Total: $2,150.00 due 2024-11-20.  ",Precision Tooling Works,2024-10-03
+INV-RAW-015,"  Apex Cloud Services LLC Invoice INV-2024-101 for monthly cloud infrastructure hosting and kubernetes cluster compute. Total due: $3,450.00. Payment terms Net 30. Due date: 2024-11-15.  ",Apex Cloud Services LLC,2024-10-19
+INV-RAW-016,"  Invoice INV-2024-204 from Global Office Logistics covering ergonomic desk furniture and ergonomic chairs. Balance: $1,280.50. Remit before 2024-10-31.  ",Global Office Logistics,2024-10-16
+INV-RAW-017,"  CyberShield Security Inc billing ref SEC-8891 for annual endpoint protection license renewals. Total payable: $5,600.00 due on 2024-12-01.  ",CyberShield Security Inc,2024-10-16
+INV-RAW-018,  Billing statement EXP-4402 by Metro Couriers Express for express document delivery services. Amount $420.75 payable by 2024-11-05.  ,Metro Couriers Express,2024-10-03
+INV-RAW-019,"  Precision Tooling Works invoice PTW-9912 for warehouse replacement conveyor parts and maintenance. Total: $2,150.00 due 2024-11-20.  ",Precision Tooling Works,2024-10-20
+INV-RAW-020,"  Apex Cloud Services LLC Invoice INV-2024-101 for monthly cloud infrastructure hosting and kubernetes cluster compute. Total due: $3,450.00. Payment terms Net 30. Due date: 2024-11-15.  ",Apex Cloud Services LLC,2024-10-24
+INV-RAW-021,"  Invoice INV-2024-204 from Global Office Logistics covering ergonomic desk furniture and ergonomic chairs. Balance: $1,280.50. Remit before 2024-10-31.  ",Global Office Logistics,2024-10-22
+INV-RAW-022,"  CyberShield Security Inc billing ref SEC-8891 for annual endpoint protection license renewals. Total payable: $5,600.00 due on 2024-12-01.  ",CyberShield Security Inc,2024-10-24
+INV-RAW-023,  Billing statement EXP-4402 by Metro Couriers Express for express document delivery services. Amount $420.75 payable by 2024-11-05.  ,Metro Couriers Express,2024-10-01
+INV-RAW-024,"  Precision Tooling Works invoice PTW-9912 for warehouse replacement conveyor parts and maintenance. Total: $2,150.00 due 2024-11-20.  ",Precision Tooling Works,2024-10-24
+INV-RAW-025,"  Apex Cloud Services LLC Invoice INV-2024-101 for monthly cloud infrastructure hosting and kubernetes cluster compute. Total due: $3,450.00. Payment terms Net 30. Due date: 2024-11-15.  ",Apex Cloud Services LLC,2024-10-20
+INV-RAW-026,"  Invoice INV-2024-204 from Global Office Logistics covering ergonomic desk furniture and ergonomic chairs. Balance: $1,280.50. Remit before 2024-10-31.  ",Global Office Logistics,2024-10-11
+INV-RAW-027,"  CyberShield Security Inc billing ref SEC-8891 for annual endpoint protection license renewals. Total payable: $5,600.00 due on 2024-12-01.  ",CyberShield Security Inc,2024-10-17
+INV-RAW-028,  Billing statement EXP-4402 by Metro Couriers Express for express document delivery services. Amount $420.75 payable by 2024-11-05.  ,Metro Couriers Express,2024-10-08
+INV-RAW-029,"  Precision Tooling Works invoice PTW-9912 for warehouse replacement conveyor parts and maintenance. Total: $2,150.00 due 2024-11-20.  ",Precision Tooling Works,2024-10-04
+INV-RAW-030,"  Apex Cloud Services LLC Invoice INV-2024-101 for monthly cloud infrastructure hosting and kubernetes cluster compute. Total due: $3,450.00. Payment terms Net 30. Due date: 2024-11-15.  ",Apex Cloud Services LLC,2024-10-06

@@ -2,25 +2,25 @@
   "name": "spotify analytics",
   "description": "",
   "metadata": {
+    "created_at": "2026-10-05T02:13:36",
+    "updated_at": "2026-10-09T13:54:27",
+    "version": "2.1.0",
     "author": "Ahmed Gad",
-    "created_at": "2026-09-28T12:41:41",
     "description": "",
-    "saved_file": "spotify analytics.json",
-    "updated_at": "2026-09-28T12:45:38",
-    "version": "2.1.0"
+    "saved_file": "C:/Users/Ahmed Gad/Documents/antigravity/quick-noether/workflows/spotify analytics.json"
   },
   "viewport": {
-    "zoom": 0.69,
-    "panX": -2.1958927097705327,
-    "panY": 254.34710439842434
+    "zoom": 1.46,
+    "panX": -689.0448695865998,
+    "panY": -564.9048196608938
   },
   "nodes": [
     {
-      "id": "node_1790547279588_441",
+      "id": "node_1790588478945_385",
       "type": "input_data",
       "name": "spotify_history.csv",
       "x": 208,
-      "y": 240,
+      "y": 432,
       "config": {
         "column_meta": [
           {
@@ -104,7 +104,7 @@
           "skipped"
         ],
         "delimiter": ",",
-        "file_path": "bda96510_spotify_history.csv",
+        "file_path": "dfe9af57_spotify_history.csv",
         "file_type": "csv",
         "has_header": true,
         "original_file_name": "spotify_history.csv",
@@ -125,14 +125,34 @@
         "start_row": 1
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
-      "id": "node_1790547301882_316",
+      "id": "node_1790588516905_531",
+      "type": "formula",
+      "name": "Formula",
+      "x": 416,
+      "y": 432,
+      "config": {
+        "formulas": [
+          {
+            "expression": "[ms_played]/1000/60/60",
+            "output_field": "ms_played",
+            "type": "float"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_1790723818197_215",
       "type": "select",
       "name": "Select",
-      "x": 496,
-      "y": 240,
+      "x": 576,
+      "y": 432,
       "config": {
         "fields": [
           {
@@ -223,79 +243,21 @@
         "select_unknown": false
       },
       "container_id": null,
-      "is_cached": false
+      "is_cached": false,
+      "locked": false
     },
     {
-      "id": "node_1790547313239_321",
-      "type": "formula",
-      "name": "Formula",
-      "x": 352,
-      "y": 240,
-      "config": {
-        "formulas": [
-          {
-            "expression": "[ms_played]/1000/60/60",
-            "output_field": "ms_played",
-            "type": "float"
-          }
-        ]
-      },
-      "container_id": null,
-      "is_cached": false
-    },
-    {
-      "id": "node_1790547400679_708",
+      "id": "node_1790723940348_926",
       "type": "summarize",
       "name": "Summarize",
-      "x": 688,
-      "y": 32,
+      "x": 720,
+      "y": 384,
       "config": {
         "actions": [
           {
             "action": "GroupBy",
             "field": "artist_name",
             "output_name": "artist_name"
-          },
-          {
-            "action": "Sum",
-            "field": "Hrs played",
-            "output_name": "Sum_Hrs played"
-          }
-        ]
-      },
-      "container_id": "container_1790548158902_68",
-      "is_cached": false
-    },
-    {
-      "id": "node_1790547441114_560",
-      "type": "sort",
-      "name": "Sort",
-      "x": 816,
-      "y": 32,
-      "config": {
-        "case_sensitive": true,
-        "sort_by": [
-          {
-            "ascending": false,
-            "column": "Sum_Hrs played"
-          }
-        ]
-      },
-      "container_id": "container_1790548158902_68",
-      "is_cached": false
-    },
-    {
-      "id": "node_1790547463423_851",
-      "type": "summarize",
-      "name": "Summarize",
-      "x": 1024,
-      "y": 224,
-      "config": {
-        "actions": [
-          {
-            "action": "GroupBy",
-            "field": "platform",
-            "output_name": "platform"
           },
           {
             "action": "GroupBy",
@@ -309,37 +271,16 @@
           }
         ]
       },
-      "container_id": "container_1790548099835_278",
-      "is_cached": false
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
     },
     {
-      "id": "node_1790547516896_843",
-      "type": "sort",
-      "name": "Sort",
-      "x": 1168,
-      "y": 176,
-      "config": {
-        "case_sensitive": true,
-        "sort_by": [
-          {
-            "ascending": true,
-            "column": "platform"
-          },
-          {
-            "ascending": false,
-            "column": "Count_reason_end"
-          }
-        ]
-      },
-      "container_id": "container_1790548099835_278",
-      "is_cached": false
-    },
-    {
-      "id": "node_1790547587930_440",
+      "id": "node_1790723998551_700",
       "type": "summarize",
       "name": "Summarize",
-      "x": 1168,
-      "y": 304,
+      "x": 736,
+      "y": 656,
       "config": {
         "actions": [
           {
@@ -348,106 +289,9 @@
             "output_name": "platform"
           },
           {
-            "action": "Max",
-            "field": "Count_reason_end",
-            "output_name": "Max_Count_reason_end"
-          }
-        ]
-      },
-      "container_id": "container_1790548099835_278",
-      "is_cached": false
-    },
-    {
-      "id": "node_1790547763885_691",
-      "type": "join",
-      "name": "Join",
-      "x": 1296,
-      "y": 224,
-      "config": {
-        "ignore_case": true,
-        "join_keys": [
-          {
-            "left_key": "platform",
-            "right_key": "platform"
-          },
-          {
-            "left_key": "Max_Count_reason_end",
-            "right_key": "Count_reason_end"
-          }
-        ],
-        "select_fields": [
-          {
-            "field": "platform",
-            "isMissing": false,
-            "original": "platform",
-            "rename": "platform",
-            "selected": true,
-            "source": "L",
-            "type": "none"
-          },
-          {
-            "field": "reason_end",
-            "isMissing": false,
-            "original": "reason_end",
-            "rename": "reason_end",
-            "selected": true,
-            "source": "R",
-            "type": "none"
-          },
-          {
-            "field": "Max_Count_reason_end",
-            "isMissing": false,
-            "original": "Max_Count_reason_end",
-            "rename": "Max_Count_reason_end",
-            "selected": true,
-            "source": "L",
-            "type": "none"
-          },
-          {
-            "field": "Right_platform",
-            "isMissing": false,
-            "original": "platform",
-            "rename": "Right_platform",
-            "selected": false,
-            "source": "R",
-            "type": "none"
-          },
-          {
-            "field": "Count_reason_end",
-            "isMissing": false,
-            "original": "Count_reason_end",
-            "rename": "Count_reason_end",
-            "selected": false,
-            "source": "R",
-            "type": "none"
-          },
-          {
-            "field": "*Unknown",
-            "isUnknown": true,
-            "original": "*Unknown",
-            "rename": "*Unknown",
-            "selected": false,
-            "source": "Dynamic",
-            "type": "none"
-          }
-        ],
-        "select_unknown": false
-      },
-      "container_id": "container_1790548099835_278",
-      "is_cached": false
-    },
-    {
-      "id": "node_1790548072339_79",
-      "type": "summarize",
-      "name": "Summarize",
-      "x": 1024,
-      "y": 608,
-      "config": {
-        "actions": [
-          {
             "action": "GroupBy",
-            "field": "platform",
-            "output_name": "platform"
+            "field": "artist_name",
+            "output_name": "artist_name"
           },
           {
             "action": "GroupBy",
@@ -461,64 +305,124 @@
           }
         ]
       },
-      "container_id": "container_1790576742641_125",
-      "is_cached": false
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
     },
     {
-      "id": "node_1790548238828_676",
+      "id": "node_1790724076907_407",
+      "type": "filter",
+      "name": "Filter_reason_end_Only",
+      "x": 944,
+      "y": 400,
+      "config": {
+        "conditions": [
+          {
+            "column": "reason_end",
+            "operator": "==",
+            "value": "fwdbtn"
+          }
+        ],
+        "logical_op": "AND",
+        "mode": "basic"
+      },
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_1790724102979_934",
       "type": "sort",
       "name": "Sort",
-      "x": 1168,
-      "y": 608,
+      "x": 1104,
+      "y": 400,
       "config": {
         "sort_by": [
           {
-            "ascending": true,
-            "column": "platform"
-          },
-          {
             "ascending": false,
-            "column": "Count_reason_start"
+            "column": "Count_reason_end"
           }
         ]
       },
-      "container_id": "container_1790576742641_125",
-      "is_cached": false
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
     },
     {
-      "id": "node_1790548279606_531",
+      "id": "node_1791243980141_440",
       "type": "join",
       "name": "Join",
-      "x": 1424,
-      "y": 656,
+      "x": 896,
+      "y": 544,
       "config": {
         "ignore_case": true,
         "join_keys": [
           {
-            "left_key": "platform",
-            "right_key": "platform"
-          },
-          {
-            "left_key": "Max_Count_reason_start",
-            "right_key": "Count_reason_start"
+            "left_key": "artist_name",
+            "right_key": "artist_name"
           }
         ],
         "select_fields": [
+          {
+            "field": "Right_artist_name",
+            "isMissing": false,
+            "original": "artist_name",
+            "rename": "Right_artist_name",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "reason_end",
+            "isMissing": true,
+            "original": "reason_end",
+            "rename": "reason_end",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "Count_reason_end",
+            "isMissing": true,
+            "original": "Count_reason_end",
+            "rename": "Count_reason_end",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "artist_name",
+            "isMissing": false,
+            "original": "artist_name",
+            "rename": "artist_name",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "reason_end",
+            "isMissing": false,
+            "original": "reason_end",
+            "rename": "reason_end",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "Count_reason_end",
+            "isMissing": false,
+            "original": "Count_reason_end",
+            "rename": "Count_reason_end",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
           {
             "field": "platform",
             "isMissing": false,
             "original": "platform",
             "rename": "platform",
             "selected": true,
-            "source": "L",
-            "type": "none"
-          },
-          {
-            "field": "Right_platform",
-            "isMissing": false,
-            "original": "platform",
-            "rename": "Right_platform",
-            "selected": false,
             "source": "R",
             "type": "none"
           },
@@ -532,20 +436,11 @@
             "type": "none"
           },
           {
-            "field": "Max_Count_reason_start",
-            "isMissing": false,
-            "original": "Max_Count_reason_start",
-            "rename": "Max_Count_reason_start",
-            "selected": true,
-            "source": "L",
-            "type": "none"
-          },
-          {
             "field": "Count_reason_start",
             "isMissing": false,
             "original": "Count_reason_start",
             "rename": "Count_reason_start",
-            "selected": false,
+            "selected": true,
             "source": "R",
             "type": "none"
           },
@@ -554,206 +449,362 @@
             "isUnknown": true,
             "original": "*Unknown",
             "rename": "*Unknown",
-            "selected": false,
+            "selected": true,
             "source": "Dynamic",
             "type": "none"
           }
-        ],
-        "select_unknown": false
+        ]
       },
-      "container_id": "container_1790576742641_125",
-      "is_cached": false
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
     },
     {
-      "id": "node_1790548290292_914",
-      "type": "summarize",
-      "name": "Summarize",
-      "x": 1328,
-      "y": 576,
+      "id": "node_1791244015651_788",
+      "type": "join",
+      "name": "Join",
+      "x": 1104,
+      "y": 560,
       "config": {
-        "actions": [
+        "ignore_case": true,
+        "join_keys": [
           {
-            "action": "GroupBy",
-            "field": "platform",
-            "output_name": "platform"
+            "left_key": "artist_name",
+            "right_key": "artist_name"
+          }
+        ],
+        "select_fields": [
+          {
+            "field": "artist_name",
+            "isMissing": false,
+            "original": "artist_name",
+            "rename": "artist_name",
+            "selected": true,
+            "source": "L",
+            "type": "none"
           },
           {
-            "action": "Max",
+            "field": "reason_end",
+            "isMissing": false,
+            "original": "reason_end",
+            "rename": "reason_end",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "Count_reason_end",
+            "isMissing": false,
+            "original": "Count_reason_end",
+            "rename": "Count_reason_end",
+            "selected": true,
+            "source": "L",
+            "type": "none"
+          },
+          {
+            "field": "Right_artist_name",
+            "isMissing": false,
+            "original": "Right_artist_name",
+            "rename": "Right_artist_name",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "Right_artist_name",
+            "isMissing": false,
+            "original": "artist_name",
+            "rename": "Right_artist_name",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "Right_reason_end",
+            "isMissing": false,
+            "original": "reason_end",
+            "rename": "Right_reason_end",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "Right_Count_reason_end",
+            "isMissing": false,
+            "original": "Count_reason_end",
+            "rename": "Right_Count_reason_end",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "platform",
+            "isMissing": false,
+            "original": "platform",
+            "rename": "platform",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "reason_start",
+            "isMissing": false,
+            "original": "reason_start",
+            "rename": "reason_start",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
             "field": "Count_reason_start",
-            "output_name": "Max_Count_reason_start"
+            "isMissing": false,
+            "original": "Count_reason_start",
+            "rename": "Count_reason_start",
+            "selected": true,
+            "source": "R",
+            "type": "none"
+          },
+          {
+            "field": "*Unknown",
+            "isUnknown": true,
+            "original": "*Unknown",
+            "rename": "*Unknown",
+            "selected": true,
+            "source": "Dynamic",
+            "type": "none"
           }
         ]
       },
-      "container_id": "container_1790576742641_125",
-      "is_cached": false
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_1791244064488_990",
+      "type": "join",
+      "name": "Join",
+      "x": 1232,
+      "y": 464,
+      "config": {
+        "ignore_case": true,
+        "join_keys": [
+          {
+            "left_key": "artist_name",
+            "right_key": "artist_name"
+          }
+        ],
+        "select_fields": [
+          {
+            "field": "artist_name",
+            "source": "L",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_end",
+            "source": "L",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_end",
+            "source": "L",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_artist_name",
+            "source": "R",
+            "original": "artist_name",
+            "selected": true,
+            "rename": "Right_artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_reason_end",
+            "source": "R",
+            "original": "reason_end",
+            "selected": true,
+            "rename": "Right_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_Count_reason_end",
+            "source": "R",
+            "original": "Count_reason_end",
+            "selected": true,
+            "rename": "Right_Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_artist_name",
+            "source": "R",
+            "original": "Right_artist_name",
+            "selected": true,
+            "rename": "Right_artist_name",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_reason_end",
+            "source": "R",
+            "original": "Right_reason_end",
+            "selected": true,
+            "rename": "Right_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Right_Count_reason_end",
+            "source": "R",
+            "original": "Right_Count_reason_end",
+            "selected": true,
+            "rename": "Right_Count_reason_end",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "platform",
+            "source": "R",
+            "original": "platform",
+            "selected": true,
+            "rename": "platform",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "reason_start",
+            "source": "R",
+            "original": "reason_start",
+            "selected": true,
+            "rename": "reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "Count_reason_start",
+            "source": "R",
+            "original": "Count_reason_start",
+            "selected": true,
+            "rename": "Count_reason_start",
+            "type": "none",
+            "isMissing": false
+          },
+          {
+            "field": "*Unknown",
+            "isUnknown": true,
+            "original": "*Unknown",
+            "rename": "*Unknown",
+            "selected": true,
+            "source": "Dynamic",
+            "type": "none"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false,
+      "locked": false
     }
   ],
   "connections": [
     {
-      "id": "conn_1790547313242_968",
-      "source": "node_1790547279588_441",
+      "id": "conn_1790588519408_332",
+      "source": "node_1790588478945_385",
       "sourceHandle": "O",
-      "target": "node_1790547313239_321",
+      "target": "node_1790588516905_531",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1790547313242_302",
-      "source": "node_1790547313239_321",
+      "id": "conn_1790723818198_760",
+      "source": "node_1790588516905_531",
       "sourceHandle": "O",
-      "target": "node_1790547301882_316",
+      "target": "node_1790723818197_215",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1790547401944_106",
-      "source": "node_1790547301882_316",
+      "id": "conn_1790723941814_442",
+      "source": "node_1790723818197_215",
       "sourceHandle": "O",
-      "target": "node_1790547400679_708",
+      "target": "node_1790723940348_926",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1790547442257_175",
-      "source": "node_1790547400679_708",
+      "id": "conn_1790724003374_172",
+      "source": "node_1790723818197_215",
       "sourceHandle": "O",
-      "target": "node_1790547441114_560",
+      "target": "node_1790723998551_700",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1790547464545_881",
-      "source": "node_1790547301882_316",
+      "id": "conn_1790724076910_254",
+      "source": "node_1790723940348_926",
       "sourceHandle": "O",
-      "target": "node_1790547463423_851",
+      "target": "node_1790724076907_407",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1790547518206_418",
-      "source": "node_1790547463423_851",
-      "sourceHandle": "O",
-      "target": "node_1790547516896_843",
+      "id": "conn_1790724104180_418",
+      "source": "node_1790724076907_407",
+      "sourceHandle": "T",
+      "target": "node_1790724102979_934",
       "targetHandle": "I"
     },
     {
-      "id": "conn_1790547589001_632",
-      "source": "node_1790547463423_851",
+      "id": "conn_1791243984768_518",
+      "source": "node_1790723998551_700",
       "sourceHandle": "O",
-      "target": "node_1790547587930_440",
-      "targetHandle": "I"
-    },
-    {
-      "id": "conn_1790547765371_167",
-      "source": "node_1790547587930_440",
-      "sourceHandle": "O",
-      "target": "node_1790547763885_691",
-      "targetHandle": "L"
-    },
-    {
-      "id": "conn_1790547767149_984",
-      "source": "node_1790547463423_851",
-      "sourceHandle": "O",
-      "target": "node_1790547763885_691",
+      "target": "node_1791243980141_440",
       "targetHandle": "R"
     },
     {
-      "id": "conn_1790548073861_793",
-      "source": "node_1790547301882_316",
+      "id": "conn_1791243986542_794",
+      "source": "node_1790723940348_926",
       "sourceHandle": "O",
-      "target": "node_1790548072339_79",
-      "targetHandle": "I"
+      "target": "node_1791243980141_440",
+      "targetHandle": "L"
     },
     {
-      "id": "conn_1790548241626_370",
-      "source": "node_1790548072339_79",
+      "id": "conn_1791244017839_639",
+      "source": "node_1790723940348_926",
       "sourceHandle": "O",
-      "target": "node_1790548238828_676",
-      "targetHandle": "I"
+      "target": "node_1791244015651_788",
+      "targetHandle": "L"
     },
     {
-      "id": "conn_1790548282436_775",
-      "source": "node_1790548238828_676",
-      "sourceHandle": "O",
-      "target": "node_1790548279606_531",
+      "id": "conn_1791244019389_973",
+      "source": "node_1791243980141_440",
+      "sourceHandle": "J",
+      "target": "node_1791244015651_788",
       "targetHandle": "R"
     },
     {
-      "id": "conn_1790548297393_689",
-      "source": "node_1790548238828_676",
+      "id": "conn_1791244067970_703",
+      "source": "node_1790723940348_926",
       "sourceHandle": "O",
-      "target": "node_1790548290292_914",
-      "targetHandle": "I"
-    },
-    {
-      "id": "conn_1790548325493_409",
-      "source": "node_1790548290292_914",
-      "sourceHandle": "O",
-      "target": "node_1790548279606_531",
+      "target": "node_1791244064488_990",
       "targetHandle": "L"
-    }
-  ],
-  "containers": [
-    {
-      "id": "container_1790548099835_278",
-      "title": "What is the most common reason for ending a track across platforms?",
-      "color": "#0284c7",
-      "textColor": "#ffffff",
-      "borderStyle": "solid",
-      "borderWidth": 2,
-      "fillOpacity": 12,
-      "margin": 24,
-      "x": 1008,
-      "y": 128,
-      "width": 496,
-      "height": 288,
-      "collapsed": false,
-      "disabled": false,
-      "nodeIds": [
-        "node_1790547463423_851",
-        "node_1790547516896_843",
-        "node_1790547587930_440",
-        "node_1790547763885_691"
-      ]
     },
     {
-      "id": "container_1790548158902_68",
-      "title": "ranking top played artists by hrs played",
-      "color": "#0284c7",
-      "textColor": "#ffffff",
-      "borderStyle": "solid",
-      "borderWidth": 2,
-      "fillOpacity": 12,
-      "margin": 24,
-      "x": 664,
-      "y": -26,
-      "width": 232,
-      "height": 138,
-      "collapsed": false,
-      "disabled": false,
-      "nodeIds": [
-        "node_1790547400679_708",
-        "node_1790547441114_560"
-      ]
-    },
-    {
-      "id": "container_1790576742641_125",
-      "title": "what is most common reason for starting a track",
-      "color": "#0284c7",
-      "textColor": "#ffffff",
-      "borderStyle": "solid",
-      "borderWidth": 2,
-      "fillOpacity": 12,
-      "margin": 24,
-      "x": 992,
-      "y": 512,
-      "width": 504,
-      "height": 218,
-      "collapsed": false,
-      "disabled": false,
-      "nodeIds": [
-        "node_1790548072339_79",
-        "node_1790548238828_676",
-        "node_1790548279606_531",
-        "node_1790548290292_914"
-      ]
+      "id": "conn_1791244069229_833",
+      "source": "node_1791244015651_788",
+      "sourceHandle": "J",
+      "target": "node_1791244064488_990",
+      "targetHandle": "R"
     }
   ],
+  "containers": [],
   "comments": [],
   "cached_node_ids": [],
   "auto_cache_upstream": false

@@ -18,8 +18,16 @@ import {
   exportWorkflowJson, exportWorkflowPackage, importWorkflowPackage,
   handleWorkflowLoaded, loadWorkflowFromServer, initWorkflowIO
 } from './workflow_io.js';
+import { ConnectionManagerUI } from './connection_manager_ui.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Database Connections Manager
+  const connUI = window.connectionManagerUI || new ConnectionManagerUI();
+  window.connectionManagerUI = connUI;
+  window.openDatabaseConnectionsModal = (connId = null) => {
+    connUI.openModal(connId);
+  };
+
   // ── TabManager: Multi-Workflow Tab System ────────────────────────────────────
   // Instantiate TabManager early; it will adopt the static canvas as Tab 1.
   const tabManager = new TabManager();
@@ -341,15 +349,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const runBtn = document.getElementById('btn-run');
   const stopBtn = document.getElementById('btn-stop');
 
-  // getToolDisplayName, stopWorkflow, runWorkflow, handleStreamEventForTab,
+  // getToolDisplayName, stopWorkflow, runWorkflow, handleStreamEventForTab, finalizeRun,
   // runWorkflowFallback — imported from ./workflow_runner.js
-
+  // Manages btn-stop-active and is-stopping UI classes during execution; Escape key cancels run
 
   if (runBtn) {
     runBtn.addEventListener('click', runWorkflow);
   }
   if (stopBtn) {
-    stopBtn.addEventListener('click', stopWorkflow);
+    stopBtn.addEventListener('click', () => {
+      stopWorkflow();
+      if (window.appEventBus) window.appEventBus.emit('workflow:stop');
+    });
   }
 
 
@@ -1492,6 +1503,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- OPTIONS ---
         case 'options:dependencies':
           openWorkflowDependenciesModal();
+          break;
+
+        case 'options:database-connections':
+        case 'options:connections':
+          if (window.openDatabaseConnectionsModal) {
+            window.openDatabaseConnectionsModal();
+          }
           break;
 
         case 'options:user-settings':

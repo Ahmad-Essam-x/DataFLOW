@@ -1,13 +1,23 @@
 {
   "name": "Inventory & Supplier Reconciliation",
   "description": "Splits composite warehouse SKUs, deduplicates counts, reconciles stock levels with supplier lead times via Join, cross-appends holding parameters, and generates audit ledger tracking IDs.",
+  "category": "operations",
+  "tags": [
+    "inventory",
+    "join",
+    "unique",
+    "text_to_columns",
+    "append_fields",
+    "supply_chain"
+  ],
+  "difficulty": "intermediate",
   "containers": [
     {
       "id": "container_inv_1",
       "title": "Supply Chain & Warehouse Audit Ledger",
       "x": 60,
       "y": 60,
-      "width": 1480,
+      "width": 1540,
       "height": 420,
       "color": "rgba(168, 85, 247, 0.08)",
       "headerColor": "#9333ea",
@@ -184,6 +194,14 @@
         "format": "csv",
         "write_mode": "overwrite"
       }
+    },
+    {
+      "id": "node_inv_browse",
+      "type": "browse",
+      "name": "Browse Reconciled Stock",
+      "x": 1320,
+      "y": 340,
+      "config": {}
     }
   ],
   "connections": [
@@ -242,18 +260,13 @@
       "sourceHandle": "O",
       "target": "node_inv_out",
       "targetHandle": "I"
+    },
+    {
+      "id": "ci9",
+      "source": "node_inv_recid",
+      "sourceHandle": "O",
+      "target": "node_inv_browse",
+      "targetHandle": "I"
     }
-  ],
-  "category": "operations",
-  "tags": {
-    "value": [
-      "operations",
-      "inventory",
-      "supplier",
-      "reconciliation",
-      "join"
-    ],
-    "Count": 5
-  },
-  "difficulty": "intermediate"
+  ]
 }

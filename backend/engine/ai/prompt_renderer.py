@@ -56,23 +56,39 @@ def render_template(template: str, row: pd.Series) -> str:
     if not isinstance(template, str):
         return template
 
-    converted = _to_jinja(template)
+    available_cols = set(row.index) if hasattr(row, 'index') else set()
+    unresolved_map = {}
 
+    def _prep_legacy(m):
+        col = m.group(1)
+        if col in available_cols:
+            return '{{ ' + col.replace(' ', '_') + ' }}'
+        token = f"__UNRESOLVED_TOKEN_{len(unresolved_map)}__"
+        unresolved_map[token] = m.group(0)
+        return token
+
+    converted = COLUMN_PATTERN.sub(_prep_legacy, template)
+
+    rendered = None
     if _JINJA2_AVAILABLE:
         try:
-            return _JINJA_ENV.from_string(converted).render(**_row_dict(row))
+            rendered = _JINJA_ENV.from_string(converted).render(**_row_dict(row))
         except Exception:
             pass  # fall through to regex fallback
 
-    # Regex fallback — handles legacy syntax only
-    def repl(match):
-        col_name = match.group(1)
-        if col_name in row:
-            val = row[col_name]
-            return '' if pd.isna(val) or val is None else str(val)
-        return match.group(0)
+    if rendered is None:
+        def repl(match):
+            col_name = match.group(1)
+            if col_name in row:
+                val = row[col_name]
+                return '' if pd.isna(val) or val is None else str(val)
+            return match.group(0)
+        return COLUMN_PATTERN.sub(repl, template)
 
-    return COLUMN_PATTERN.sub(repl, template)
+    for token, orig in unresolved_map.items():
+        rendered = rendered.replace(token, orig)
+
+    return rendered
 
 
 def extract_column_references(template: str) -> List[str]:

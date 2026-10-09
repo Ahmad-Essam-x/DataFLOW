@@ -1306,7 +1306,7 @@ textarea.form-control {
   font-size: 9px;
   font-weight: normal;
   color: var(--text-muted);
-  margin-left: 4px;
+  margin-left: 0;
 }
 
 /* Active Column Sort Toolbar Badge */
@@ -1375,6 +1375,23 @@ body.light-theme .results-sort-indicator {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+}
+
+.th-subtitle-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.th-subtitle-row .th-dtype {
+  margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.th-subtitle-row .th-input-source-pill {
+  margin-right: 0;
 }
 
 .th-name {
@@ -8979,5 +8996,178 @@ body.light-theme .lineage-tree-node-detail {
   color: #334155;
   border-color: #e2e8f0;
 }
+
+/* ======================================================================
+   Database Connections Manager & Ingest Panel Styles
+   ====================================================================== */
+.conn-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  background: var(--bg-main);
+}
+.conn-item:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.04));
+  border-color: var(--border-subtle);
+}
+.conn-item.active {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: var(--color-primary);
+}
+.conn-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.conn-item-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.conn-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.badge-duckdb {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.badge-sqlite {
+  background: rgba(2, 132, 199, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(2, 132, 199, 0.4);
+}
+.badge-postgresql {
+  background: rgba(147, 51, 234, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(147, 51, 234, 0.4);
+}
+.badge-snowflake {
+  background: rgba(6, 182, 212, 0.2);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+
+.conn-type-selector {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.conn-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.conn-type-card:hover {
+  border-color: var(--color-primary);
+  background: var(--bg-hover);
+}
+.conn-type-card.active {
+  border-color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.15);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+.conn-type-card span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sql-editor-textarea {
+  width: 100%;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 90px;
+  box-sizing: border-box;
+}
+.sql-editor-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.inpanel-table-preview {
+  margin-top: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.inpanel-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-hover, rgba(255, 255, 255, 0.04));
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+}
+.inpanel-table-scroll {
+  max-height: 180px;
+  overflow: auto;
+}
+.inpanel-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+}
+.inpanel-grid th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-strong);
+  border-right: 1px solid var(--border-subtle);
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.inpanel-grid td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 
 

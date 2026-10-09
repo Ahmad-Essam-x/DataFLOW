@@ -160,7 +160,7 @@ class TestSampleWorkflowsCoverage(unittest.TestCase):
                 has_comments = True
 
         # Check all classic offline engine tools from NODE_REGISTRY (excluding external AI runtime nodes and new extension nodes)
-        registered_tools = set(NODE_REGISTRY.keys()) - {"llm_process", "join_multiple"}
+        registered_tools = set(NODE_REGISTRY.keys()) - {"llm_process", "join_multiple", "schema_fit", "llm_override"}
         missing_tools = registered_tools - found_types
 
         self.assertEqual(

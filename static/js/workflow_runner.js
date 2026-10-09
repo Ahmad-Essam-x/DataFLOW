@@ -234,6 +234,9 @@ export function handleStreamEventForTab(ev, targetTab) {
             ? targetCanvas.nodeMap.get(targetCanvas.selectedNodeId)
             : targetCanvas.nodes.find(n => n.id === targetCanvas.selectedNodeId);
           resultsPanel.showNodeResults(selNode);
+          if (window.appConfigPanel && typeof window.appConfigPanel.render === 'function' && window.appConfigPanel.currentNode && selNode && window.appConfigPanel.currentNode.id === selNode.id) {
+            window.appConfigPanel.render(selNode);
+          }
         }
       } else {
         if (ev.success) {

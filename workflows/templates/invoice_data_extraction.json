@@ -3,47 +3,35 @@
   "description": "Uses an LLM to extract structured fields (vendor name, invoice number, total amount, due date) from free-text invoice descriptions into a clean structured table.",
   "category": "ai_llm",
   "tags": [
+    "ai",
     "llm",
-    "extraction",
     "invoice",
-    "finance",
-    "nlp",
-    "structured"
+    "extraction",
+    "ap",
+    "finance"
   ],
   "difficulty": "intermediate",
   "containers": [
     {
       "id": "ctr_ie1",
-      "title": "Step 1 - Load Invoice Data",
+      "title": "Unstructured Invoices Ingestion",
       "x": 60,
       "y": 60,
-      "width": 480,
-      "height": 300,
-      "color": "rgba(139,92,246,0.07)",
+      "width": 520,
+      "height": 340,
+      "color": "rgba(139, 92, 246, 0.08)",
       "headerColor": "#8b5cf6",
       "collapsed": false,
       "disabled": false
     },
     {
       "id": "ctr_ie2",
-      "title": "Step 2 - LLM Field Extraction (JSON Parse Mode)",
-      "x": 590,
+      "title": "AI Information Extraction & AP Ledger",
+      "x": 620,
       "y": 60,
-      "width": 440,
-      "height": 300,
-      "color": "rgba(139,92,246,0.07)",
-      "headerColor": "#8b5cf6",
-      "collapsed": false,
-      "disabled": false
-    },
-    {
-      "id": "ctr_ie3",
-      "title": "Step 3 - Clean & Export",
-      "x": 1080,
-      "y": 60,
-      "width": 580,
-      "height": 300,
-      "color": "rgba(59,130,246,0.07)",
+      "width": 1180,
+      "height": 340,
+      "color": "rgba(59, 130, 246, 0.08)",
       "headerColor": "#3b82f6",
       "collapsed": false,
       "disabled": false
@@ -52,11 +40,11 @@
   "comments": [
     {
       "id": "comment_ie1",
-      "text": "### Invoice Extraction Pipeline\n- **Input CSV**: Expects column `InvoiceText` containing raw invoice content\n- **LLM Process (JSON Parse Mode)**: Instructs the LLM to respond with structured JSON\n- **Extracted fields**: VendorName, InvoiceNumber, TotalAmount, DueDate, Currency\n- **Filter**: Rows where extraction failed are routed to a review queue\n\n> System prompt forces strict JSON output. Use llama3.1 or gpt-4o-mini for best results.",
+      "text": "### Invoice Processing Methodology\n- Reads unstructured invoice narrative texts from invoices_raw.csv.\n- Trims extra whitespace with Data Clean.\n- Calls LLM Process to extract accounting entities into structured fields.\n- Formulas and filters validate records and prepare an AP payment ledger.",
       "x": 60,
-      "y": 380,
+      "y": 430,
       "width": 520,
-      "height": 180,
+      "height": 160,
       "color": "#8b5cf6"
     }
   ],
@@ -64,7 +52,7 @@
     {
       "id": "node_ie_in",
       "type": "input_data",
-      "name": "Input Invoice Records (CSV)",
+      "name": "Input Raw Invoices (CSV)",
       "x": 100,
       "y": 170,
       "config": {
@@ -93,74 +81,46 @@
       "id": "node_ie_llm",
       "type": "llm_process",
       "name": "AI Field Extractor",
-      "x": 630,
+      "x": 660,
       "y": 170,
       "config": {
         "provider_type": "ollama",
-        "connection": {
-          "base_url": "http://localhost:11434",
-          "api_key": ""
-        },
-        "model": "llama3.2:latest",
-        "temperature": 0.0,
-        "max_tokens": 256,
-        "top_p": 1.0,
-        "timeout_seconds": 45,
-        "system_prompt": "You are an invoice parsing assistant. Extract invoice fields and return ONLY a valid JSON object with these exact keys: vendor_name, invoice_number, total_amount, due_date, currency. If a field cannot be found, use null. No explanation, no markdown, just the JSON object.",
-        "user_prompt_template": "Extract the invoice details from this text:\n\n{{[InvoiceText]}}",
-        "rag_context": {
-          "enabled": false,
-          "source": "static",
-          "text": "",
-          "column": "",
-          "file_path": "",
-          "placement": "before"
-        },
-        "output_mode": "json_parse",
-        "output_column": "AI_Response",
-        "json_fields": [
+        "model": "llama3.2",
+        "user_prompt_template": "Extract invoice information from:\n{{[InvoiceText]}}\nFormat as JSON with keys: vendor, invoice_num, amount.",
+        "output_column": "ExtractedJSON",
+        "on_error": "null"
+      }
+    },
+    {
+      "id": "node_ie_formula",
+      "type": "formula",
+      "name": "Tag Processing Status",
+      "x": 880,
+      "y": 170,
+      "config": {
+        "formulas": [
           {
-            "field_name": "vendor_name",
-            "output_col": "VendorName"
-          },
-          {
-            "field_name": "invoice_number",
-            "output_col": "InvoiceNumber"
-          },
-          {
-            "field_name": "total_amount",
-            "output_col": "TotalAmount"
-          },
-          {
-            "field_name": "due_date",
-            "output_col": "DueDate"
-          },
-          {
-            "field_name": "currency",
-            "output_col": "Currency"
+            "output_field": "AP_BatchID",
+            "type": "string",
+            "expression": "'BATCH-2024Q4'"
           }
-        ],
-        "on_error": "error_message",
-        "max_retries": 2,
-        "concurrency": 2,
-        "rate_limit_rps": 3,
-        "include_token_columns": false
+        ]
       }
     },
     {
       "id": "node_ie_filter",
       "type": "filter",
-      "name": "Filter Successful Extractions",
-      "x": 1120,
+      "name": "Filter Processed Records",
+      "x": 1080,
       "y": 170,
       "config": {
         "mode": "basic",
         "logical_op": "AND",
         "conditions": [
           {
-            "column": "VendorName",
-            "operator": "is not null",
-            "value": ""
+            "column": "AP_BatchID",
+            "operator": "==",
+            "value": "BATCH-2024Q4"
           }
         ]
       }
@@ -168,13 +128,13 @@
     {
       "id": "node_ie_sort",
       "type": "sort",
-      "name": "Sort by Due Date",
-      "x": 1320,
-      "y": 130,
+      "name": "Sort by Invoice ID",
+      "x": 1280,
+      "y": 170,
       "config": {
         "sort_by": [
           {
-            "column": "DueDate",
+            "column": "InvoiceID",
             "ascending": true
           }
         ]
@@ -183,21 +143,21 @@
     {
       "id": "node_ie_out",
       "type": "output_data",
-      "name": "Export Structured Invoices",
-      "x": 1520,
-      "y": 130,
+      "name": "Export Structured AP Ledger",
+      "x": 1480,
+      "y": 170,
       "config": {
-        "filename": "invoices_structured",
-        "format": "xlsx",
+        "filename": "structured_ap_ledger",
+        "format": "csv",
         "write_mode": "overwrite"
       }
     },
     {
       "id": "node_ie_browse",
       "type": "browse",
-      "name": "Preview Results",
-      "x": 1520,
-      "y": 260,
+      "name": "Browse AP Ledger",
+      "x": 1660,
+      "y": 170,
       "config": {}
     }
   ],
@@ -220,26 +180,33 @@
       "id": "cie3",
       "source": "node_ie_llm",
       "sourceHandle": "O",
-      "target": "node_ie_filter",
+      "target": "node_ie_formula",
       "targetHandle": "I"
     },
     {
       "id": "cie4",
+      "source": "node_ie_formula",
+      "sourceHandle": "O",
+      "target": "node_ie_filter",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cie5",
       "source": "node_ie_filter",
       "sourceHandle": "T",
       "target": "node_ie_sort",
       "targetHandle": "I"
     },
     {
-      "id": "cie5",
+      "id": "cie6",
       "source": "node_ie_sort",
       "sourceHandle": "O",
       "target": "node_ie_out",
       "targetHandle": "I"
     },
     {
-      "id": "cie6",
-      "source": "node_ie_sort",
+      "id": "cie7",
+      "source": "node_ie_out",
       "sourceHandle": "O",
       "target": "node_ie_browse",
       "targetHandle": "I"
