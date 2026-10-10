@@ -1,0 +1,697 @@
+<?xml version="1.0"?>
+<AlteryxDocument yxmdVer="11.3">
+  <Nodes>
+    <Node ToolID="6">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="54" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="58" />
+          <Fields>
+            <Field name="Country" />
+            <Field name="Month" />
+            <Field name="Tax Expense" />
+          </Fields>
+          <Data>
+            <r>
+              <c>United States</c>
+              <c>2016-06-01</c>
+              <c>4314.16</c>
+            </r>
+            <r>
+              <c>United States</c>
+              <c>2016-07-01</c>
+              <c>6354.35</c>
+            </r>
+            <r>
+              <c>United States</c>
+              <c>2016-08-01</c>
+              <c>42434.52</c>
+            </r>
+            <r>
+              <c>United States</c>
+              <c>2016-09-01</c>
+              <c>52353.52</c>
+            </r>
+            <r>
+              <c>United States</c>
+              <c>2016-10-01</c>
+              <c>5232.52</c>
+            </r>
+            <r>
+              <c>United States</c>
+              <c>2016-11-01</c>
+              <c>1323.52</c>
+            </r>
+            <r>
+              <c>United States</c>
+              <c>2016-12-01</c>
+              <c>24141.55</c>
+            </r>
+            <r>
+              <c>Canada</c>
+              <c>2016-06-01</c>
+              <c>1134.24</c>
+            </r>
+            <r>
+              <c>Canada</c>
+              <c>2016-07-01</c>
+              <c>1244.25</c>
+            </r>
+            <r>
+              <c>Canada</c>
+              <c>2016-08-01</c>
+              <c>874.63</c>
+            </r>
+            <r>
+              <c>Canada</c>
+              <c>2016-10-01</c>
+              <c>767.63</c>
+            </r>
+            <r>
+              <c>Canada</c>
+              <c>2016-11-01</c>
+              <c>363.65</c>
+            </r>
+            <r>
+              <c>Canada</c>
+              <c>2016-12-01</c>
+              <c>366.74</c>
+            </r>
+            <r>
+              <c>Brazil</c>
+              <c>2014-01-01</c>
+              <c>864.72</c>
+            </r>
+            <r>
+              <c>Brazil</c>
+              <c>2016-10-01</c>
+              <c>8444.02</c>
+            </r>
+            <r>
+              <c>Brazil</c>
+              <c>2016-11-01</c>
+              <c>4774.29</c>
+            </r>
+            <r>
+              <c>Brazil</c>
+              <c>2016-12-01</c>
+              <c>3553.35</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2014-01-01</c>
+              <c>72150.53</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2014-02-01</c>
+              <c>67340.35</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2014-03-01</c>
+              <c>62530.53</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2014-04-01</c>
+              <c>57720.63</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2016-05-01</c>
+              <c>1957.55</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2016-06-01</c>
+              <c>1663.92</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2016-07-01</c>
+              <c>1414.33</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2016-08-01</c>
+              <c>1202.18</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2016-09-01</c>
+              <c>1021.85</c>
+            </r>
+            <r>
+              <c>Chile</c>
+              <c>2016-10-01</c>
+              <c>868.58</c>
+            </r>
+            <r>
+              <c>Colombia</c>
+              <c>2015-03-01</c>
+              <c>155595.44</c>
+            </r>
+            <r>
+              <c>Colombia</c>
+              <c>2015-04-01</c>
+              <c>124476.36</c>
+            </r>
+            <r>
+              <c>Colombia</c>
+              <c>2015-05-01</c>
+              <c>99581.08</c>
+            </r>
+            <r>
+              <c>Colombia</c>
+              <c>2015-06-01</c>
+              <c>79664.87</c>
+            </r>
+            <r>
+              <c>Colombia</c>
+              <c>2015-07-01</c>
+              <c>63731.89</c>
+            </r>
+            <r>
+              <c>Colombia</c>
+              <c>2015-08-01</c>
+              <c>50985.52</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2006-05-01</c>
+              <c>112409.7</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2006-06-01</c>
+              <c>118974.43</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2006-07-01</c>
+              <c>157393.26</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2008-06-01</c>
+              <c>78868.35</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2010-07-01</c>
+              <c>53798.14</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2010-08-01</c>
+              <c>71013.54</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2010-09-01</c>
+              <c>59990.31</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2010-10-01</c>
+              <c>63345.7</c>
+            </r>
+            <r>
+              <c>China</c>
+              <c>2010-11-01</c>
+              <c>66886.65</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2001-01-01</c>
+              <c>21328.65</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2001-02-01</c>
+              <c>20233.08</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2003-01-01</c>
+              <c>38041.92</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2003-02-01</c>
+              <c>36083.88</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2003-03-01</c>
+              <c>34069.9</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2003-04-01</c>
+              <c>31999.97</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2015-06-01</c>
+              <c>71999.93</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2015-07-01</c>
+              <c>82167.75</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2015-08-01</c>
+              <c>72615.31</c>
+            </r>
+            <r>
+              <c>Japan</c>
+              <c>2015-09-01</c>
+              <c>76237.69</c>
+            </r>
+            <r>
+              <c>South Korea</c>
+              <c>2013-07-01</c>
+              <c>52463.04</c>
+            </r>
+            <r>
+              <c>South Korea</c>
+              <c>2013-08-01</c>
+              <c>69027.2</c>
+            </r>
+            <r>
+              <c>South Korea</c>
+              <c>2014-08-01</c>
+              <c>105953.79</c>
+            </r>
+            <r>
+              <c>South Korea</c>
+              <c>2014-09-01</c>
+              <c>87645.6</c>
+            </r>
+            <r>
+              <c>South Korea</c>
+              <c>2014-10-01</c>
+              <c>90550.43</c>
+            </r>
+            <r>
+              <c>South Korea</c>
+              <c>2014-11-01</c>
+              <c>93477.51</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="7">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.Filter.Filter">
+        <Position x="198" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Mode>Simple</Mode>
+          <Simple>
+            <Field>Country</Field>
+            <Operator>=</Operator>
+            <Operands>
+              <Operand>Canada</Operand>
+            </Operands>
+          </Simple>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText>[Country] = "Canada"</DefaultAnnotationText>
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxFilter" />
+    </Node>
+    <Node ToolID="8">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.Filter.Filter">
+        <Position x="198" y="222" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Mode>Simple</Mode>
+          <Simple>
+            <Field>Tax Expense</Field>
+            <Operator>&lt;=</Operator>
+            <Operands>
+              <Operand>1500</Operand>
+            </Operands>
+          </Simple>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText>[Tax Expense] &lt;= 1500</DefaultAnnotationText>
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxFilter" />
+    </Node>
+    <Node ToolID="9">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.Filter.Filter">
+        <Position x="198" y="390" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Mode>Simple</Mode>
+          <Simple>
+            <Field>Tax Expense</Field>
+            <Operator>&gt;=</Operator>
+            <Operands>
+              <Operand>1500</Operand>
+            </Operands>
+          </Simple>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText>[Tax Expense] &gt;= 1500</DefaultAnnotationText>
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxFilter" />
+    </Node>
+    <Node ToolID="10">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="390" y="66" width="204" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Equals = Canada</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="1" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="11">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="390" y="234" width="276" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Less than or equal to 1500 &lt;=</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="1" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="12">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="390" y="402" width="276" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>greater than or equal to 1500 &gt;=</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="1" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="13">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="294" y="18" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_14816_05e25ad3cb02458dafedde3f67bcef5c_\Engine_2572_651b68bb6b1740c198a2854011da6af3_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>True Records</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="14">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="294" y="90" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_14816_05e25ad3cb02458dafedde3f67bcef5c_\Engine_2572_eb1bc45cb47c4fa788d0f7932b1a2824_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>False Records</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="15">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="294" y="186" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_14816_05e25ad3cb02458dafedde3f67bcef5c_\Engine_2572_c1d5afc99c3240a4898ea0e2ea23ca77_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>True Records</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="16">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="294" y="258" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_14816_05e25ad3cb02458dafedde3f67bcef5c_\Engine_2572_b70d453efee747f49905d41004d8c15f_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>False Records</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="17">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="294" y="354" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_14816_05e25ad3cb02458dafedde3f67bcef5c_\Engine_2572_28bfad77aabb4b999d7b79ec79f1a112_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>True Records</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="18">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="294" y="426" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_14816_05e25ad3cb02458dafedde3f67bcef5c_\Engine_2572_f4582403ef744cb9a4cd1d09e7fe389a_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>False Records</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+  </Nodes>
+  <Connections>
+    <Connection>
+      <Origin ToolID="6" Connection="Output" />
+      <Destination ToolID="7" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="6" Connection="Output" />
+      <Destination ToolID="8" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="6" Connection="Output" />
+      <Destination ToolID="9" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="7" Connection="True" />
+      <Destination ToolID="13" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="7" Connection="False" />
+      <Destination ToolID="14" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="8" Connection="True" />
+      <Destination ToolID="15" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="8" Connection="False" />
+      <Destination ToolID="16" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="9" Connection="True" />
+      <Destination ToolID="17" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="9" Connection="False" />
+      <Destination ToolID="18" Connection="Input" />
+    </Connection>
+  </Connections>
+  <Properties>
+    <Memory default="True" />
+    <GlobalRecordLimit value="0" />
+    <TempFiles default="True" />
+    <Annotation on="True" includeToolName="False" />
+    <ConvErrorLimit value="10" />
+    <ConvErrorLimit_Stop value="False" />
+    <CancelOnError value="False" />
+    <DisableBrowse value="False" />
+    <EnablePerformanceProfiling value="False" />
+    <DisableAllOutput value="False" />
+    <ShowAllMacroMessages value="False" />
+    <ShowConnectionStatusIsOn value="True" />
+    <ShowConnectionStatusOnlyWhenRunning value="True" />
+    <ZoomLevel value="0" />
+    <LayoutType>Horizontal</LayoutType>
+    <MetaInfo>
+      <NameIsFileName value="True" />
+      <Name>016 Filter</Name>
+      <Description />
+      <RootToolName />
+      <ToolVersion />
+      <ToolInDb value="False" />
+      <CategoryName />
+      <SearchTags />
+      <Author />
+      <Company />
+      <Copyright />
+      <DescriptionLink actual="" displayed="" />
+      <Example>
+        <Description />
+        <File />
+      </Example>
+    </MetaInfo>
+    <Events>
+      <Enabled value="True" />
+    </Events>
+  </Properties>
+</AlteryxDocument>

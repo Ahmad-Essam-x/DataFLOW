@@ -1,0 +1,781 @@
+{
+  "name": "012 Data Cleansing",
+  "description": "Imported from Alteryx workflow '012 Data Cleansing.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_9",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 184,
+      "y": 126,
+      "config": {
+        "columns": [
+          "States",
+          "Entity Number"
+        ],
+        "data": [
+          [
+            "#ALABAMA",
+            "00010"
+          ],
+          [
+            "#ALASKA",
+            "00012"
+          ],
+          [
+            "#ARIZONA",
+            "09000"
+          ],
+          [
+            "#ARKANSAS",
+            "00030"
+          ],
+          [
+            "#CALIFORNIA",
+            "00042"
+          ],
+          [
+            "#COLORADO",
+            "00014"
+          ],
+          [
+            "#CONNECTICUT",
+            "00048"
+          ],
+          [
+            "#DELAWARE",
+            "00009"
+          ],
+          [
+            "#DISTRICT OF COLUMBIA",
+            "00000"
+          ],
+          [
+            "#FLORIDA",
+            "00055"
+          ],
+          [
+            "#GEORGIA",
+            "00060"
+          ],
+          [
+            "#HAWAII",
+            "00078"
+          ],
+          [
+            "#IDAHO",
+            "00098"
+          ],
+          [
+            "#ILLINOIS",
+            "00045"
+          ],
+          [
+            "#INDIANA",
+            "00016"
+          ],
+          [
+            "#IOWA",
+            "00102"
+          ],
+          [
+            "#KANSAS",
+            "00072"
+          ],
+          [
+            "#KENTUCKY",
+            "00800"
+          ],
+          [
+            "#LOUISIANA",
+            "00020"
+          ],
+          [
+            "#MAINE",
+            "00084"
+          ],
+          [
+            "#MONTANA",
+            "00088"
+          ],
+          [
+            "#NEBRASKA",
+            "00069"
+          ],
+          [
+            "#NEVADA",
+            "00048"
+          ],
+          [
+            "#NEW HAMPSHIRE",
+            "00125"
+          ],
+          [
+            "#NEW JERSEY",
+            "00026"
+          ],
+          [
+            "#NEW MEXICO",
+            "20000"
+          ],
+          [
+            "#NEW YORK",
+            "00168"
+          ],
+          [
+            "#NORTH CAROLINA",
+            "00116"
+          ],
+          [
+            "#NORTH DAKOTA",
+            "00030"
+          ],
+          [
+            "#OHIO",
+            "00031"
+          ],
+          [
+            "#OKLAHOMA",
+            "00064"
+          ],
+          [
+            "#OREGON",
+            "10000"
+          ],
+          [
+            "#MARYLAND",
+            "00136"
+          ],
+          [
+            "#MASSACHUSETTS",
+            "00210"
+          ],
+          [
+            "#MICHIGAN",
+            "00036"
+          ],
+          [
+            "#MINNESOTA",
+            "00037"
+          ],
+          [
+            "#MISSISSIPPI",
+            "00152"
+          ],
+          [
+            "#MISSOURI",
+            "06000"
+          ],
+          [
+            "#PENNSYLVANIA",
+            "00040"
+          ],
+          [
+            "#RHODE ISLAND",
+            "00082"
+          ],
+          [
+            "#SOUTH CAROLINA",
+            "00042"
+          ],
+          [
+            "#SOUTH DAKOTA",
+            "02000"
+          ],
+          [
+            "#TENNESSEE",
+            "00220"
+          ],
+          [
+            "#TEXAS",
+            "00090"
+          ],
+          [
+            "#UTAH",
+            "03000"
+          ],
+          [
+            "#VERMONT",
+            "00188"
+          ],
+          [
+            "#VIRGINIA",
+            "00288"
+          ],
+          [
+            "#WASHINGTON",
+            "04000"
+          ],
+          [
+            "#WEST VIRGINIA",
+            "00050"
+          ],
+          [
+            "#WISCONSIN",
+            "00153"
+          ],
+          [
+            "#WYOMING",
+            "00208"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_10",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 184,
+      "y": 54,
+      "config": {
+        "columns": [
+          "States",
+          "Manager"
+        ],
+        "data": [
+          [
+            "1 Alabama",
+            "Catie"
+          ],
+          [
+            "2 Alaska",
+            "Catie"
+          ],
+          [
+            "3 Arizona",
+            "Catie"
+          ],
+          [
+            "4 Arkansas",
+            "Catie"
+          ],
+          [
+            "5 California",
+            "Catie"
+          ],
+          [
+            "6 Colorado",
+            "Catie"
+          ],
+          [
+            "7 Connecticut",
+            "Catie"
+          ],
+          [
+            "8 Delaware",
+            "Catie"
+          ],
+          [
+            "9 District of Columbia",
+            "Catie"
+          ],
+          [
+            "10 Florida",
+            "Catie"
+          ],
+          [
+            "11 Georgia",
+            "Catie"
+          ],
+          [
+            "12 Hawaii",
+            "Catie"
+          ],
+          [
+            "13 Idaho",
+            "Catie"
+          ],
+          [
+            "14 Illinois",
+            "Catie"
+          ],
+          [
+            "15 Indiana",
+            "Catie"
+          ],
+          [
+            "16 Iowa",
+            "Sue"
+          ],
+          [
+            "17 Kansas",
+            "Sue"
+          ],
+          [
+            "18 Kentucky",
+            "Sue"
+          ],
+          [
+            "19 Louisiana",
+            "Sue"
+          ],
+          [
+            "20 Maine",
+            "Sue"
+          ],
+          [
+            "21 Montana",
+            "Sue"
+          ],
+          [
+            "22 Nebraska",
+            "Sue"
+          ],
+          [
+            "23 Nevada",
+            "Sue"
+          ],
+          [
+            "24 New Hampshire",
+            "Sue"
+          ],
+          [
+            "25 New Jersey",
+            "Sue"
+          ],
+          [
+            "26 New Mexico",
+            "Sue"
+          ],
+          [
+            "27 New York",
+            "Sue"
+          ],
+          [
+            "28 North Carolina",
+            "Sue"
+          ],
+          [
+            "29 North Dakota",
+            "Sue"
+          ],
+          [
+            "30 Ohio",
+            "Sue"
+          ],
+          [
+            "31 Oklahoma",
+            "Bob"
+          ],
+          [
+            "32 Oregon",
+            "Bob"
+          ],
+          [
+            "33 Maryland",
+            "Bob"
+          ],
+          [
+            "34 Massachusetts",
+            "Bob"
+          ],
+          [
+            "35 Michigan",
+            "Bob"
+          ],
+          [
+            "36 Minnesota",
+            "Bob"
+          ],
+          [
+            "37 Mississippi",
+            "Bob"
+          ],
+          [
+            "38 Missouri",
+            "Bob"
+          ],
+          [
+            "39 Pennsylvania",
+            "Bob"
+          ],
+          [
+            "40 Rhode Island",
+            "Bob"
+          ],
+          [
+            "41 South Carolina",
+            "Bob"
+          ],
+          [
+            "42 South Dakota",
+            "Bob"
+          ],
+          [
+            "43 Tennessee",
+            "Bob"
+          ],
+          [
+            "44 Texas",
+            "Bob"
+          ],
+          [
+            "45 Utah",
+            "Bob"
+          ],
+          [
+            "46 Vermont",
+            "Bob"
+          ],
+          [
+            "47 Virginia",
+            "Bob"
+          ],
+          [
+            "48 Washington",
+            "Bob"
+          ],
+          [
+            "49 West Virginia",
+            "Bob"
+          ],
+          [
+            "50 Wisconsin",
+            "Bob"
+          ],
+          [
+            "51 Wyoming",
+            "Bob"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_11",
+      "type": "clean",
+      "name": "Clean",
+      "x": 268,
+      "y": 126,
+      "config": {
+        "columns": [
+          "States"
+        ],
+        "replace_nulls_numeric": false,
+        "replace_nulls_string": false,
+        "trim_whitespace": false,
+        "remove_tabs_linebreaks": false,
+        "remove_all_ws": false,
+        "remove_letters": false,
+        "remove_numbers": false,
+        "remove_punctuation": true,
+        "case_mode": "none"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_12",
+      "type": "clean",
+      "name": "Clean",
+      "x": 268,
+      "y": 54,
+      "config": {
+        "columns": [
+          "States"
+        ],
+        "replace_nulls_numeric": false,
+        "replace_nulls_string": false,
+        "trim_whitespace": false,
+        "remove_tabs_linebreaks": false,
+        "remove_all_ws": false,
+        "remove_letters": false,
+        "remove_numbers": true,
+        "remove_punctuation": false,
+        "case_mode": "none"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_15",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 184,
+      "y": 198,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2"
+        ],
+        "data": [
+          [
+            "        cat",
+            ""
+          ],
+          [
+            "   dog",
+            ""
+          ],
+          [
+            "deer",
+            ""
+          ],
+          [
+            "    elephant    ",
+            ""
+          ],
+          [
+            "   rabbit",
+            ""
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_17",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 184,
+      "y": 270,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2"
+        ],
+        "data": [
+          [
+            "CaT",
+            "DOG"
+          ],
+          [
+            "FisH",
+            "rabbit"
+          ],
+          [
+            "PIGS",
+            "bird"
+          ],
+          [
+            "Horses",
+            "ELEPHANT"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_18",
+      "type": "clean",
+      "name": "Clean",
+      "x": 268,
+      "y": 270,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2"
+        ],
+        "replace_nulls_numeric": false,
+        "replace_nulls_string": false,
+        "trim_whitespace": false,
+        "remove_tabs_linebreaks": false,
+        "remove_all_ws": false,
+        "remove_letters": false,
+        "remove_numbers": false,
+        "remove_punctuation": false,
+        "case_mode": "upper"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_19",
+      "type": "clean",
+      "name": "Clean",
+      "x": 268,
+      "y": 198,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2"
+        ],
+        "replace_nulls_numeric": false,
+        "replace_nulls_string": false,
+        "trim_whitespace": true,
+        "remove_tabs_linebreaks": false,
+        "remove_all_ws": false,
+        "remove_letters": false,
+        "remove_numbers": false,
+        "remove_punctuation": false,
+        "case_mode": "none"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_21",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 184,
+      "y": 342,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2"
+        ],
+        "data": [
+          [
+            "",
+            "5"
+          ],
+          [
+            "",
+            "6"
+          ],
+          [
+            "2",
+            ""
+          ],
+          [
+            "",
+            "5"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_22",
+      "type": "clean",
+      "name": "Clean",
+      "x": 268,
+      "y": 342,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2"
+        ],
+        "replace_nulls_numeric": true,
+        "replace_nulls_string": true,
+        "trim_whitespace": false,
+        "remove_tabs_linebreaks": false,
+        "remove_all_ws": false,
+        "remove_letters": false,
+        "remove_numbers": false,
+        "remove_punctuation": false,
+        "case_mode": "none"
+      },
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_9_O_alteryx_11_I_1",
+      "source": "alteryx_9",
+      "sourceHandle": "O",
+      "target": "alteryx_11",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_10_O_alteryx_12_I_2",
+      "source": "alteryx_10",
+      "sourceHandle": "O",
+      "target": "alteryx_12",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_15_O_alteryx_19_I_3",
+      "source": "alteryx_15",
+      "sourceHandle": "O",
+      "target": "alteryx_19",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_17_O_alteryx_18_I_4",
+      "source": "alteryx_17",
+      "sourceHandle": "O",
+      "target": "alteryx_18",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_21_O_alteryx_22_I_5",
+      "source": "alteryx_21",
+      "sourceHandle": "O",
+      "target": "alteryx_22",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_13",
+      "text": "Numbers",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 61,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_14",
+      "text": "Punctuation",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 133,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_16",
+      "text": "White Space",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 217,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_20",
+      "text": "Modify Case",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 289,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_23",
+      "text": "Nulls",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 361,
+      "width": 160,
+      "height": 60
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '012 Data Cleansing.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "012 Data Cleansing.yxmd",
+    "total_tools": 10,
+    "mapped_tools": 10,
+    "fallback_tools": 0
+  }
+}

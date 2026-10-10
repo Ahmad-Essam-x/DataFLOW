@@ -272,6 +272,8 @@ export async function openWorkflowFileDialog() {
       if (isPackage) {
         await importWorkflowPackage(file);
         window.activeWorkflowFile = { handle: null, name: fileName, path: fileName };
+      } else if (fileName.endsWith('.yxmd')) {
+        await importYxmdWorkflow(file);
       } else {
         const text = await file.text();
         const wf = JSON.parse(text);
@@ -374,6 +376,32 @@ export async function importWorkflowPackage(file) {
   }
 }
 
+export async function importYxmdWorkflow(file) {
+  if (!file) return;
+  try {
+    window.showToast('info', 'Importing Alteryx Workflow...', `Converting '${file.name}'...`, 4000);
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/workflow/import-yxmd', { method: 'POST', body: formData });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.error || 'Failed to import Alteryx workflow.');
+
+    if (json.workflow) {
+      handleWorkflowLoaded(json.workflow, json.filename || file.name.replace(/\.yxmd$/i, ''));
+      const stats = json.stats || {};
+      const coverage = stats.coverage_pct !== undefined ? `${stats.coverage_pct}%` : '100%';
+      const msg = `Mapped ${stats.mapped_tools || 0} tools (${stats.fallback_tools || 0} fallbacks). Coverage: ${coverage}`;
+      window.showToast('success', 'Alteryx Workflow Imported', msg);
+      await window.refreshSavedWorkflows?.();
+    } else {
+      throw new Error('No valid workflow definition returned.');
+    }
+  } catch (err) {
+    console.error('Alteryx import failed:', err);
+    window.showToast('error', 'Import Failed', err.message);
+  }
+}
+
 export function handleWorkflowLoaded(wf, defaultName = 'Workflow') {
   const filePath = (wf && (wf._path || wf.path)) ? (wf._path || wf.path) : null;
   const fileName = (wf && wf._filename) ? wf._filename : (defaultName.endsWith('.json') ? defaultName : `${defaultName}.json`);
@@ -404,6 +432,7 @@ export function initWorkflowIO() {
   window.exportWorkflowJson = exportWorkflowJson;
   window.exportWorkflowPackage = exportWorkflowPackage;
   window.importWorkflowPackage = importWorkflowPackage;
+  window.importYxmdWorkflow = importYxmdWorkflow;
   window.handleWorkflowLoaded = handleWorkflowLoaded;
   window.loadWorkflowFromServer = loadWorkflowFromServer;
 
@@ -416,6 +445,8 @@ export function initWorkflowIO() {
       try {
         if (file.name.endsWith('.zip') || file.name.endsWith('.yxzp')) {
           await importWorkflowPackage(file);
+        } else if (file.name.endsWith('.yxmd')) {
+          await importYxmdWorkflow(file);
         } else {
           const text = await file.text();
           const wf = JSON.parse(text);

@@ -1,0 +1,595 @@
+{
+  "name": "challenge_13_atcodedog05_Solution",
+  "description": "Imported from Alteryx workflow 'challenge_13_atcodedog05_Solution.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_41",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 78,
+      "y": 282,
+      "config": {
+        "columns": [
+          "RecordID",
+          "Description"
+        ],
+        "data": [
+          [
+            "1",
+            "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\"> <head> <META http-equiv=\"Content-Type\" content=\"text/html\"> <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"> </head> <body style=\"margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;\"> <table style=\"font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px\"> <tr style=\"text-align:center;font-weight:bold;background:#9CBCE2\"> <td></td> </tr> <tr> <td> <table style=\"font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px\"> <tr> <td>Type</td> <td><Null></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>State</td> <td><Null></td> </tr> <tr> <td>In Country</td> <td><Null></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>MSA</td> <td>4773</td> </tr> <tr> <td>FID Name</td> <td><Null></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>GLOBALID</td> <td>{32D84405-69A5-4G9D-9Q62-C026E123JB14}</td> </tr> <tr> <td>Area Name</td> <td>Midtown</td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>Area ID</td> <td>FH899039453280</td> </tr> <tr> <td>Creation User</td> <td><AYXAcademy></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>Date Stamp</td> <td><2019-09-20></td> </tr> <tr> <td>Last Modified By</td> <td><John Doe></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>SHAPE</td> <td>Polygon</td> </tr> <tr> <td>SHAPE.AREA</td> <td>6137399.359468</td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>SHAPE.LEN</td> <td>12680.218239</td> </tr> </table> </td> </tr> </table> </body> </html>"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_42",
+      "type": "browse",
+      "name": "Browse",
+      "x": 191,
+      "y": 282,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_44",
+      "type": "browse",
+      "name": "Browse",
+      "x": 583,
+      "y": 282,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_46",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 474,
+      "y": 282,
+      "config": {
+        "columns": [
+          "RecordID",
+          "Name",
+          "Value"
+        ],
+        "data": [
+          [
+            "1",
+            "Type",
+            ""
+          ],
+          [
+            "1",
+            "State",
+            ""
+          ],
+          [
+            "1",
+            "In Country",
+            ""
+          ],
+          [
+            "1",
+            "MSA",
+            "4773"
+          ],
+          [
+            "1",
+            "FID Name",
+            ""
+          ],
+          [
+            "1",
+            "GLOBALID",
+            "{32D84405-69A5-4G9D-9Q62-C026E123JB14}"
+          ],
+          [
+            "1",
+            "Area Name",
+            "Midtown"
+          ],
+          [
+            "1",
+            "Area ID",
+            "FH899039453280"
+          ],
+          [
+            "1",
+            "Creation User",
+            "<AYXAcademy>"
+          ],
+          [
+            "1",
+            "Date Stamp",
+            "<2019-09-20>"
+          ],
+          [
+            "1",
+            "Last Modified By",
+            "<John Doe>"
+          ],
+          [
+            "1",
+            "SHAPE",
+            "Polygon"
+          ],
+          [
+            "1",
+            "SHAPE.AREA",
+            "6137399.359468"
+          ],
+          [
+            "1",
+            "SHAPE.LEN",
+            "12680.218239"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_48",
+      "type": "formula",
+      "name": "Description = Replace([Description], \"<table\", \"^\")\n\nDescription = Replace([Desc...",
+      "x": 126,
+      "y": 426,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], \"<table\", \"^\")",
+            "type": "string"
+          },
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], \"</table\", \"^\")",
+            "type": "string"
+          },
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], \"</td>\", \"$\")",
+            "type": "string"
+          },
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], \"<td>\", \"$\")",
+            "type": "string"
+          },
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], \"<tr>\", \"|\")",
+            "type": "string"
+          },
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], \"</tr>\", \"|\")",
+            "type": "string"
+          },
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], '<tr bgcolor=\"#D4E4F3\">', \"$\")",
+            "type": "string"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_49",
+      "type": "text_to_columns",
+      "name": "Text To Columns",
+      "x": 186,
+      "y": 426,
+      "config": {
+        "column": "Description",
+        "delimiter": ",",
+        "num_columns": 1,
+        "split_to": "columns"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_52",
+      "type": "sample",
+      "name": "Sample",
+      "x": 246,
+      "y": 426,
+      "config": {
+        "sample_type": "records_range",
+        "ranges": "3"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_53",
+      "type": "text_to_columns",
+      "name": "Text To Columns",
+      "x": 306,
+      "y": 426,
+      "config": {
+        "column": "Description",
+        "delimiter": ",",
+        "num_columns": 1,
+        "split_to": "columns"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_55",
+      "type": "filter",
+      "name": "StartsWith([Description], \"$\")",
+      "x": 426,
+      "y": 426,
+      "config": {
+        "mode": "custom",
+        "expression": "StartsWith([Description], \"$\")"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_56",
+      "type": "clean",
+      "name": "Clean",
+      "x": 366,
+      "y": 426,
+      "config": {
+        "columns": [
+          "Description"
+        ],
+        "replace_nulls_numeric": true,
+        "replace_nulls_string": true,
+        "trim_whitespace": true,
+        "remove_tabs_linebreaks": false,
+        "remove_all_ws": false,
+        "remove_letters": false,
+        "remove_numbers": false,
+        "remove_punctuation": false,
+        "case_mode": "none"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_57",
+      "type": "formula",
+      "name": "Description = Replace([Description], \"$ $\", \"$\")\nDescription = ReplaceFirst([Des...",
+      "x": 486,
+      "y": 414,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "Replace([Description], \"$ $\", \"$\")",
+            "type": "string"
+          },
+          {
+            "output_field": "Description",
+            "field": "Description",
+            "expression": "ReplaceFirst([Description], \"$\", \"\")",
+            "type": "string"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_58",
+      "type": "text_to_columns",
+      "name": "Text To Columns",
+      "x": 546,
+      "y": 414,
+      "config": {
+        "column": "Description",
+        "delimiter": ",",
+        "num_columns": 2,
+        "split_to": "columns"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_59",
+      "type": "formula",
+      "name": "Value = IF [2]='<Null>' THEN Null() ELSE [2] ENDIF",
+      "x": 606,
+      "y": 414,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "Value",
+            "field": "Value",
+            "expression": "IF [2]='<Null>' THEN Null() ELSE [2] ENDIF",
+            "type": "string"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_60",
+      "type": "select",
+      "name": "Select",
+      "x": 666,
+      "y": 414,
+      "config": {
+        "fields": [
+          {
+            "field": "RecordID",
+            "original": "RecordID",
+            "rename": "RecordID",
+            "type": "none",
+            "selected": true,
+            "keep": true
+          },
+          {
+            "field": "1",
+            "original": "1",
+            "rename": "Name",
+            "type": "none",
+            "selected": true,
+            "keep": true
+          },
+          {
+            "field": "Value",
+            "original": "Value",
+            "rename": "Value",
+            "type": "none",
+            "selected": true,
+            "keep": true
+          },
+          {
+            "field": "*Unknown",
+            "original": "*Unknown",
+            "rename": "*Unknown",
+            "type": "none",
+            "selected": false,
+            "keep": false
+          }
+        ],
+        "select_unknown": false
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_61",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 66,
+      "y": 426,
+      "config": {
+        "columns": [
+          "RecordID",
+          "Description"
+        ],
+        "data": [
+          [
+            "1",
+            "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\"> <head> <META http-equiv=\"Content-Type\" content=\"text/html\"> <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"> </head> <body style=\"margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;\"> <table style=\"font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px\"> <tr style=\"text-align:center;font-weight:bold;background:#9CBCE2\"> <td></td> </tr> <tr> <td> <table style=\"font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px\"> <tr> <td>Type</td> <td><Null></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>State</td> <td><Null></td> </tr> <tr> <td>In Country</td> <td><Null></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>MSA</td> <td>4773</td> </tr> <tr> <td>FID Name</td> <td><Null></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>GLOBALID</td> <td>{32D84405-69A5-4G9D-9Q62-C026E123JB14}</td> </tr> <tr> <td>Area Name</td> <td>Midtown</td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>Area ID</td> <td>FH899039453280</td> </tr> <tr> <td>Creation User</td> <td><AYXAcademy></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>Date Stamp</td> <td><2019-09-20></td> </tr> <tr> <td>Last Modified By</td> <td><John Doe></td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>SHAPE</td> <td>Polygon</td> </tr> <tr> <td>SHAPE.AREA</td> <td>6137399.359468</td> </tr> <tr bgcolor=\"#D4E4F3\"> <td>SHAPE.LEN</td> <td>12680.218239</td> </tr> </table> </td> </tr> </table> </body> </html>"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_62",
+      "type": "browse",
+      "name": "Browse",
+      "x": 726,
+      "y": 414,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_41_O_alteryx_42_I_1",
+      "source": "alteryx_41",
+      "sourceHandle": "O",
+      "target": "alteryx_42",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_46_O_alteryx_44_I_2",
+      "source": "alteryx_46",
+      "sourceHandle": "O",
+      "target": "alteryx_44",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_48_O_alteryx_49_I_3",
+      "source": "alteryx_48",
+      "sourceHandle": "O",
+      "target": "alteryx_49",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_49_O_alteryx_52_I_4",
+      "source": "alteryx_49",
+      "sourceHandle": "O",
+      "target": "alteryx_52",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_52_O_alteryx_53_I_5",
+      "source": "alteryx_52",
+      "sourceHandle": "O",
+      "target": "alteryx_53",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_53_O_alteryx_56_I_6",
+      "source": "alteryx_53",
+      "sourceHandle": "O",
+      "target": "alteryx_56",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_55_T_alteryx_57_I_7",
+      "source": "alteryx_55",
+      "sourceHandle": "T",
+      "target": "alteryx_57",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_56_O_alteryx_55_I_8",
+      "source": "alteryx_56",
+      "sourceHandle": "O",
+      "target": "alteryx_55",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_57_O_alteryx_58_I_9",
+      "source": "alteryx_57",
+      "sourceHandle": "O",
+      "target": "alteryx_58",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_58_O_alteryx_59_I_10",
+      "source": "alteryx_58",
+      "sourceHandle": "O",
+      "target": "alteryx_59",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_59_O_alteryx_60_I_11",
+      "source": "alteryx_59",
+      "sourceHandle": "O",
+      "target": "alteryx_60",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_60_O_alteryx_62_I_12",
+      "source": "alteryx_60",
+      "sourceHandle": "O",
+      "target": "alteryx_62",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_61_O_alteryx_48_I_13",
+      "source": "alteryx_61",
+      "sourceHandle": "O",
+      "target": "alteryx_48",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_63",
+      "text": "My Solution",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 59,
+      "y": 390,
+      "width": 739,
+      "height": 204
+    },
+    {
+      "id": "alteryx_15",
+      "text": "Input",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 59,
+      "y": 239,
+      "width": 216,
+      "height": 144
+    },
+    {
+      "id": "alteryx_16",
+      "text": "Output",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 454,
+      "y": 240,
+      "width": 216,
+      "height": 144
+    },
+    {
+      "id": "alteryx_29",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 54,
+      "y": 54,
+      "width": 324,
+      "height": 72
+    },
+    {
+      "id": "alteryx_30",
+      "text": "Weekly Challenge #13",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 16,
+      "x": 450,
+      "y": 70,
+      "width": 300,
+      "height": 60
+    },
+    {
+      "id": "alteryx_31",
+      "text": "The input contains a series of name/value pairs within the description field. The description field has a HTML table that contains 14 name/value contained within <td> tags. Each pairing can be found on a different row (designated by the <tr> tag).\n\nThe objective is to produce a table containing the 14 name/value pairs.",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 59,
+      "y": 114,
+      "width": 612,
+      "height": 108
+    },
+    {
+      "id": "alteryx_64",
+      "text": "I have used the strategy of replacing\n\n\"<table></table>\" with ^\n\"<tr></tr>\" with |\n\"<td></td>\" with $\n\nAnd later taking reference for splitting to rows and columns",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 474,
+      "y": 486,
+      "width": 312,
+      "height": 96
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow 'challenge_13_atcodedog05_Solution.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "challenge_13_atcodedog05_Solution.yxmd",
+    "total_tools": 16,
+    "mapped_tools": 16,
+    "fallback_tools": 0
+  }
+}

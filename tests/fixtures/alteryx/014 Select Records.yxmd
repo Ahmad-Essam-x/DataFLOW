@@ -1,0 +1,724 @@
+<?xml version="1.0"?>
+<AlteryxDocument yxmdVer="2018.1">
+  <Nodes>
+    <Node ToolID="17">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="390" y="330" width="216" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Multiple selections</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="1" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="16">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="390" y="222" width="288" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>All records beyond a certain row</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="1" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="14">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="390" y="150" width="204" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>A range of records</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="1" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="10">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.RecordID.RecordID">
+        <Position x="162" y="54.00003" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <FieldName>RecordID</FieldName>
+          <StartValue>1</StartValue>
+          <FieldType>Int32</FieldType>
+          <FieldSize>6</FieldSize>
+          <Position>0</Position>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxRecordID" />
+    </Node>
+    <Node ToolID="9">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="390" y="66" width="204" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>A single record</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="1" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="8">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="606" y="162" width="492" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>A hyphen is used to specify a range</Text>
+          <Font name="Segoe UI" size="8.25" style="0" />
+          <TextColor name="Black" />
+          <FillColor name="White" />
+          <Shape shape="3" />
+          <Justification Justification="3" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="7">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="678" y="222" width="300" height="72" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>A plus (+) is certain N records after are shown
+A minus (-) certain N records before are shown</Text>
+          <Font name="Segoe UI" size="8.25" style="0" />
+          <TextColor name="Black" />
+          <FillColor name="White" />
+          <Shape shape="3" />
+          <Justification Justification="3" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="6">
+      <GuiSettings>
+        <Position x="270" y="210" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="Ranges">-5</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="SelectRecords.yxmc" />
+    </Node>
+    <Node ToolID="5">
+      <GuiSettings>
+        <Position x="270" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="Ranges">20</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="SelectRecords.yxmc" />
+    </Node>
+    <Node ToolID="4">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="606" y="78" width="492" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>specify a single record</Text>
+          <Font name="Segoe UI" size="8.25" style="0" />
+          <TextColor name="Black" />
+          <FillColor name="White" />
+          <Shape shape="3" />
+          <Justification Justification="3" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="3">
+      <GuiSettings>
+        <Position x="270" y="138" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="Ranges">10-15</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="SelectRecords.yxmc" />
+    </Node>
+    <Node ToolID="2">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="618" y="330" width="528" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text><![CDATA[Multiple selections can listed together. ]]></Text>
+          <Font name="Segoe UI" size="8.25" style="0" />
+          <TextColor name="Black" />
+          <FillColor name="White" />
+          <Shape shape="3" />
+          <Justification Justification="0" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="1">
+      <GuiSettings>
+        <Position x="269.9999" y="318" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="Ranges">5
+10-13
+-2
+20+</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="SelectRecords.yxmc" />
+    </Node>
+    <Node ToolID="18">
+      <GuiSettings>
+        <Position x="270" y="258" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="Ranges">20+</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="SelectRecords.yxmc" />
+    </Node>
+    <Node ToolID="19">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="342" y="222" width="24" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>-</Text>
+          <Font name="Segoe UI" size="14.25" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="20">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="342" y="270" width="24" height="36" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>+</Text>
+          <Font name="Segoe UI" size="14.25" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="22">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="54" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="36" />
+          <Fields>
+            <Field name="id" />
+            <Field name="first_name" />
+            <Field name="last_name" />
+            <Field name="email" />
+            <Field name="gender" />
+            <Field name="concatenate" />
+            <Field name="Money" />
+          </Fields>
+          <Data>
+            <r>
+              <c>1</c>
+              <c>Abner</c>
+              <c>Cinavas</c>
+              <c>acinavas0@facebook.com</c>
+              <c>Male</c>
+              <c>Crane, blue</c>
+              <c>$7.15</c>
+            </r>
+            <r>
+              <c>2</c>
+              <c>Delmore</c>
+              <c>Mattaus</c>
+              <c>dmattaus1@soundcloud.com</c>
+              <c>Male</c>
+              <c>Sparrow, house</c>
+              <c>$9.85</c>
+            </r>
+            <r>
+              <c>3</c>
+              <c>Brett</c>
+              <c>Morrell</c>
+              <c>bmorrell2@bloomberg.com</c>
+              <c>Male</c>
+              <c>Common melba finch</c>
+              <c>$1.92</c>
+            </r>
+            <r>
+              <c>4</c>
+              <c>Marissa</c>
+              <c>Symmons</c>
+              <c>msymmons3@yellowpages.com</c>
+              <c>Female</c>
+              <c>Rhinoceros, square-lipped</c>
+              <c>$5.14</c>
+            </r>
+            <r>
+              <c>5</c>
+              <c>Stillmann</c>
+              <c>Hagart</c>
+              <c>shagart4@forbes.com</c>
+              <c>Male</c>
+              <c>Royal tern</c>
+              <c>$8.84</c>
+            </r>
+            <r>
+              <c>6</c>
+              <c>Tammy</c>
+              <c>Bolwell</c>
+              <c>tbolwell5@elegantthemes.com</c>
+              <c>Male</c>
+              <c>Vulture, black</c>
+              <c>$0.26</c>
+            </r>
+            <r>
+              <c>7</c>
+              <c>Prudy</c>
+              <c>Restill</c>
+              <c>prestill6@sohu.com</c>
+              <c>Female</c>
+              <c>Ring-tailed lemur</c>
+              <c>$1.67</c>
+            </r>
+            <r>
+              <c>8</c>
+              <c>Mirabelle</c>
+              <c>Plume</c>
+              <c>mplume7@dedecms.com</c>
+              <c>Female</c>
+              <c>Lizard, blue-tongued</c>
+              <c>$1.16</c>
+            </r>
+            <r>
+              <c>9</c>
+              <c>Doy</c>
+              <c>Bartlomiej</c>
+              <c>dbartlomiej8@godaddy.com</c>
+              <c>Male</c>
+              <c>Lemming, collared</c>
+              <c>$0.90</c>
+            </r>
+            <r>
+              <c>10</c>
+              <c>Martica</c>
+              <c>Swidenbank</c>
+              <c>mswidenbank9@house.gov</c>
+              <c>Female</c>
+              <c>Duck, mountain</c>
+              <c>$2.63</c>
+            </r>
+            <r>
+              <c>11</c>
+              <c>Dolores</c>
+              <c>Egleton</c>
+              <c>degletona@berkeley.edu</c>
+              <c>Female</c>
+              <c>Defassa waterbuck</c>
+              <c>$6.04</c>
+            </r>
+            <r>
+              <c>12</c>
+              <c>Linus</c>
+              <c>Lamburn</c>
+              <c>llamburnb@wisc.edu</c>
+              <c>Male</c>
+              <c>Civet cat</c>
+              <c>$5.12</c>
+            </r>
+            <r>
+              <c>13</c>
+              <c>Chelsea</c>
+              <c>Symon</c>
+              <c>csymonc@canalblog.com</c>
+              <c>Female</c>
+              <c>Two-toed tree sloth</c>
+              <c>$3.98</c>
+            </r>
+            <r>
+              <c>14</c>
+              <c>Jillie</c>
+              <c>Petrashkov</c>
+              <c>jpetrashkovd@wikia.com</c>
+              <c>Female</c>
+              <c>White-eye, pale</c>
+              <c>$6.57</c>
+            </r>
+            <r>
+              <c>15</c>
+              <c>Nero</c>
+              <c>Hasty</c>
+              <c>nhastye@delicious.com</c>
+              <c>Male</c>
+              <c>Neotropic cormorant</c>
+              <c>$6.15</c>
+            </r>
+            <r>
+              <c>16</c>
+              <c>Tammy</c>
+              <c>Moses</c>
+              <c>tmosesf@upenn.edu</c>
+              <c>Male</c>
+              <c>Indian tree pie</c>
+              <c>$6.70</c>
+            </r>
+            <r>
+              <c>17</c>
+              <c>Wallis</c>
+              <c>Pockett</c>
+              <c>wpockettg@digg.com</c>
+              <c>Male</c>
+              <c>Brindled gnu</c>
+              <c>$7.78</c>
+            </r>
+            <r>
+              <c>18</c>
+              <c>Emmet</c>
+              <c>Matashkin</c>
+              <c>ematashkinh@hugedomains.com</c>
+              <c>Male</c>
+              <c>Wolf, mexican</c>
+              <c>$4.69</c>
+            </r>
+            <r>
+              <c>19</c>
+              <c>Danny</c>
+              <c>Castiello</c>
+              <c>dcastielloi@bigcartel.com</c>
+              <c>Male</c>
+              <c>Cockatoo, roseate</c>
+              <c>$3.79</c>
+            </r>
+            <r>
+              <c>20</c>
+              <c>Timoteo</c>
+              <c>Whittet</c>
+              <c>twhittetj@yahoo.com</c>
+              <c>Male</c>
+              <c>Red-capped cardinal</c>
+              <c>$0.49</c>
+            </r>
+            <r>
+              <c>21</c>
+              <c>Robinett</c>
+              <c>Silverthorn</c>
+              <c>rsilverthornk@live.com</c>
+              <c>Female</c>
+              <c>Duck, blue</c>
+              <c>$8.61</c>
+            </r>
+            <r>
+              <c>22</c>
+              <c>Eli</c>
+              <c>Matuszak</c>
+              <c>ematuszakl@slashdot.org</c>
+              <c>Male</c>
+              <c>Antechinus, brown</c>
+              <c>$6.43</c>
+            </r>
+            <r>
+              <c>23</c>
+              <c>Amanda</c>
+              <c>Windrass</c>
+              <c>awindrassm@guardian.co.uk</c>
+              <c>Female</c>
+              <c>Booby, blue-footed</c>
+              <c>$2.36</c>
+            </r>
+            <r>
+              <c>24</c>
+              <c>Simone</c>
+              <c>Franzini</c>
+              <c>sfranzinin@webnode.com</c>
+              <c>Female</c>
+              <c>Lizard, mexican beaded</c>
+              <c>$7.28</c>
+            </r>
+            <r>
+              <c>25</c>
+              <c>Wallache</c>
+              <c>Margett</c>
+              <c>wmargetto@nyu.edu</c>
+              <c>Male</c>
+              <c>Sage hen</c>
+              <c>$0.75</c>
+            </r>
+            <r>
+              <c>26</c>
+              <c>Lee</c>
+              <c>Braunfeld</c>
+              <c>lbraunfeldp@dell.com</c>
+              <c>Female</c>
+              <c>Crab-eating fox</c>
+              <c>$7.21</c>
+            </r>
+            <r>
+              <c>27</c>
+              <c>Dilan</c>
+              <c>Trawin</c>
+              <c>dtrawinq@surveymonkey.com</c>
+              <c>Male</c>
+              <c>Brown lemur</c>
+              <c>$1.57</c>
+            </r>
+            <r>
+              <c>28</c>
+              <c>Bevan</c>
+              <c>Boecke</c>
+              <c>bboecker@i2i.jp</c>
+              <c>Male</c>
+              <c>Galapagos tortoise</c>
+              <c>$4.52</c>
+            </r>
+            <r>
+              <c>29</c>
+              <c>Belva</c>
+              <c>Vidler</c>
+              <c>bvidlers@reverbnation.com</c>
+              <c>Female</c>
+              <c>Roseate cockatoo</c>
+              <c>$1.59</c>
+            </r>
+            <r>
+              <c>30</c>
+              <c>Blakeley</c>
+              <c>Brazil</c>
+              <c>bbrazilt@dot.gov</c>
+              <c>Female</c>
+              <c>Wallaby, red-necked</c>
+              <c>$8.64</c>
+            </r>
+            <r>
+              <c>31</c>
+              <c>Trevar</c>
+              <c>MacQuist</c>
+              <c>tmacquistu@abc.net.au</c>
+              <c>Male</c>
+              <c>Stick insect</c>
+              <c>$9.05</c>
+            </r>
+            <r>
+              <c>32</c>
+              <c>Dermot</c>
+              <c>Cromb</c>
+              <c>dcrombv@rediff.com</c>
+              <c>Male</c>
+              <c>Sparrow, house</c>
+              <c>$3.48</c>
+            </r>
+            <r>
+              <c>33</c>
+              <c>Adams</c>
+              <c>Gustus</c>
+              <c>agustusw@mapquest.com</c>
+              <c>Male</c>
+              <c>Cormorant, great</c>
+              <c>$2.17</c>
+            </r>
+            <r>
+              <c>34</c>
+              <c>Clair</c>
+              <c>Gove</c>
+              <c>cgovex@nature.com</c>
+              <c>Female</c>
+              <c>Squirrel, smith's bush</c>
+              <c>$1.97</c>
+            </r>
+            <r>
+              <c>35</c>
+              <c>Nils</c>
+              <c>Solman</c>
+              <c>nsolmany@japanpost.jp</c>
+              <c>Male</c>
+              <c>Elk, Wapiti</c>
+              <c>$6.89</c>
+            </r>
+            <r>
+              <c>36</c>
+              <c>Heidi</c>
+              <c>Fortie</c>
+              <c>hfortiez@1688.com</c>
+              <c>Female</c>
+              <c>Blackish oystercatcher</c>
+              <c>$1.74</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+  </Nodes>
+  <Connections>
+    <Connection>
+      <Origin ToolID="10" Connection="Output" />
+      <Destination ToolID="5" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="10" Connection="Output" />
+      <Destination ToolID="3" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="10" Connection="Output" />
+      <Destination ToolID="6" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="10" Connection="Output" />
+      <Destination ToolID="18" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="10" Connection="Output" />
+      <Destination ToolID="1" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="22" Connection="Output" />
+      <Destination ToolID="10" Connection="Input" />
+    </Connection>
+  </Connections>
+  <Properties>
+    <Memory default="True" />
+    <GlobalRecordLimit value="0" />
+    <TempFiles default="True" />
+    <Annotation on="True" includeToolName="False" />
+    <ConvErrorLimit value="10" />
+    <ConvErrorLimit_Stop value="False" />
+    <CancelOnError value="False" />
+    <DisableBrowse value="False" />
+    <EnablePerformanceProfiling value="False" />
+    <DisableAllOutput value="False" />
+    <ShowAllMacroMessages value="False" />
+    <ShowConnectionStatusIsOn value="True" />
+    <ShowConnectionStatusOnlyWhenRunning value="True" />
+    <ZoomLevel value="0" />
+    <LayoutType>Horizontal</LayoutType>
+    <MetaInfo>
+      <NameIsFileName value="True" />
+      <Name>014 Select Records</Name>
+      <Description />
+      <RootToolName />
+      <ToolVersion />
+      <ToolInDb value="False" />
+      <CategoryName />
+      <SearchTags />
+      <Author />
+      <Company />
+      <Copyright />
+      <DescriptionLink actual="" displayed="" />
+      <Example>
+        <Description />
+        <File />
+      </Example>
+    </MetaInfo>
+    <Events>
+      <Enabled value="True" />
+    </Events>
+  </Properties>
+</AlteryxDocument>

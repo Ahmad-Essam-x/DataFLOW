@@ -1,0 +1,480 @@
+{
+  "name": "Marketing Attribution & Survey Matrix",
+  "description": "Unions web and mobile survey streams, replaces campaign codes with friendly names, selects key attributes, unpivots quarterly ratings with Transpose, samples records, and pivots into a Regional cross-tab matrix.",
+  "metadata": {
+    "created_at": "2026-10-09T21:40:56",
+    "updated_at": "2026-10-09T21:40:56",
+    "version": "2.1.0",
+    "author": "",
+    "description": "Unions web and mobile survey streams, replaces campaign codes with friendly names, selects key attributes, unpivots quarterly ratings with Transpose, samples records, and pivots into a Regional cross-tab matrix."
+  },
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "node_mkt_in",
+      "type": "input_data",
+      "name": "Input Web Responses (CSV)",
+      "x": 100,
+      "y": 150,
+      "config": {
+        "delimiter": ",",
+        "file_path": "quarterly_campaign_responses.csv",
+        "file_type": "csv",
+        "has_header": true,
+        "preview_columns": [
+          "Email",
+          "CampaignCode",
+          "Region",
+          "Q1_Score",
+          "Q2_Score",
+          "Q3_Score",
+          "Q4_Score"
+        ],
+        "column_meta": [
+          {
+            "name": "Email",
+            "type": "string",
+            "alteryx_type": "String"
+          },
+          {
+            "name": "CampaignCode",
+            "type": "string",
+            "alteryx_type": "String"
+          },
+          {
+            "name": "Region",
+            "type": "string",
+            "alteryx_type": "String"
+          },
+          {
+            "name": "Q1_Score",
+            "type": "numeric",
+            "alteryx_type": "Double"
+          },
+          {
+            "name": "Q2_Score",
+            "type": "numeric",
+            "alteryx_type": "Double"
+          },
+          {
+            "name": "Q3_Score",
+            "type": "numeric",
+            "alteryx_type": "Double"
+          },
+          {
+            "name": "Q4_Score",
+            "type": "numeric",
+            "alteryx_type": "Double"
+          }
+        ]
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_mobile",
+      "type": "text_input",
+      "name": "Mobile Event Responses",
+      "x": 100,
+      "y": 300,
+      "config": {
+        "columns": [
+          "Email",
+          "CampaignCode",
+          "Region",
+          "Q1_Score",
+          "Q2_Score",
+          "Q3_Score",
+          "Q4_Score"
+        ],
+        "data": [
+          [
+            "mobile_1@app.com",
+            "CAMP_SUM_24",
+            "North America",
+            88,
+            92,
+            85,
+            94
+          ],
+          [
+            "mobile_2@app.com",
+            "CAMP_WIN_24",
+            "EMEA",
+            75,
+            78,
+            82,
+            89
+          ],
+          [
+            "mobile_3@app.com",
+            "CAMP_AUT_24",
+            "APAC",
+            91,
+            90,
+            93,
+            95
+          ],
+          [
+            "mobile_4@app.com",
+            "CAMP_SPR_24",
+            "LATAM",
+            80,
+            84,
+            82,
+            88
+          ]
+        ]
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_union",
+      "type": "union",
+      "name": "Union Web & Mobile Logs",
+      "x": 300,
+      "y": 210,
+      "config": {
+        "mode": "by_name",
+        "non_matching": "all"
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_lookup",
+      "type": "text_input",
+      "name": "Campaign Dictionary",
+      "x": 300,
+      "y": 340,
+      "config": {
+        "columns": [
+          "Code",
+          "CampaignName",
+          "Tier"
+        ],
+        "data": [
+          [
+            "CAMP_SUM_24",
+            "Summer Brand Lift",
+            "Tier-1"
+          ],
+          [
+            "CAMP_AUT_24",
+            "Autumn Customer Retarget",
+            "Tier-2"
+          ],
+          [
+            "CAMP_WIN_24",
+            "Winter Holiday Blitz",
+            "Tier-1"
+          ],
+          [
+            "CAMP_SPR_24",
+            "Spring Product Launch",
+            "Tier-2"
+          ]
+        ]
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_fr",
+      "type": "find_replace",
+      "name": "Replace Campaign Codes",
+      "x": 500,
+      "y": 240,
+      "config": {
+        "action": "replace",
+        "case_sensitive": false,
+        "find_field": "CampaignCode",
+        "find_value_field": "Code",
+        "replace_with_field": "CampaignName",
+        "search_mode": "entire_field"
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_select",
+      "type": "select",
+      "name": "Select & Format Fields",
+      "x": 680,
+      "y": 240,
+      "config": {
+        "fields": [
+          {
+            "keep": true,
+            "original": "Email",
+            "rename": "UserEmail",
+            "type": "string"
+          },
+          {
+            "keep": true,
+            "original": "CampaignCode",
+            "rename": "CampaignName",
+            "type": "string"
+          },
+          {
+            "keep": true,
+            "original": "Region",
+            "rename": "Region",
+            "type": "string"
+          },
+          {
+            "keep": true,
+            "original": "Q1_Score",
+            "rename": "Q1",
+            "type": "float"
+          },
+          {
+            "keep": true,
+            "original": "Q2_Score",
+            "rename": "Q2",
+            "type": "float"
+          },
+          {
+            "keep": true,
+            "original": "Q3_Score",
+            "rename": "Q3",
+            "type": "float"
+          },
+          {
+            "keep": true,
+            "original": "Q4_Score",
+            "rename": "Q4",
+            "type": "float"
+          }
+        ]
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_multifield",
+      "type": "multi_field_formula",
+      "name": "Standardize Scores",
+      "x": 860,
+      "y": 240,
+      "config": {
+        "expression": "[_CurrentField_] * 1.0",
+        "field_type_filter": "numeric",
+        "output_mode": "update",
+        "output_prefix": "",
+        "output_suffix": "",
+        "output_type": "float",
+        "selected_fields": [
+          "Q1",
+          "Q2",
+          "Q3",
+          "Q4"
+        ]
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_transpose",
+      "type": "transpose",
+      "name": "Unpivot Quarterly Scores",
+      "x": 1040,
+      "y": 240,
+      "config": {
+        "data_columns": [
+          "Q1",
+          "Q2",
+          "Q3",
+          "Q4"
+        ],
+        "key_columns": [
+          "UserEmail",
+          "CampaignName",
+          "Region"
+        ],
+        "name_column": "Quarter",
+        "value_column": "Score"
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_sample",
+      "type": "sample",
+      "name": "Sample Validation Rows",
+      "x": 1220,
+      "y": 240,
+      "config": {
+        "n_records": 100,
+        "sample_type": "first_n"
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_crosstab",
+      "type": "crosstab",
+      "name": "Pivot to Regional Matrix",
+      "x": 1424,
+      "y": 240,
+      "config": {
+        "agg_func": "mean",
+        "group_by": [
+          "Region"
+        ],
+        "header_field": "CampaignName",
+        "value_field": "Score"
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    },
+    {
+      "id": "node_mkt_out",
+      "type": "output_data",
+      "name": "Export Attribution Matrix",
+      "x": 1620,
+      "y": 240,
+      "config": {
+        "filename": "campaign_attribution_matrix",
+        "format": "csv",
+        "write_mode": "overwrite"
+      },
+      "container_id": "container_mkt_1",
+      "is_cached": false,
+      "locked": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "cm1",
+      "source": "node_mkt_in",
+      "sourceHandle": "O",
+      "target": "node_mkt_union",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm2",
+      "source": "node_mkt_mobile",
+      "sourceHandle": "O",
+      "target": "node_mkt_union",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm3",
+      "source": "node_mkt_union",
+      "sourceHandle": "O",
+      "target": "node_mkt_fr",
+      "targetHandle": "F"
+    },
+    {
+      "id": "cm4",
+      "source": "node_mkt_lookup",
+      "sourceHandle": "O",
+      "target": "node_mkt_fr",
+      "targetHandle": "R"
+    },
+    {
+      "id": "cm5",
+      "source": "node_mkt_fr",
+      "sourceHandle": "O",
+      "target": "node_mkt_select",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm6",
+      "source": "node_mkt_select",
+      "sourceHandle": "O",
+      "target": "node_mkt_multifield",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm6_b",
+      "source": "node_mkt_multifield",
+      "sourceHandle": "O",
+      "target": "node_mkt_transpose",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm7",
+      "source": "node_mkt_transpose",
+      "sourceHandle": "O",
+      "target": "node_mkt_sample",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm8",
+      "source": "node_mkt_sample",
+      "sourceHandle": "O",
+      "target": "node_mkt_crosstab",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm9",
+      "source": "node_mkt_crosstab",
+      "sourceHandle": "O",
+      "target": "node_mkt_out",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [
+    {
+      "id": "container_mkt_1",
+      "title": "Marketing Attribution & Pivoting Pipeline",
+      "color": "rgba(249, 115, 22, 0.08)",
+      "textColor": "#ffffff",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "fillOpacity": 12,
+      "margin": 24,
+      "x": 60,
+      "y": 60,
+      "width": 1760,
+      "height": 420,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "node_mkt_in",
+        "node_mkt_mobile",
+        "node_mkt_union",
+        "node_mkt_lookup",
+        "node_mkt_fr",
+        "node_mkt_select",
+        "node_mkt_multifield",
+        "node_mkt_transpose",
+        "node_mkt_sample",
+        "node_mkt_crosstab",
+        "node_mkt_out"
+      ]
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment_mkt_1",
+      "text": "### Survey Analysis Methodology\n- Web survey responses are unioned with mobile telemetry records.\n- Find Replace maps campaign codes to human-readable names.\n- Select casts scores and standardizes headers.\n- Multi-Field Formula applies batch numeric transformations to Q1-Q4 scores.\n- Transpose melts Q1-Q4 ratings into tall pairs.\n- Cross Tab aggregates average ratings into an Executive Regional Grid.",
+      "color": "#eab308",
+      "textColor": "#1e293b",
+      "fontSize": 13,
+      "x": 60,
+      "y": 500,
+      "width": 460,
+      "height": 140
+    }
+  ],
+  "cached_node_ids": [],
+  "auto_cache_upstream": false
+}

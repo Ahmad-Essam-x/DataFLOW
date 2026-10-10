@@ -1,0 +1,990 @@
+{
+  "name": "018 Join",
+  "description": "Imported from Alteryx workflow '018 Join.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_16",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 138,
+      "y": 90,
+      "config": {
+        "columns": [
+          "City",
+          "Population"
+        ],
+        "data": [
+          [
+            "Chicago",
+            "2695598"
+          ],
+          [
+            "Los Angeles",
+            "3792622"
+          ],
+          [
+            "New York",
+            "8175133"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_17",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 138,
+      "y": 186,
+      "config": {
+        "columns": [
+          "City",
+          "Sport",
+          "Team"
+        ],
+        "data": [
+          [
+            "Chicago",
+            "Baseball",
+            "Cubs"
+          ],
+          [
+            "Chicago",
+            "Baseball",
+            "White Sox"
+          ],
+          [
+            "Los Angeles",
+            "Baseball",
+            "Dodgers"
+          ],
+          [
+            "Los Angeles",
+            "Baseball",
+            "Angels"
+          ],
+          [
+            "New York",
+            "Baseball",
+            "Yankees"
+          ],
+          [
+            "New York",
+            "Baseball",
+            "Mets"
+          ],
+          [
+            "Boston",
+            "Baseball",
+            "Red Sox"
+          ],
+          [
+            "Tampa",
+            "Baseball",
+            "Devil Rays"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_18",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 630,
+      "y": 90,
+      "config": {
+        "columns": [
+          "Product",
+          "Quarter",
+          "Sales"
+        ],
+        "data": [
+          [
+            "Product 1",
+            "Q1",
+            "7557.41"
+          ],
+          [
+            "Product 1",
+            "Q2",
+            "3528.7"
+          ],
+          [
+            "Product 1",
+            "Q3",
+            "4157.25"
+          ],
+          [
+            "Product 1",
+            "Q4",
+            "15797.4"
+          ],
+          [
+            "Product 10",
+            "Q1",
+            "415.05"
+          ],
+          [
+            "Product 10",
+            "Q2",
+            "377.25"
+          ],
+          [
+            "Product 10",
+            "Q3",
+            "543.38"
+          ],
+          [
+            "Product 10",
+            "Q4",
+            "1618.63"
+          ],
+          [
+            "Product 11",
+            "Q1",
+            "3573.11"
+          ],
+          [
+            "Product 11",
+            "Q2",
+            "856.75"
+          ],
+          [
+            "Product 11",
+            "Q3",
+            "1536.33"
+          ],
+          [
+            "Product 11",
+            "Q4",
+            "4549.38"
+          ],
+          [
+            "Product 12",
+            "Q1",
+            "45"
+          ],
+          [
+            "Product 12",
+            "Q2",
+            "1145.25"
+          ],
+          [
+            "Product 12",
+            "Q3",
+            "1168.41"
+          ],
+          [
+            "Product 12",
+            "Q4",
+            "1553.53"
+          ],
+          [
+            "Product 13",
+            "Q1",
+            ""
+          ],
+          [
+            "Product 13",
+            "Q2",
+            "596.88"
+          ],
+          [
+            "Product 13",
+            "Q3",
+            "1420.53"
+          ],
+          [
+            "Product 13",
+            "Q4",
+            "1202.46"
+          ],
+          [
+            "Product 14",
+            "Q1",
+            "2073.54"
+          ],
+          [
+            "Product 14",
+            "Q2",
+            "936.75"
+          ],
+          [
+            "Product 14",
+            "Q3",
+            "1429.75"
+          ],
+          [
+            "Product 14",
+            "Q4",
+            "2266.55"
+          ],
+          [
+            "Product 15",
+            "Q1",
+            ""
+          ],
+          [
+            "Product 15",
+            "Q2",
+            "240.63"
+          ],
+          [
+            "Product 15",
+            "Q3",
+            "1018.75"
+          ],
+          [
+            "Product 15",
+            "Q4",
+            "1245.29"
+          ],
+          [
+            "Product 2",
+            "Q1",
+            "5342.76"
+          ],
+          [
+            "Product 2",
+            "Q2",
+            "3670.16"
+          ],
+          [
+            "Product 2",
+            "Q3",
+            "4851.31"
+          ],
+          [
+            "Product 2",
+            "Q4",
+            "6262.98"
+          ],
+          [
+            "Product 3",
+            "Q1",
+            "9844.21"
+          ],
+          [
+            "Product 3",
+            "Q2",
+            "6197.73"
+          ],
+          [
+            "Product 3",
+            "Q3",
+            "7916.88"
+          ],
+          [
+            "Product 3",
+            "Q4",
+            "16499.83"
+          ],
+          [
+            "Product 4",
+            "Q1",
+            "3379.05"
+          ],
+          [
+            "Product 4",
+            "Q2",
+            "2200.5"
+          ],
+          [
+            "Product 4",
+            "Q3",
+            "2866.16"
+          ],
+          [
+            "Product 4",
+            "Q4",
+            "6226.1"
+          ],
+          [
+            "Product 5",
+            "Q1",
+            "3000"
+          ],
+          [
+            "Product 5",
+            "Q2",
+            "533.75"
+          ],
+          [
+            "Product 5",
+            "Q3",
+            "1252"
+          ],
+          [
+            "Product 5",
+            "Q4",
+            "5658.52"
+          ],
+          [
+            "Product 7",
+            "Q1",
+            "100"
+          ],
+          [
+            "Product 7",
+            "Q2",
+            "1090.83"
+          ],
+          [
+            "Product 7",
+            "Q3",
+            "1912.31"
+          ],
+          [
+            "Product 7",
+            "Q4",
+            "4874.79"
+          ],
+          [
+            "Product 8",
+            "Q1",
+            ""
+          ],
+          [
+            "Product 8",
+            "Q2",
+            "522.38"
+          ],
+          [
+            "Product 8",
+            "Q3",
+            "809"
+          ],
+          [
+            "Product 8",
+            "Q4",
+            "1721.09"
+          ],
+          [
+            "Product 9",
+            "Q1",
+            "3635.54"
+          ],
+          [
+            "Product 9",
+            "Q2",
+            "1803"
+          ],
+          [
+            "Product 9",
+            "Q3",
+            "1563"
+          ],
+          [
+            "Product 9",
+            "Q4",
+            "7628.88"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_19",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 630,
+      "y": 210,
+      "config": {
+        "columns": [
+          "Item",
+          "Product",
+          "Quarter",
+          "Gross Margin"
+        ],
+        "data": [
+          [
+            "Socks",
+            "Product 1",
+            "Q1",
+            "5290.19"
+          ],
+          [
+            "Socks",
+            "Product 1",
+            "Q2",
+            "2470.09"
+          ],
+          [
+            "Socks",
+            "Product 1",
+            "Q3",
+            "2910.07"
+          ],
+          [
+            "Socks",
+            "Product 1",
+            "Q4",
+            "11058.18"
+          ],
+          [
+            "Shoes",
+            "Product 10",
+            "Q1",
+            "290.53"
+          ],
+          [
+            "Shoes",
+            "Product 10",
+            "Q2",
+            "264.07"
+          ],
+          [
+            "Shoes",
+            "Product 10",
+            "Q3",
+            "380.36"
+          ],
+          [
+            "Shoes",
+            "Product 10",
+            "Q4",
+            "1133.04"
+          ],
+          [
+            "Shirts",
+            "Product 11",
+            "Q1",
+            "2501.18"
+          ],
+          [
+            "Shirts",
+            "Product 11",
+            "Q2",
+            "599.72"
+          ],
+          [
+            "Shirts",
+            "Product 11",
+            "Q3",
+            "1075.43"
+          ],
+          [
+            "Shirts",
+            "Product 11",
+            "Q4",
+            "3184.56"
+          ],
+          [
+            "Jeans",
+            "Product 12",
+            "Q1",
+            "31.5"
+          ],
+          [
+            "Jeans",
+            "Product 12",
+            "Q2",
+            "801.67"
+          ],
+          [
+            "Jeans",
+            "Product 12",
+            "Q3",
+            "817.89"
+          ],
+          [
+            "Jeans",
+            "Product 12",
+            "Q4",
+            "1087.47"
+          ],
+          [
+            "Skirts",
+            "Product 13",
+            "Q1",
+            "0"
+          ],
+          [
+            "Skirts",
+            "Product 13",
+            "Q2",
+            "417.81"
+          ],
+          [
+            "Skirts",
+            "Product 13",
+            "Q3",
+            "994.37"
+          ],
+          [
+            "Skirts",
+            "Product 13",
+            "Q4",
+            "841.72"
+          ],
+          [
+            "Gloves",
+            "Product 14",
+            "Q1",
+            "1451.48"
+          ],
+          [
+            "Gloves",
+            "Product 14",
+            "Q2",
+            "655.72"
+          ],
+          [
+            "Gloves",
+            "Product 14",
+            "Q3",
+            "1000.82"
+          ],
+          [
+            "Gloves",
+            "Product 14",
+            "Q4",
+            "1586.59"
+          ],
+          [
+            "Hats",
+            "Product 15",
+            "Q1",
+            "0"
+          ],
+          [
+            "Hats",
+            "Product 15",
+            "Q2",
+            "168.44"
+          ],
+          [
+            "Hats",
+            "Product 15",
+            "Q3",
+            "713.13"
+          ],
+          [
+            "Hats",
+            "Product 15",
+            "Q4",
+            "871.7"
+          ],
+          [
+            "Belts",
+            "Product 2",
+            "Q1",
+            "3739.93"
+          ],
+          [
+            "Belts",
+            "Product 2",
+            "Q2",
+            "2569.11"
+          ],
+          [
+            "Belts",
+            "Product 2",
+            "Q3",
+            "3395.92"
+          ],
+          [
+            "Belts",
+            "Product 2",
+            "Q4",
+            "4384.08"
+          ],
+          [
+            "Bikini",
+            "Product 3",
+            "Q1",
+            "6890.95"
+          ],
+          [
+            "Bikini",
+            "Product 3",
+            "Q2",
+            "4338.41"
+          ],
+          [
+            "Bikini",
+            "Product 3",
+            "Q3",
+            "5541.81"
+          ],
+          [
+            "Bikini",
+            "Product 3",
+            "Q4",
+            "11549.88"
+          ],
+          [
+            "Earings",
+            "Product 4",
+            "Q1",
+            "2365.34"
+          ],
+          [
+            "Earings",
+            "Product 4",
+            "Q2",
+            "1540.35"
+          ],
+          [
+            "Earings",
+            "Product 4",
+            "Q3",
+            "2006.31"
+          ],
+          [
+            "Earings",
+            "Product 4",
+            "Q4",
+            "4358.27"
+          ],
+          [
+            "Rings",
+            "Product 5",
+            "Q1",
+            "2100"
+          ],
+          [
+            "Rings",
+            "Product 5",
+            "Q2",
+            "373.63"
+          ],
+          [
+            "Rings",
+            "Product 5",
+            "Q3",
+            "876.4"
+          ],
+          [
+            "Rings",
+            "Product 5",
+            "Q4",
+            "3960.97"
+          ],
+          [
+            "Purse",
+            "Product 7",
+            "Q1",
+            "70"
+          ],
+          [
+            "Purse",
+            "Product 7",
+            "Q2",
+            "763.58"
+          ],
+          [
+            "Purse",
+            "Product 7",
+            "Q3",
+            "1338.62"
+          ],
+          [
+            "Purse",
+            "Product 7",
+            "Q4",
+            "3412.35"
+          ],
+          [
+            "Backpacks",
+            "Product 8",
+            "Q1",
+            "0"
+          ],
+          [
+            "Backpacks",
+            "Product 8",
+            "Q2",
+            "365.66"
+          ],
+          [
+            "Backpacks",
+            "Product 8",
+            "Q3",
+            "566.3"
+          ],
+          [
+            "Backpacks",
+            "Product 8",
+            "Q4",
+            "1204.76"
+          ],
+          [
+            "Wallet",
+            "Product 9",
+            "Q1",
+            "2544.88"
+          ],
+          [
+            "Wallet",
+            "Product 9",
+            "Q2",
+            "1262.1"
+          ],
+          [
+            "Wallet",
+            "Product 9",
+            "Q3",
+            "1094.1"
+          ],
+          [
+            "Wallet",
+            "Product 9",
+            "Q4",
+            "5340.21"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_20",
+      "type": "join",
+      "name": "Join",
+      "x": 258,
+      "y": 138,
+      "config": {
+        "join_mode": "keys",
+        "join_keys": [
+          {
+            "left_key": "City",
+            "right_key": "City"
+          }
+        ],
+        "left_keys": [
+          "City"
+        ],
+        "right_keys": [
+          "City"
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_21",
+      "type": "join",
+      "name": "Join",
+      "x": 750,
+      "y": 138,
+      "config": {
+        "join_mode": "keys",
+        "join_keys": [
+          {
+            "left_key": "Product",
+            "right_key": "Product"
+          }
+        ],
+        "left_keys": [
+          "Product"
+        ],
+        "right_keys": [
+          "Product"
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_26",
+      "type": "browse",
+      "name": "Browse",
+      "x": 354,
+      "y": 54,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_27",
+      "type": "browse",
+      "name": "Browse",
+      "x": 354,
+      "y": 138,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_28",
+      "type": "browse",
+      "name": "Browse",
+      "x": 354,
+      "y": 222,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_29",
+      "type": "browse",
+      "name": "Browse",
+      "x": 846,
+      "y": 54,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_30",
+      "type": "browse",
+      "name": "Browse",
+      "x": 846,
+      "y": 138,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_31",
+      "type": "browse",
+      "name": "Browse",
+      "x": 846,
+      "y": 222,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_16_O_alteryx_20_L_1",
+      "source": "alteryx_16",
+      "sourceHandle": "O",
+      "target": "alteryx_20",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_alteryx_17_O_alteryx_20_R_2",
+      "source": "alteryx_17",
+      "sourceHandle": "O",
+      "target": "alteryx_20",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_alteryx_18_O_alteryx_21_L_3",
+      "source": "alteryx_18",
+      "sourceHandle": "O",
+      "target": "alteryx_21",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_alteryx_19_O_alteryx_21_R_4",
+      "source": "alteryx_19",
+      "sourceHandle": "O",
+      "target": "alteryx_21",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_alteryx_20_L_alteryx_26_I_5",
+      "source": "alteryx_20",
+      "sourceHandle": "L",
+      "target": "alteryx_26",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_20_J_alteryx_27_I_6",
+      "source": "alteryx_20",
+      "sourceHandle": "J",
+      "target": "alteryx_27",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_20_R_alteryx_28_I_7",
+      "source": "alteryx_20",
+      "sourceHandle": "R",
+      "target": "alteryx_28",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_21_L_alteryx_29_I_8",
+      "source": "alteryx_21",
+      "sourceHandle": "L",
+      "target": "alteryx_29",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_21_J_alteryx_30_I_9",
+      "source": "alteryx_21",
+      "sourceHandle": "J",
+      "target": "alteryx_30",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_21_R_alteryx_31_I_10",
+      "source": "alteryx_21",
+      "sourceHandle": "R",
+      "target": "alteryx_31",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_22",
+      "text": "Left",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 102,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_23",
+      "text": "Right",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 210,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_24",
+      "text": "Left",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 546,
+      "y": 114,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_25",
+      "text": "Right",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 546,
+      "y": 222,
+      "width": 160,
+      "height": 60
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '018 Join.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "018 Join.yxmd",
+    "total_tools": 12,
+    "mapped_tools": 12,
+    "fallback_tools": 0
+  }
+}

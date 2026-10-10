@@ -1,0 +1,223 @@
+{
+  "name": "019 Join multiple",
+  "description": "Imported from Alteryx workflow '019 Join multiple.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_28",
+      "type": "browse",
+      "name": "Browse",
+      "x": 402,
+      "y": 150,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_32",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 150,
+      "y": 246,
+      "config": {
+        "columns": [
+          "Name",
+          "Position Title"
+        ],
+        "data": [
+          [
+            "Melaine Krook",
+            "Junior Developer"
+          ],
+          [
+            "Terra Puchi",
+            "Senior Developer"
+          ],
+          [
+            "Jackson Knowles",
+            "Data Scientist"
+          ],
+          [
+            "Christina Lawrence",
+            "Junior Analyst"
+          ],
+          [
+            "Teresa Ren",
+            "Senior Analyst"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_33",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 150,
+      "y": 54,
+      "config": {
+        "columns": [
+          "Name",
+          "Age"
+        ],
+        "data": [
+          [
+            "Melaine Krook",
+            "34"
+          ],
+          [
+            "Terra Puchi",
+            "34"
+          ],
+          [
+            "Jackson Knowles",
+            "32"
+          ],
+          [
+            "Christina Lawrence",
+            "23"
+          ],
+          [
+            "Teresa Ren",
+            "23"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_34",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 150,
+      "y": 150,
+      "config": {
+        "columns": [
+          "Name",
+          "Salary"
+        ],
+        "data": [
+          [
+            "Melaine Krook",
+            "79000"
+          ],
+          [
+            "Terra Puchi",
+            "135000"
+          ],
+          [
+            "Jackson Knowles",
+            "160000"
+          ],
+          [
+            "Christina Lawrence",
+            "53000"
+          ],
+          [
+            "Teresa Ren",
+            "83000"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_36",
+      "type": "join_multiple",
+      "name": "Join Multiple",
+      "x": 270,
+      "y": 150,
+      "config": {
+        "join_mode": "keys",
+        "join_keys": []
+      },
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_32_O_alteryx_36_I_1",
+      "source": "alteryx_32",
+      "sourceHandle": "O",
+      "target": "alteryx_36",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_33_O_alteryx_36_I_2",
+      "source": "alteryx_33",
+      "sourceHandle": "O",
+      "target": "alteryx_36",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_34_O_alteryx_36_I_3",
+      "source": "alteryx_34",
+      "sourceHandle": "O",
+      "target": "alteryx_36",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_36_O_alteryx_28_I_4",
+      "source": "alteryx_36",
+      "sourceHandle": "O",
+      "target": "alteryx_28",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_29",
+      "text": "Dataset 1",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 78,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_30",
+      "text": "Dataset 2",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 174,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_31",
+      "text": "Dataset 3",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 270,
+      "width": 160,
+      "height": 60
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '019 Join multiple.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "019 Join multiple.yxmd",
+    "total_tools": 5,
+    "mapped_tools": 5,
+    "fallback_tools": 0
+  }
+}

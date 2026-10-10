@@ -1,0 +1,1129 @@
+{
+  "name": "Union",
+  "description": "Imported from Alteryx workflow 'Union.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_48",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 78,
+      "y": 2785,
+      "config": {
+        "columns": [
+          "Department",
+          "Manager Name"
+        ],
+        "data": [
+          [
+            "Sales",
+            "Tim"
+          ],
+          [
+            "HR",
+            "Taylor"
+          ],
+          [
+            "Marketing",
+            "Sally"
+          ],
+          [
+            "Support",
+            "Mike"
+          ]
+        ]
+      },
+      "container_id": "alteryx_44",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_49",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 78,
+      "y": 2910,
+      "config": {
+        "columns": [
+          "Record ID",
+          "Name"
+        ],
+        "data": [
+          [
+            "1",
+            "Tim"
+          ],
+          [
+            "2",
+            "Rob"
+          ],
+          [
+            "3",
+            "Sally"
+          ],
+          [
+            "4",
+            "Mike"
+          ],
+          [
+            "5",
+            "Sal"
+          ],
+          [
+            "6",
+            "Taylor"
+          ]
+        ]
+      },
+      "container_id": "alteryx_44",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_50",
+      "type": "unsupported_tool",
+      "name": "Basic Table",
+      "x": 186,
+      "y": 2802,
+      "config": {
+        "original_tool": "PortfolioComposerTable",
+        "original_plugin": "PortfolioPluginsGui.ComposerTable.PortfolioComposerTable",
+        "tool_id": "50",
+        "raw_xml": "<Configuration>\n              <TableMode>Basic</TableMode>\n              <GroupingFields orderChanged=\"False\" />\n              <Width>100%</Width>\n              <ShowHeader value=\"True\" />\n              <ShowBarGraph value=\"False\" />\n              <TableFields orderChanged=\"False\">\n                <Field name=\"Department\" selected=\"True\" Alignment=\"Center\" />\n                <Field name=\"Manager Name\" selected=\"True\" Alignment=\"Center\" Width=\"\" />\n                <Field name=\"*Unknown\" selected=\"True\" Alignment=\"Right\" />\n              </TableFields>\n              <TableStyles>\n                <Style Name=\"Data\" Font=\"Arial\" Size=\"8\" TextColor=\"#000000\" BackColor=\"#ffffff\" AltColor=\"#f0f0f0\" RowGroup=\"1\" />\n                <Style Name=\"Header\" Font=\"Arial\" Size=\"10\" TextColor=\"#000000\" BackColor=\"#dbdbdb\" />\n                <Style Name=\"Borders\" Width=\"1\" DataColor=\"#000000\" HeaderColor=\"#000000\" RowBorder=\"None\" BasicColBorder=\"Default (Use Per Column Setting)\" />\n                <Style Name=\"Table\" CellPadding=\"0\" ColumnPadding=\"0\" TableBorder=\"true\" Width=\"1\" BorderColor=\"#000000\" />\n              </TableStyles>\n              <StyleRules />\n            </Configuration>\n            "
+      },
+      "container_id": "alteryx_44",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_51",
+      "type": "unsupported_tool",
+      "name": "Basic Table",
+      "x": 186,
+      "y": 2886,
+      "config": {
+        "original_tool": "PortfolioComposerTable",
+        "original_plugin": "PortfolioPluginsGui.ComposerTable.PortfolioComposerTable",
+        "tool_id": "51",
+        "raw_xml": "<Configuration>\n              <TableMode>Basic</TableMode>\n              <GroupingFields orderChanged=\"False\" />\n              <Width>100%</Width>\n              <ShowHeader value=\"True\" />\n              <ShowBarGraph value=\"False\" />\n              <TableFields orderChanged=\"False\">\n                <Field name=\"Record ID\" selected=\"True\" Alignment=\"Center\" />\n                <Field name=\"Name\" selected=\"True\" Alignment=\"Center\" Width=\"\" />\n                <Field name=\"*Unknown\" selected=\"True\" Alignment=\"Right\" />\n              </TableFields>\n              <TableStyles>\n                <Style Name=\"Data\" Font=\"Arial\" Size=\"8\" TextColor=\"#000000\" BackColor=\"#ffffff\" AltColor=\"#f0f0f0\" RowGroup=\"1\" />\n                <Style Name=\"Header\" Font=\"Arial\" Size=\"10\" TextColor=\"#000000\" BackColor=\"#dbdbdb\" />\n                <Style Name=\"Borders\" Width=\"1\" DataColor=\"#000000\" HeaderColor=\"#000000\" RowBorder=\"None\" BasicColBorder=\"Default (Use Per Column Setting)\" />\n                <Style Name=\"Table\" CellPadding=\"0\" ColumnPadding=\"0\" TableBorder=\"true\" Width=\"1\" BorderColor=\"#000000\" />\n              </TableStyles>\n              <StyleRules />\n            </Configuration>\n            "
+      },
+      "container_id": "alteryx_44",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_52",
+      "type": "union",
+      "name": "Union",
+      "x": 318,
+      "y": 2850,
+      "config": {
+        "mode": "by_name"
+      },
+      "container_id": "alteryx_44",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_53",
+      "type": "unsupported_tool",
+      "name": "Table",
+      "x": 402,
+      "y": 2850,
+      "config": {
+        "original_tool": "PortfolioComposerText",
+        "original_plugin": "PortfolioPluginsGui.ComposerText.PortfolioComposerText",
+        "tool_id": "53",
+        "raw_xml": "<Configuration>\n              <Images />\n              <HeaderMode value=\"True\" />\n              <HeaderField>Table</HeaderField>\n              <Position>Above</Position>\n              <RawMode value=\"False\" />\n              <ValidatePCXML value=\"True\" />\n              <Message />\n              <RichTextMode value=\"True\" />\n              <RichTextString>{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033{\\fonttbl{\\f0\\fnil\\fcharset0 Microsoft Sans Serif;}}\n\\viewkind4\\uc1\\pard\\qc\\f0\\fs29 Table\\par\n}\n</RichTextString>\n              <Styles>\n                <Style Name=\"TextStyle\" />\n              </Styles>\n            </Configuration>\n            "
+      },
+      "container_id": "alteryx_44",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_55",
+      "type": "unsupported_tool",
+      "name": "PortfolioComposerRender",
+      "x": 498,
+      "y": 2850,
+      "config": {
+        "original_tool": "PortfolioComposerRender",
+        "original_plugin": "PortfolioPluginsGui.ComposerRender.PortfolioComposerRender",
+        "tool_id": "55",
+        "raw_xml": "<Configuration>\n              <TempFileType>pdf</TempFileType>\n              <BatchMode value=\"False\" />\n              <DataField>Table</DataField>\n              <Separator>Continuous</Separator>\n              <ShowHeader value=\"False\" />\n              <ShowFooter value=\"False\" />\n              <PortraitMode value=\"True\" />\n              <PaperType Width=\"612\" Height=\"792\" Left=\"36\" Right=\"36\" Top=\"36\" Bottom=\"36\" />\n              <DefaultStyles>\n                <Style Name=\"TextStyle\" FontName=\"Arial\" FontSize=\"14\" Justify=\"Left\" ForeColor=\"#000000\" Locale=\"1033\" />\n              </DefaultStyles>\n              <PNGResolution>1</PNGResolution>\n              <PNGLargerAction>squeeze</PNGLargerAction>\n              <PNGLargerThanPageChoice>warning</PNGLargerThanPageChoice>\n              <PNGTransparentBG value=\"False\" />\n              <PNGBackColor value=\"#ffffff\" />\n            </Configuration>\n            "
+      },
+      "container_id": "alteryx_44",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_11",
+      "type": "join",
+      "name": "Join",
+      "x": 282,
+      "y": 1083,
+      "config": {
+        "join_mode": "keys",
+        "join_keys": [
+          {
+            "left_key": "Transaction ID",
+            "right_key": "Transaction ID"
+          }
+        ],
+        "left_keys": [
+          "Transaction ID"
+        ],
+        "right_keys": [
+          "Transaction ID"
+        ]
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_12",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 102,
+      "y": 879,
+      "config": {
+        "columns": [
+          "Transaction ID",
+          "Transaction Amount"
+        ],
+        "data": [
+          [
+            "12345",
+            "330"
+          ],
+          [
+            "5647",
+            "210"
+          ],
+          [
+            "54321",
+            "200"
+          ],
+          [
+            "6789",
+            "240"
+          ],
+          [
+            "9876",
+            "150"
+          ],
+          [
+            "1928",
+            "80"
+          ],
+          [
+            "23451",
+            "90"
+          ],
+          [
+            "4543",
+            "235"
+          ]
+        ]
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_13",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 102,
+      "y": 1299,
+      "config": {
+        "columns": [
+          "Transaction ID",
+          "Transaction Type"
+        ],
+        "data": [
+          [
+            "5432",
+            "Credit"
+          ],
+          [
+            "12345",
+            "Credit"
+          ],
+          [
+            "54321",
+            "Debit"
+          ],
+          [
+            "7532",
+            "Credit"
+          ],
+          [
+            "6789",
+            "Debit"
+          ],
+          [
+            "23423",
+            "Debit"
+          ],
+          [
+            "9876",
+            "Credit"
+          ],
+          [
+            "1928",
+            "Debit"
+          ],
+          [
+            "235",
+            "Debit"
+          ]
+        ]
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_16",
+      "type": "browse",
+      "name": "Browse",
+      "x": 762,
+      "y": 879,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_17",
+      "type": "browse",
+      "name": "Browse",
+      "x": 762,
+      "y": 1083,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_18",
+      "type": "browse",
+      "name": "Browse",
+      "x": 762,
+      "y": 1299,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_19",
+      "type": "browse",
+      "name": "Browse",
+      "x": 186,
+      "y": 1429,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_20",
+      "type": "browse",
+      "name": "Browse",
+      "x": 209,
+      "y": 757,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_29",
+      "type": "join",
+      "name": "Join",
+      "x": 282,
+      "y": 2082,
+      "config": {
+        "join_mode": "keys",
+        "join_keys": [
+          {
+            "left_key": "Transaction ID",
+            "right_key": "Transaction ID"
+          }
+        ],
+        "left_keys": [
+          "Transaction ID"
+        ],
+        "right_keys": [
+          "Transaction ID"
+        ]
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_30",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 77,
+      "y": 1878,
+      "config": {
+        "columns": [
+          "Transaction ID",
+          "Transaction Amount"
+        ],
+        "data": [
+          [
+            "12345",
+            "330"
+          ],
+          [
+            "5647",
+            "210"
+          ],
+          [
+            "54321",
+            "200"
+          ],
+          [
+            "6789",
+            "240"
+          ],
+          [
+            "9876",
+            "150"
+          ],
+          [
+            "1928",
+            "80"
+          ],
+          [
+            "23451",
+            "90"
+          ],
+          [
+            "4543",
+            "235"
+          ]
+        ]
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_31",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 78,
+      "y": 2298,
+      "config": {
+        "columns": [
+          "Transaction ID",
+          "Transaction Type"
+        ],
+        "data": [
+          [
+            "5432",
+            "Credit"
+          ],
+          [
+            "12345",
+            "Credit"
+          ],
+          [
+            "54321",
+            "Debit"
+          ],
+          [
+            "7532",
+            "Credit"
+          ],
+          [
+            "6789",
+            "Debit"
+          ],
+          [
+            "23423",
+            "Debit"
+          ],
+          [
+            "9876",
+            "Credit"
+          ],
+          [
+            "1928",
+            "Debit"
+          ],
+          [
+            "235",
+            "Debit"
+          ]
+        ]
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_32",
+      "type": "browse",
+      "name": "Browse",
+      "x": 174,
+      "y": 2430,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_33",
+      "type": "browse",
+      "name": "Browse",
+      "x": 186,
+      "y": 1758,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_36",
+      "type": "union",
+      "name": "Union",
+      "x": 666,
+      "y": 1938,
+      "config": {
+        "mode": "by_pos"
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_37",
+      "type": "union",
+      "name": "Union",
+      "x": 654,
+      "y": 2250,
+      "config": {
+        "mode": "by_pos"
+      },
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_38",
+      "type": "browse",
+      "name": "Browse",
+      "x": 762,
+      "y": 1938,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_39",
+      "type": "browse",
+      "name": "Browse",
+      "x": 750,
+      "y": 2250,
+      "config": {},
+      "container_id": "alteryx_15",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_5",
+      "type": "union",
+      "name": "Union",
+      "x": 342,
+      "y": 277,
+      "config": {
+        "mode": "by_name"
+      },
+      "container_id": "alteryx_10",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_2",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 78,
+      "y": 397,
+      "config": {
+        "columns": [
+          "Record ID",
+          "Amount"
+        ],
+        "data": [
+          [
+            "6",
+            "150"
+          ],
+          [
+            "7",
+            "200"
+          ],
+          [
+            "8",
+            "50"
+          ],
+          [
+            "9",
+            "100"
+          ],
+          [
+            "10",
+            "200"
+          ]
+        ]
+      },
+      "container_id": "alteryx_10",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_1",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 78,
+      "y": 157,
+      "config": {
+        "columns": [
+          "Record ID",
+          "Amount"
+        ],
+        "data": [
+          [
+            "1",
+            "250"
+          ],
+          [
+            "2",
+            "100"
+          ],
+          [
+            "3",
+            "50"
+          ],
+          [
+            "4",
+            "150"
+          ],
+          [
+            "5",
+            "150"
+          ]
+        ]
+      },
+      "container_id": "alteryx_10",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_4",
+      "type": "browse",
+      "name": "Browse",
+      "x": 174,
+      "y": 396,
+      "config": {},
+      "container_id": "alteryx_10",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_3",
+      "type": "browse",
+      "name": "Browse",
+      "x": 174,
+      "y": 157,
+      "config": {},
+      "container_id": "alteryx_10",
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_6",
+      "type": "browse",
+      "name": "Browse",
+      "x": 438,
+      "y": 277,
+      "config": {},
+      "container_id": "alteryx_10",
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_48_O_alteryx_50_I_1",
+      "source": "alteryx_48",
+      "sourceHandle": "O",
+      "target": "alteryx_50",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_49_O_alteryx_51_I_2",
+      "source": "alteryx_49",
+      "sourceHandle": "O",
+      "target": "alteryx_51",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_50_O_alteryx_52_I_3",
+      "source": "alteryx_50",
+      "sourceHandle": "O",
+      "target": "alteryx_52",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_51_O_alteryx_52_I_4",
+      "source": "alteryx_51",
+      "sourceHandle": "O",
+      "target": "alteryx_52",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_52_O_alteryx_53_I_5",
+      "source": "alteryx_52",
+      "sourceHandle": "O",
+      "target": "alteryx_53",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_53_O_alteryx_55_I_6",
+      "source": "alteryx_53",
+      "sourceHandle": "O",
+      "target": "alteryx_55",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_11_L_alteryx_16_I_7",
+      "source": "alteryx_11",
+      "sourceHandle": "L",
+      "target": "alteryx_16",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_11_J_alteryx_17_I_8",
+      "source": "alteryx_11",
+      "sourceHandle": "J",
+      "target": "alteryx_17",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_11_R_alteryx_18_I_9",
+      "source": "alteryx_11",
+      "sourceHandle": "R",
+      "target": "alteryx_18",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_12_O_alteryx_11_L_10",
+      "source": "alteryx_12",
+      "sourceHandle": "O",
+      "target": "alteryx_11",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_alteryx_13_O_alteryx_11_R_11",
+      "source": "alteryx_13",
+      "sourceHandle": "O",
+      "target": "alteryx_11",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_alteryx_12_O_alteryx_20_I_12",
+      "source": "alteryx_12",
+      "sourceHandle": "O",
+      "target": "alteryx_20",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_13_O_alteryx_19_I_13",
+      "source": "alteryx_13",
+      "sourceHandle": "O",
+      "target": "alteryx_19",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_29_L_alteryx_36_I_14",
+      "source": "alteryx_29",
+      "sourceHandle": "L",
+      "target": "alteryx_36",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_29_J_alteryx_36_I_15",
+      "source": "alteryx_29",
+      "sourceHandle": "J",
+      "target": "alteryx_36",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_29_R_alteryx_37_I_16",
+      "source": "alteryx_29",
+      "sourceHandle": "R",
+      "target": "alteryx_37",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_29_J_alteryx_37_I_17",
+      "source": "alteryx_29",
+      "sourceHandle": "J",
+      "target": "alteryx_37",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_30_O_alteryx_29_L_18",
+      "source": "alteryx_30",
+      "sourceHandle": "O",
+      "target": "alteryx_29",
+      "targetHandle": "L"
+    },
+    {
+      "id": "conn_alteryx_31_O_alteryx_29_R_19",
+      "source": "alteryx_31",
+      "sourceHandle": "O",
+      "target": "alteryx_29",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_alteryx_30_O_alteryx_33_I_20",
+      "source": "alteryx_30",
+      "sourceHandle": "O",
+      "target": "alteryx_33",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_31_O_alteryx_32_I_21",
+      "source": "alteryx_31",
+      "sourceHandle": "O",
+      "target": "alteryx_32",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_36_O_alteryx_38_I_22",
+      "source": "alteryx_36",
+      "sourceHandle": "O",
+      "target": "alteryx_38",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_37_O_alteryx_39_I_23",
+      "source": "alteryx_37",
+      "sourceHandle": "O",
+      "target": "alteryx_39",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_5_O_alteryx_6_I_24",
+      "source": "alteryx_5",
+      "sourceHandle": "O",
+      "target": "alteryx_6",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_2_O_alteryx_4_I_25",
+      "source": "alteryx_2",
+      "sourceHandle": "O",
+      "target": "alteryx_4",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_2_O_alteryx_5_I_26",
+      "source": "alteryx_2",
+      "sourceHandle": "O",
+      "target": "alteryx_5",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_1_O_alteryx_5_I_27",
+      "source": "alteryx_1",
+      "sourceHandle": "O",
+      "target": "alteryx_5",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_1_O_alteryx_3_I_28",
+      "source": "alteryx_1",
+      "sourceHandle": "O",
+      "target": "alteryx_3",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [
+    {
+      "id": "alteryx_44",
+      "title": "Combine reporting elements",
+      "color": "#ecf2f2",
+      "textColor": "#314c4a",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "x": 20,
+      "y": 2706,
+      "width": 960,
+      "height": 323,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "alteryx_48",
+        "alteryx_49",
+        "alteryx_50",
+        "alteryx_51",
+        "alteryx_52",
+        "alteryx_53",
+        "alteryx_55"
+      ]
+    },
+    {
+      "id": "alteryx_15",
+      "title": "Joins",
+      "color": "#ecf2f2",
+      "textColor": "#314c4a",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "x": 20,
+      "y": 586,
+      "width": 1944,
+      "height": 2107,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "alteryx_11",
+        "alteryx_12",
+        "alteryx_13",
+        "alteryx_16",
+        "alteryx_17",
+        "alteryx_18",
+        "alteryx_19",
+        "alteryx_20",
+        "alteryx_29",
+        "alteryx_30",
+        "alteryx_31",
+        "alteryx_32",
+        "alteryx_33",
+        "alteryx_36",
+        "alteryx_37",
+        "alteryx_38",
+        "alteryx_39"
+      ]
+    },
+    {
+      "id": "alteryx_10",
+      "title": "Stacking like records",
+      "color": "#ecf2f2",
+      "textColor": "#314c4a",
+      "borderStyle": "solid",
+      "borderWidth": 2,
+      "x": 20,
+      "y": 23,
+      "width": 840,
+      "height": 547,
+      "collapsed": false,
+      "disabled": false,
+      "nodeIds": [
+        "alteryx_5",
+        "alteryx_2",
+        "alteryx_1",
+        "alteryx_4",
+        "alteryx_3",
+        "alteryx_6"
+      ]
+    }
+  ],
+  "comments": [
+    {
+      "id": "alteryx_56",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 570,
+      "y": 2814,
+      "width": 348,
+      "height": 132
+    },
+    {
+      "id": "alteryx_21",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 186,
+      "y": 1386,
+      "width": 348,
+      "height": 288
+    },
+    {
+      "id": "alteryx_22",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 210,
+      "y": 665,
+      "width": 348,
+      "height": 252
+    },
+    {
+      "id": "alteryx_23",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 822,
+      "y": 1242,
+      "width": 432,
+      "height": 180
+    },
+    {
+      "id": "alteryx_24",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 822,
+      "y": 1026,
+      "width": 840,
+      "height": 192
+    },
+    {
+      "id": "alteryx_25",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 822,
+      "y": 846,
+      "width": 504,
+      "height": 156
+    },
+    {
+      "id": "alteryx_26",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 1338,
+      "y": 882,
+      "width": 180,
+      "height": 96
+    },
+    {
+      "id": "alteryx_27",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 1266,
+      "y": 1278,
+      "width": 204,
+      "height": 108
+    },
+    {
+      "id": "alteryx_28",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 1674,
+      "y": 1062,
+      "width": 228,
+      "height": 120
+    },
+    {
+      "id": "alteryx_34",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 174,
+      "y": 2346,
+      "width": 348,
+      "height": 288
+    },
+    {
+      "id": "alteryx_35",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 186,
+      "y": 1698,
+      "width": 348,
+      "height": 252
+    },
+    {
+      "id": "alteryx_40",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 822,
+      "y": 2154,
+      "width": 708,
+      "height": 264
+    },
+    {
+      "id": "alteryx_41",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 822,
+      "y": 1866,
+      "width": 720,
+      "height": 252
+    },
+    {
+      "id": "alteryx_42",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 1566,
+      "y": 1878,
+      "width": 312,
+      "height": 216
+    },
+    {
+      "id": "alteryx_43",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 1554,
+      "y": 2178,
+      "width": 312,
+      "height": 216
+    },
+    {
+      "id": "alteryx_8",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 174,
+      "y": 102,
+      "width": 228,
+      "height": 168
+    },
+    {
+      "id": "alteryx_9",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 174,
+      "y": 342,
+      "width": 228,
+      "height": 168
+    },
+    {
+      "id": "alteryx_7",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 498,
+      "y": 109,
+      "width": 300,
+      "height": 396
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T22:48:13",
+    "updated_at": "2026-10-09T22:48:13",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow 'Union.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "Union.yxmd",
+    "total_tools": 30,
+    "mapped_tools": 26,
+    "fallback_tools": 4
+  }
+}

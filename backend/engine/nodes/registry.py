@@ -340,5 +340,15 @@ TOOL_METADATA: List[Dict[str, Any]] = [
         "inputs": [],
         "outputs": [],
         "description": "Add documentation notes with Markdown support"
+    },
+    {
+        "type": "unsupported_tool",
+        "name": "Unsupported Tool",
+        "category": "fallback",
+        "color": "#f59e0b",
+        "icon": "alert-triangle",
+        "inputs": ["I"],
+        "outputs": ["O"],
+        "description": "Preserved Alteryx tool not yet natively implemented. Operates as a non-destructive passthrough."
     }
 ]

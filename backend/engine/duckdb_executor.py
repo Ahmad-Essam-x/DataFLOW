@@ -32,7 +32,11 @@ from backend.engine.node_registry import (
 _COMPILABLE_TYPES = frozenset({
     "input_data", "output_data", "filter", "sort", "unique",
     "select", "formula", "join", "union", "summarize", "parse",
-    "data_clean", "tool_container", "comment",
+    "data_clean", "tool_container", "comment", "clean",
+    "find_replace", "transpose", "crosstab", "join_multiple",
+    "multi_row_formula", "multi_field_formula", "sample",
+    "record_id", "text_input", "auto_field", "date_time",
+    "text_to_columns",
 })
 
 

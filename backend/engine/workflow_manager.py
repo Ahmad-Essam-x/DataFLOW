@@ -257,17 +257,29 @@ class WorkflowManager:
         }
 
     def load_from_path(self, filepath: str) -> Dict[str, Any]:
-        """Loads and normalizes workflow JSON from an arbitrary disk path chosen in Windows Explorer."""
+        """Loads and normalizes workflow JSON or Alteryx .yxmd from an arbitrary disk path chosen in Windows Explorer."""
         clean_p = os.path.abspath(filepath)
         if not os.path.isfile(clean_p):
             raise FileNotFoundError(f"Workflow file does not exist: {clean_p}")
 
-        with open(clean_p, "r", encoding="utf-8") as f:
-            raw_data = json.load(f)
-
-        normalized, warnings = self.validate_and_normalize(raw_data)
         filename = os.path.basename(clean_p)
         file_stem = os.path.splitext(filename)[0]
+        stats = None
+
+        if clean_p.lower().endswith(".yxmd"):
+            from backend.engine.alteryx import parse_yxmd_file
+            parse_result = parse_yxmd_file(clean_p)
+            raw_data = parse_result.workflow
+            stats = parse_result.to_dict()["stats"]
+            alteryx_warnings = [w.message for w in parse_result.warnings]
+        else:
+            with open(clean_p, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+            alteryx_warnings = []
+
+        normalized, warnings = self.validate_and_normalize(raw_data)
+        if alteryx_warnings:
+            warnings = alteryx_warnings + warnings
 
         generic_names = {"new workflow", "untitled_workflow", "untitled", "workflow"}
         current_name = normalized.get("name")
@@ -277,7 +289,7 @@ class WorkflowManager:
         else:
             resolved_name = current_name
 
-        return {
+        result: Dict[str, Any] = {
             "success": True,
             "filename": filename,
             "path": clean_p.replace("\\", "/"),
@@ -285,6 +297,9 @@ class WorkflowManager:
             "workflow": normalized,
             "warnings": warnings
         }
+        if stats:
+            result["stats"] = stats
+        return result
 
     def _prune_old_backups(self, workflow_stem: str, max_keep: int = 10) -> None:
         """Keeps at most max_keep historical revisions for a workflow stem."""
@@ -663,7 +678,17 @@ class WorkflowManager:
         with zipfile.ZipFile(zip_file_obj, "r") as zf:
             namelist = zf.namelist()
             if "workflow.json" not in namelist:
-                raise ValueError("Invalid package: 'workflow.json' missing from root of archive.")
+                has_yxmd = any(m.lower().endswith(".yxmd") for m in namelist if not m.startswith("__MACOSX"))
+                if has_yxmd:
+                    from backend.engine.alteryx import import_yxzp_package
+                    zip_file_obj.seek(0)
+                    yxzp_res = import_yxzp_package(zip_file_obj, self.data_dir, self.workflows_dir)
+                    # Automatically save extracted workflow into WORKFLOWS_DIR
+                    save_res = self.save_workflow(yxzp_res["workflow"])
+                    yxzp_res["workflow_file"] = save_res["file"]
+                    yxzp_res["extracted_assets"] = yxzp_res.get("extracted_files", [])
+                    return yxzp_res
+                raise ValueError("Invalid package: neither 'workflow.json' nor '.yxmd' found in root of archive.")
 
             extracted_data_files = []
 

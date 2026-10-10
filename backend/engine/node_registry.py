@@ -24,6 +24,8 @@ from backend.engine.nodes import (
     UniqueNode,
     SampleNode,
     RecordIDNode,
+    RunningTotalNode,
+    DynamicRenameNode,
     JoinNode,
     UnionNode,
     FindReplaceNode,
@@ -34,6 +36,7 @@ from backend.engine.nodes import (
     TextToColumnsNode,
     DateTimeNode,
     LLMProcessNode,
+    UnsupportedToolNode,
     NODE_REGISTRY,
     TOOL_METADATA,
 )
@@ -59,6 +62,8 @@ __all__ = [
     "UniqueNode",
     "SampleNode",
     "RecordIDNode",
+    "RunningTotalNode",
+    "DynamicRenameNode",
     "JoinNode",
     "UnionNode",
     "FindReplaceNode",
@@ -69,6 +74,7 @@ __all__ = [
     "TextToColumnsNode",
     "DateTimeNode",
     "LLMProcessNode",
+    "UnsupportedToolNode",
     "NODE_REGISTRY",
     "TOOL_METADATA",
 ]

@@ -1,0 +1,367 @@
+{
+  "name": "013 Sample",
+  "description": "Imported from Alteryx workflow '013 Sample.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_24",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 54,
+      "y": 54,
+      "config": {
+        "columns": [
+          "Country",
+          "Month",
+          "Tax Expense"
+        ],
+        "data": [
+          [
+            "United States",
+            "2016-06-01",
+            "411613.56"
+          ],
+          [
+            "United States",
+            "2016-07-01",
+            "540242.8"
+          ],
+          [
+            "Canada",
+            "2016-10-01",
+            "225600"
+          ],
+          [
+            "Canada",
+            "2016-11-01",
+            "230300"
+          ],
+          [
+            "Canada",
+            "2016-12-01",
+            "235000"
+          ],
+          [
+            "Brazil",
+            "2014-01-01",
+            "48100"
+          ],
+          [
+            "Brazil",
+            "2016-10-01",
+            "240653.37"
+          ],
+          [
+            "Brazil",
+            "2016-11-01",
+            "252686.04"
+          ],
+          [
+            "Chile",
+            "2016-08-01",
+            "1202.18"
+          ],
+          [
+            "Chile",
+            "2016-09-01",
+            "1021.85"
+          ],
+          [
+            "Chile",
+            "2016-10-01",
+            "868.58"
+          ],
+          [
+            "Colombia",
+            "2015-03-01",
+            "155595.44"
+          ],
+          [
+            "Colombia",
+            "2015-07-01",
+            "63731.89"
+          ],
+          [
+            "Colombia",
+            "2015-08-01",
+            "50985.52"
+          ],
+          [
+            "China",
+            "2006-05-01",
+            "112409.7"
+          ],
+          [
+            "China",
+            "2006-06-01",
+            "118974.43"
+          ],
+          [
+            "China",
+            "2006-07-01",
+            "157393.26"
+          ],
+          [
+            "Japan",
+            "2003-03-01",
+            "34069.9"
+          ],
+          [
+            "Japan",
+            "2015-07-01",
+            "82167.75"
+          ],
+          [
+            "Japan",
+            "2015-08-01",
+            "72615.31"
+          ],
+          [
+            "Japan",
+            "2015-09-01",
+            "76237.69"
+          ],
+          [
+            "South Korea",
+            "2014-10-01",
+            "90550.43"
+          ],
+          [
+            "South Korea",
+            "2014-11-01",
+            "93477.51"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_25",
+      "type": "record_id",
+      "name": "Record Id",
+      "x": 138,
+      "y": 54,
+      "config": {
+        "field_name": "RecordID",
+        "start_value": 1
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_26",
+      "type": "sample",
+      "name": "First 2",
+      "x": 222,
+      "y": 54,
+      "config": {
+        "sample_type": "first",
+        "records": 2
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_28",
+      "type": "sample",
+      "name": "Last 3",
+      "x": 222,
+      "y": 126,
+      "config": {
+        "sample_type": "last",
+        "records": 3
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_29",
+      "type": "sample",
+      "name": "Skip 1st 5",
+      "x": 222,
+      "y": 210,
+      "config": {
+        "sample_type": "first",
+        "records": 5
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_30",
+      "type": "sample",
+      "name": "1 of every 2",
+      "x": 222,
+      "y": 282,
+      "config": {
+        "sample_type": "first",
+        "records": 2
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_31",
+      "type": "sample",
+      "name": "Random 1 in 4",
+      "x": 222,
+      "y": 354,
+      "config": {
+        "sample_type": "random",
+        "records": 4
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_32",
+      "type": "sample",
+      "name": "First 15%",
+      "x": 222,
+      "y": 426,
+      "config": {
+        "sample_type": "percent",
+        "records": 15
+      },
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_24_O_alteryx_25_I_1",
+      "source": "alteryx_24",
+      "sourceHandle": "O",
+      "target": "alteryx_25",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_25_O_alteryx_26_I_2",
+      "source": "alteryx_25",
+      "sourceHandle": "O",
+      "target": "alteryx_26",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_25_O_alteryx_28_I_3",
+      "source": "alteryx_25",
+      "sourceHandle": "O",
+      "target": "alteryx_28",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_25_O_alteryx_29_I_4",
+      "source": "alteryx_25",
+      "sourceHandle": "O",
+      "target": "alteryx_29",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_25_O_alteryx_30_I_5",
+      "source": "alteryx_25",
+      "sourceHandle": "O",
+      "target": "alteryx_30",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_25_O_alteryx_31_I_6",
+      "source": "alteryx_25",
+      "sourceHandle": "O",
+      "target": "alteryx_31",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_25_O_alteryx_32_I_7",
+      "source": "alteryx_25",
+      "sourceHandle": "O",
+      "target": "alteryx_32",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_27",
+      "text": "First",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 318,
+      "y": 66,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_33",
+      "text": "Last",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 318,
+      "y": 138,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_34",
+      "text": "Skip",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 318,
+      "y": 222,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_35",
+      "text": "1 of every 2",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 318,
+      "y": 294,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_36",
+      "text": "Random",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 318,
+      "y": 366,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_37",
+      "text": "First %",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 318,
+      "y": 438,
+      "width": 160,
+      "height": 60
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '013 Sample.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "013 Sample.yxmd",
+    "total_tools": 8,
+    "mapped_tools": 8,
+    "fallback_tools": 0
+  }
+}

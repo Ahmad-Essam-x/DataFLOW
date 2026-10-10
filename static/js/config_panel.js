@@ -295,6 +295,9 @@ export class ConfigPanel {
       case 'llm_override':
         this.renderLLMOverrideConfig(toolBody, node);
         break;
+      case 'unsupported_tool':
+        this.renderUnsupportedToolConfig(toolBody, node);
+        break;
       default:
         toolBody.innerHTML = `<p class="form-hint">No configuration options for this tool.</p>`;
     }
@@ -11494,6 +11497,54 @@ export class ConfigPanel {
         btnTest.disabled = false;
       }
     });
+  }
+
+  renderUnsupportedToolConfig(container, node) {
+    const cfg = node.config || {};
+    const origTool = cfg.original_tool || 'Alteryx Tool';
+    const origPlugin = cfg.original_plugin || 'Unknown Plugin';
+    const toolId = cfg.tool_id || node.id;
+    const rawXml = cfg.raw_xml || '';
+    const err = cfg.error || null;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'unsupported-tool-config';
+    wrap.innerHTML = `
+      <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-size: 16px;">⚠️</span>
+          <strong style="color: #d97706; font-size: 13px;">Alteryx Fallback Passthrough</strong>
+        </div>
+        <p style="margin: 0 0 6px 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary, #64748b);">
+          This tool was preserved from the imported Alteryx workflow. During pipeline execution, it operates as a <strong>non-destructive passthrough</strong>, forwarding upstream records directly downstream.
+        </p>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #94a3b8);">Original Alteryx Tool</label>
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary, #1e293b);">${this.escapeHtml(origTool)} <span style="font-size: 11px; font-weight: normal; color: var(--text-muted, #94a3b8);">(Tool #${this.escapeHtml(toolId)})</span></div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #94a3b8);">Plugin Identifier</label>
+        <div style="font-size: 11px; font-family: monospace; background: var(--bg-surface-2, #f1f5f9); padding: 4px 8px; border-radius: 4px; word-break: break-all;">${this.escapeHtml(origPlugin)}</div>
+      </div>
+
+      ${err ? `
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #ef4444;">Mapping Notice</label>
+        <div style="font-size: 12px; color: #dc2626;">${this.escapeHtml(err)}</div>
+      </div>
+      ` : ''}
+
+      <div class="form-group" style="margin-top: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #94a3b8);">Original XML Configuration</label>
+        </div>
+        <pre style="font-size: 11px; font-family: monospace; max-height: 240px; overflow: auto; background: var(--bg-surface-2, #1e293b); color: var(--code-fg, #e2e8f0); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color, #334155); margin: 0; white-space: pre-wrap; word-break: break-word;">${rawXml ? this.escapeHtml(rawXml) : '<em>No XML configuration found</em>'}</pre>
+      </div>
+    `;
+    container.appendChild(wrap);
   }
 
   escapeHtml(str) {

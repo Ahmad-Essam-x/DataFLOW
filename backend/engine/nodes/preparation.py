@@ -36,7 +36,7 @@ class SelectNode(BaseNode):
         elif "select_unknown" in self.config:
             select_unknown = bool(self.config["select_unknown"])
         else:
-            select_unknown = True
+            select_unknown = False if fields else True
 
         out_df = pd.DataFrame()
         processed_orig_cols = set()
@@ -896,6 +896,37 @@ class SampleNode(BaseNode):
                 pct = max(0.0, min(100.0, percent))
                 count = int(np.ceil(total * (pct / 100.0)))
                 return sub_df.head(count)
+            elif sample_type in ("records_range", "range"):
+                # Support Alteryx SelectRecords syntax: e.g. "10-15", "-5", "20+", "20"
+                ranges_str = str(self.config.get("ranges", "") or self.config.get("range_expression", "")).strip()
+                if not ranges_str:
+                    return sub_df
+                selected_indices = set()
+                lines = [line.strip() for line in re.split(r'[\r\n,]+', ranges_str) if line.strip()]
+                for line in lines:
+                    try:
+                        if "-" in line and not line.startswith("-") and not line.endswith("-"):
+                            parts = line.split("-")
+                            start = int(parts[0]) - 1
+                            end = int(parts[1])
+                            for idx in range(max(0, start), min(total, end)):
+                                selected_indices.add(idx)
+                        elif line.startswith("-"):
+                            end = int(line[1:])
+                            for idx in range(0, min(total, end)):
+                                selected_indices.add(idx)
+                        elif line.endswith("+"):
+                            start = int(line[:-1]) - 1
+                            for idx in range(max(0, start), total):
+                                selected_indices.add(idx)
+                        else:
+                            idx = int(line) - 1
+                            if 0 <= idx < total:
+                                selected_indices.add(idx)
+                    except Exception:
+                        pass
+                sorted_indices = sorted(list(selected_indices))
+                return sub_df.iloc[sorted_indices] if sorted_indices else sub_df.iloc[0:0]
             else:
                 return sub_df.head(max(0, n_records))
 
@@ -1252,4 +1283,82 @@ class MultiFieldFormulaNode(BaseNode):
                 raise NodeExecutionError(f"Multi-Field Formula error on column '{col}': {str(e)}")
 
         return {"O": out_df}
+
+
+# ----------------------------------------------------------------------
+# 16. Running Total Tool
+# ----------------------------------------------------------------------
+class RunningTotalNode(BaseNode):
+    type_name = "running_total"
+    category = "preparation"
+    display_name = "Running Total"
+    description = "Calculate cumulative sum for specified numeric columns"
+    input_ports = ["I"]
+    output_ports = ["O"]
+
+    def execute(self, inputs: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, pd.DataFrame]:
+        df = inputs.get("I")
+        if df is None:
+            raise NodeExecutionError("Running Total: No input connected.")
+
+        if df.empty:
+            return {"O": df.copy()}
+
+        res_df = df.copy()
+        rt_fields = self.config.get("running_total_fields", [])
+        if isinstance(rt_fields, str):
+            rt_fields = [rt_fields]
+        group_by = self.config.get("group_by_fields", [])
+        if isinstance(group_by, str):
+            group_by = [group_by]
+        group_cols = [c for c in group_by if c in df.columns]
+
+        for field in rt_fields:
+            if field in res_df.columns:
+                out_col = f"RunTot_{field}"
+                numeric_s = pd.to_numeric(res_df[field], errors="coerce").fillna(0)
+                if group_cols:
+                    res_df[out_col] = numeric_s.groupby(res_df[group_cols].apply(tuple, axis=1)).cumsum()
+                else:
+                    res_df[out_col] = numeric_s.cumsum()
+
+        return {"O": res_df}
+
+
+# ----------------------------------------------------------------------
+# 17. Dynamic Rename Tool
+# ----------------------------------------------------------------------
+class DynamicRenameNode(BaseNode):
+    type_name = "dynamic_rename"
+    category = "preparation"
+    display_name = "Dynamic Rename"
+    description = "Dynamically rename column headers (e.g., from first row or formula)"
+    input_ports = ["I"]
+    output_ports = ["O"]
+
+    def execute(self, inputs: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, pd.DataFrame]:
+        df = inputs.get("I")
+        if df is None:
+            raise NodeExecutionError("Dynamic Rename: No input connected.")
+
+        if df.empty:
+            return {"O": df.copy()}
+
+        mode = str(self.config.get("rename_mode", "firstrow")).lower()
+        res_df = df.copy()
+
+        if mode in ("firstrow", "first_row", "takefirstrow"):
+            if len(res_df) > 0:
+                new_headers = [str(val).strip() if pd.notna(val) else f"Field_{i+1}" for i, val in enumerate(res_df.iloc[0])]
+                res_df = res_df.iloc[1:].copy()
+                res_df.columns = new_headers
+                res_df.reset_index(drop=True, inplace=True)
+        elif mode in ("add_prefix", "prefix"):
+            pfx = str(self.config.get("prefix", ""))
+            res_df.columns = [f"{pfx}{c}" for c in res_df.columns]
+        elif mode in ("add_suffix", "suffix"):
+            sfx = str(self.config.get("suffix", ""))
+            res_df.columns = [f"{c}{sfx}" for c in res_df.columns]
+
+        return {"O": res_df}
 

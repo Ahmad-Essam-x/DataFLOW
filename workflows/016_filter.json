@@ -1,0 +1,552 @@
+{
+  "name": "016 Filter",
+  "description": "Imported from Alteryx workflow '016 Filter.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_6",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 54,
+      "y": 54,
+      "config": {
+        "columns": [
+          "Country",
+          "Month",
+          "Tax Expense"
+        ],
+        "data": [
+          [
+            "United States",
+            "2016-06-01",
+            "4314.16"
+          ],
+          [
+            "United States",
+            "2016-07-01",
+            "6354.35"
+          ],
+          [
+            "United States",
+            "2016-08-01",
+            "42434.52"
+          ],
+          [
+            "United States",
+            "2016-09-01",
+            "52353.52"
+          ],
+          [
+            "United States",
+            "2016-10-01",
+            "5232.52"
+          ],
+          [
+            "United States",
+            "2016-11-01",
+            "1323.52"
+          ],
+          [
+            "United States",
+            "2016-12-01",
+            "24141.55"
+          ],
+          [
+            "Canada",
+            "2016-06-01",
+            "1134.24"
+          ],
+          [
+            "Canada",
+            "2016-07-01",
+            "1244.25"
+          ],
+          [
+            "Canada",
+            "2016-08-01",
+            "874.63"
+          ],
+          [
+            "Canada",
+            "2016-10-01",
+            "767.63"
+          ],
+          [
+            "Canada",
+            "2016-11-01",
+            "363.65"
+          ],
+          [
+            "Canada",
+            "2016-12-01",
+            "366.74"
+          ],
+          [
+            "Brazil",
+            "2014-01-01",
+            "864.72"
+          ],
+          [
+            "Brazil",
+            "2016-10-01",
+            "8444.02"
+          ],
+          [
+            "Brazil",
+            "2016-11-01",
+            "4774.29"
+          ],
+          [
+            "Brazil",
+            "2016-12-01",
+            "3553.35"
+          ],
+          [
+            "Chile",
+            "2014-01-01",
+            "72150.53"
+          ],
+          [
+            "Chile",
+            "2014-02-01",
+            "67340.35"
+          ],
+          [
+            "Chile",
+            "2014-03-01",
+            "62530.53"
+          ],
+          [
+            "Chile",
+            "2014-04-01",
+            "57720.63"
+          ],
+          [
+            "Chile",
+            "2016-05-01",
+            "1957.55"
+          ],
+          [
+            "Chile",
+            "2016-06-01",
+            "1663.92"
+          ],
+          [
+            "Chile",
+            "2016-07-01",
+            "1414.33"
+          ],
+          [
+            "Chile",
+            "2016-08-01",
+            "1202.18"
+          ],
+          [
+            "Chile",
+            "2016-09-01",
+            "1021.85"
+          ],
+          [
+            "Chile",
+            "2016-10-01",
+            "868.58"
+          ],
+          [
+            "Colombia",
+            "2015-03-01",
+            "155595.44"
+          ],
+          [
+            "Colombia",
+            "2015-04-01",
+            "124476.36"
+          ],
+          [
+            "Colombia",
+            "2015-05-01",
+            "99581.08"
+          ],
+          [
+            "Colombia",
+            "2015-06-01",
+            "79664.87"
+          ],
+          [
+            "Colombia",
+            "2015-07-01",
+            "63731.89"
+          ],
+          [
+            "Colombia",
+            "2015-08-01",
+            "50985.52"
+          ],
+          [
+            "China",
+            "2006-05-01",
+            "112409.7"
+          ],
+          [
+            "China",
+            "2006-06-01",
+            "118974.43"
+          ],
+          [
+            "China",
+            "2006-07-01",
+            "157393.26"
+          ],
+          [
+            "China",
+            "2008-06-01",
+            "78868.35"
+          ],
+          [
+            "China",
+            "2010-07-01",
+            "53798.14"
+          ],
+          [
+            "China",
+            "2010-08-01",
+            "71013.54"
+          ],
+          [
+            "China",
+            "2010-09-01",
+            "59990.31"
+          ],
+          [
+            "China",
+            "2010-10-01",
+            "63345.7"
+          ],
+          [
+            "China",
+            "2010-11-01",
+            "66886.65"
+          ],
+          [
+            "Japan",
+            "2001-01-01",
+            "21328.65"
+          ],
+          [
+            "Japan",
+            "2001-02-01",
+            "20233.08"
+          ],
+          [
+            "Japan",
+            "2003-01-01",
+            "38041.92"
+          ],
+          [
+            "Japan",
+            "2003-02-01",
+            "36083.88"
+          ],
+          [
+            "Japan",
+            "2003-03-01",
+            "34069.9"
+          ],
+          [
+            "Japan",
+            "2003-04-01",
+            "31999.97"
+          ],
+          [
+            "Japan",
+            "2015-06-01",
+            "71999.93"
+          ],
+          [
+            "Japan",
+            "2015-07-01",
+            "82167.75"
+          ],
+          [
+            "Japan",
+            "2015-08-01",
+            "72615.31"
+          ],
+          [
+            "Japan",
+            "2015-09-01",
+            "76237.69"
+          ],
+          [
+            "South Korea",
+            "2013-07-01",
+            "52463.04"
+          ],
+          [
+            "South Korea",
+            "2013-08-01",
+            "69027.2"
+          ],
+          [
+            "South Korea",
+            "2014-08-01",
+            "105953.79"
+          ],
+          [
+            "South Korea",
+            "2014-09-01",
+            "87645.6"
+          ],
+          [
+            "South Korea",
+            "2014-10-01",
+            "90550.43"
+          ],
+          [
+            "South Korea",
+            "2014-11-01",
+            "93477.51"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_7",
+      "type": "filter",
+      "name": "[Country] = \"Canada\"",
+      "x": 198,
+      "y": 54,
+      "config": {
+        "mode": "basic",
+        "conditions": [
+          {
+            "column": "Country",
+            "operator": "==",
+            "value": "Canada"
+          }
+        ],
+        "logical_op": "AND"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_8",
+      "type": "filter",
+      "name": "[Tax Expense] <= 1500",
+      "x": 198,
+      "y": 222,
+      "config": {
+        "mode": "basic",
+        "conditions": [
+          {
+            "column": "Tax Expense",
+            "operator": "<=",
+            "value": "1500"
+          }
+        ],
+        "logical_op": "AND"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_9",
+      "type": "filter",
+      "name": "[Tax Expense] >= 1500",
+      "x": 198,
+      "y": 390,
+      "config": {
+        "mode": "basic",
+        "conditions": [
+          {
+            "column": "Tax Expense",
+            "operator": ">=",
+            "value": "1500"
+          }
+        ],
+        "logical_op": "AND"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_13",
+      "type": "browse",
+      "name": "Browse",
+      "x": 294,
+      "y": 20,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_14",
+      "type": "browse",
+      "name": "Browse",
+      "x": 294,
+      "y": 90,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_15",
+      "type": "browse",
+      "name": "Browse",
+      "x": 294,
+      "y": 186,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_16",
+      "type": "browse",
+      "name": "Browse",
+      "x": 294,
+      "y": 258,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_17",
+      "type": "browse",
+      "name": "Browse",
+      "x": 294,
+      "y": 354,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_18",
+      "type": "browse",
+      "name": "Browse",
+      "x": 294,
+      "y": 426,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_6_O_alteryx_7_I_1",
+      "source": "alteryx_6",
+      "sourceHandle": "O",
+      "target": "alteryx_7",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_6_O_alteryx_8_I_2",
+      "source": "alteryx_6",
+      "sourceHandle": "O",
+      "target": "alteryx_8",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_6_O_alteryx_9_I_3",
+      "source": "alteryx_6",
+      "sourceHandle": "O",
+      "target": "alteryx_9",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_7_T_alteryx_13_I_4",
+      "source": "alteryx_7",
+      "sourceHandle": "T",
+      "target": "alteryx_13",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_7_F_alteryx_14_I_5",
+      "source": "alteryx_7",
+      "sourceHandle": "F",
+      "target": "alteryx_14",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_8_T_alteryx_15_I_6",
+      "source": "alteryx_8",
+      "sourceHandle": "T",
+      "target": "alteryx_15",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_8_F_alteryx_16_I_7",
+      "source": "alteryx_8",
+      "sourceHandle": "F",
+      "target": "alteryx_16",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_9_T_alteryx_17_I_8",
+      "source": "alteryx_9",
+      "sourceHandle": "T",
+      "target": "alteryx_17",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_9_F_alteryx_18_I_9",
+      "source": "alteryx_9",
+      "sourceHandle": "F",
+      "target": "alteryx_18",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_10",
+      "text": "Equals = Canada",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 390,
+      "y": 66,
+      "width": 204,
+      "height": 60
+    },
+    {
+      "id": "alteryx_11",
+      "text": "Less than or equal to 1500 <=",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 390,
+      "y": 234,
+      "width": 276,
+      "height": 60
+    },
+    {
+      "id": "alteryx_12",
+      "text": "greater than or equal to 1500 >=",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 390,
+      "y": 402,
+      "width": 276,
+      "height": 60
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '016 Filter.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "016 Filter.yxmd",
+    "total_tools": 10,
+    "mapped_tools": 10,
+    "fallback_tools": 0
+  }
+}

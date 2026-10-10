@@ -3,6 +3,7 @@ Core SQL Compiler Engine.
 Topologically sorts workflow nodes, resolves port-scoped CTE lineage,
 generates Common Table Expressions (CTEs), and produces complete executable SQL scripts.
 """
+import os
 import re
 import datetime
 from typing import Dict, Any, List, Optional, Set, Tuple, Union
@@ -138,6 +139,8 @@ class SQLCompiler:
                 expected_ports = ["T", "F"]
             elif ntype == "join":
                 expected_ports = ["J", "L", "R"]
+            elif ntype == "join_multiple":
+                expected_ports = ["J"]
             elif ntype == "unique":
                 expected_ports = ["U", "D"]
 
@@ -160,9 +163,14 @@ class SQLCompiler:
         # 5. Compile each node in topological order
         compiled_ctes: List[Dict[str, Any]] = []
         table_mappings = self.options.get("table_mappings", {})
+        node_schemas: Dict[Any, List[str]] = {}
         context = {
             "table_mappings": table_mappings,
             "dialect": self.dialect,
+            "workflow": self.workflow,
+            "node_map": node_map,
+            "options": self.options,
+            "node_schemas": node_schemas,
         }
 
         for nid in execution_order:
@@ -188,7 +196,7 @@ class SQLCompiler:
                     # Fallback to single port CTE
                     src_cte = cte_name_map.get((src_id, "O"), f"cte_{_slugify(src_id)}")
 
-                if ntype == "union":
+                if ntype in ("union", "join_multiple"):
                     if tgt_port not in input_sources:
                         input_sources[tgt_port] = []
                     input_sources[tgt_port].append(src_cte)
@@ -225,6 +233,61 @@ class SQLCompiler:
                     "port": port,
                     "query": query_body.strip()
                 })
+
+                # Infer output columns and register in node_schemas
+                cfg = node_data.get("config", {})
+                cols: List[str] = []
+                if ntype == "text_input":
+                    cols = list(cfg.get("columns", []))
+                    if not cols and cfg.get("data") and isinstance(cfg["data"][0], dict):
+                        cols = list(cfg["data"][0].keys())
+                elif ntype == "input_data":
+                    cols = list(cfg.get("columns", []))
+                    if not cols:
+                        f_path = cfg.get("filepath") or cfg.get("file_path") or cfg.get("file_name") or ""
+                        c_paths = [f_path, os.path.join("data", f_path), os.path.join("data", os.path.basename(f_path))]
+                        for cp in c_paths:
+                            if cp and os.path.exists(cp) and cp.lower().endswith(".csv"):
+                                try:
+                                    import csv
+                                    with open(cp, "r", encoding="utf-8", errors="ignore") as fp:
+                                        rdr = csv.reader(fp)
+                                        h = next(rdr, None)
+                                        if h:
+                                            cols = list(h)
+                                            break
+                                except Exception:
+                                    pass
+                elif ntype == "select":
+                    fields = cfg.get("fields") or cfg.get("columns") or []
+                    for it in fields:
+                        if it.get("selected", True) and it.get("keep", True):
+                            fn = it.get("rename") or it.get("name") or it.get("field") or it.get("original")
+                            if fn and fn != "*Unknown":
+                                cols.append(fn)
+                elif ntype == "transpose":
+                    k_cols = cfg.get("key_columns") or []
+                    nm_col = cfg.get("name_column") or "Name"
+                    vl_col = cfg.get("value_column") or "Value"
+                    cols = list(k_cols) + [nm_col, vl_col]
+                elif ntype == "crosstab":
+                    grp = cfg.get("group_by") or []
+                    if isinstance(grp, str):
+                        grp = [grp]
+                    cols = list(grp)
+                elif ntype in ("union", "sort", "filter", "sample", "clean", "unique", "find_replace", "multi_field_formula", "multi_row_formula"):
+                    for u_src in input_sources.values():
+                        if isinstance(u_src, str) and u_src in node_schemas:
+                            cols = list(node_schemas[u_src])
+                            break
+                        elif isinstance(u_src, list) and u_src and u_src[0] in node_schemas:
+                            cols = list(node_schemas[u_src[0]])
+                            break
+
+                if cols:
+                    node_schemas[cte_name] = cols
+                    node_schemas[nid] = cols
+                    node_schemas[(nid, port)] = cols
 
         if not compiled_ctes:
             return {

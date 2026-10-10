@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<AlteryxDocument yxmdVer="11.3">
+  <Nodes>
+    <Node ToolID="13">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.DbFileInput.DbFileInput">
+        <Position x="102" y="90" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Passwords />
+          <File OutputFileName="" RecordLimit="" SearchSubDirs="False" FileFormat="25">C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`</File>
+          <FormatSpecificOptions>
+            <FirstRowData>False</FirstRowData>
+            <ImportLine>1</ImportLine>
+          </FormatSpecificOptions>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText>MOCK_DATA.xlsx
+Table=`one$`</DefaultAnnotationText>
+          <Left value="False" />
+        </Annotation>
+        <Dependencies>
+          <Implicit />
+        </Dependencies>
+        <MetaInfo connection="Output">
+          <RecordInfo>
+            <Field name="DATA001" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F2" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F3" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F4" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F5" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F6" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F7" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F8" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+          </RecordInfo>
+        </MetaInfo>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxDbFileInput" />
+    </Node>
+    <Node ToolID="14">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.DbFileInput.DbFileInput">
+        <Position x="102" y="258" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Passwords />
+          <File OutputFileName="" RecordLimit="" SearchSubDirs="False" FileFormat="25">C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`</File>
+          <FormatSpecificOptions>
+            <FirstRowData>False</FirstRowData>
+            <ImportLine>1</ImportLine>
+          </FormatSpecificOptions>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText>MOCK_DATA.xlsx
+Table=`one$`</DefaultAnnotationText>
+          <Left value="False" />
+        </Annotation>
+        <Dependencies>
+          <Implicit />
+        </Dependencies>
+        <MetaInfo connection="Output">
+          <RecordInfo>
+            <Field name="DATA001" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F2" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F3" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F4" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F5" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F6" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F7" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+            <Field name="F8" size="255" source="File: C:\Users\kpen002\Desktop\Alteryx Presentation\Videos\MOCK_DATA.xlsx|||`one$`" type="V_String" />
+          </RecordInfo>
+        </MetaInfo>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxDbFileInput" />
+    </Node>
+  </Nodes>
+  <Connections />
+  <Properties>
+    <Memory default="True" />
+    <GlobalRecordLimit value="0" />
+    <TempFiles default="True" />
+    <Annotation on="True" includeToolName="False" />
+    <ConvErrorLimit value="10" />
+    <ConvErrorLimit_Stop value="False" />
+    <CancelOnError value="False" />
+    <DisableBrowse value="False" />
+    <EnablePerformanceProfiling value="False" />
+    <DisableAllOutput value="False" />
+    <ShowAllMacroMessages value="False" />
+    <ShowConnectionStatusIsOn value="True" />
+    <ShowConnectionStatusOnlyWhenRunning value="True" />
+    <ZoomLevel value="0" />
+    <LayoutType>Horizontal</LayoutType>
+    <MetaInfo>
+      <NameIsFileName value="True" />
+      <Name>001 input data</Name>
+      <Description />
+      <RootToolName />
+      <ToolVersion />
+      <ToolInDb value="False" />
+      <CategoryName />
+      <SearchTags />
+      <Author />
+      <Company />
+      <Copyright />
+      <DescriptionLink actual="" displayed="" />
+      <Example>
+        <Description />
+        <File />
+      </Example>
+    </MetaInfo>
+    <Events>
+      <Enabled value="True" />
+    </Events>
+  </Properties>
+</AlteryxDocument>

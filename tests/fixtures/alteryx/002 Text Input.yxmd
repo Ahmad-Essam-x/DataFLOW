@@ -1,0 +1,305 @@
+<?xml version="1.0"?>
+<AlteryxDocument yxmdVer="11.3">
+  <Nodes>
+    <Node ToolID="1">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="54" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="4" />
+          <Fields>
+            <Field name="Field3" />
+            <Field name="Field1" />
+            <Field name="Field2" />
+          </Fields>
+          <Data>
+            <r>
+              <c>1</c>
+              <c>cat</c>
+              <c>234</c>
+            </r>
+            <r>
+              <c>2</c>
+              <c>dog</c>
+              <c>12</c>
+            </r>
+            <r>
+              <c>3</c>
+              <c>bear</c>
+              <c>14</c>
+            </r>
+            <r>
+              <c>4</c>
+              <c>fish</c>
+              <c>526</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="2">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="54" y="186" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="19" />
+          <Fields>
+            <Field name="Field1" />
+            <Field name="Field2" />
+            <Field name="Field3" />
+            <Field name="Field4" />
+            <Field name="Field5" />
+            <Field name="Field6" />
+            <Field name="Field7" />
+            <Field name="Field8" />
+          </Fields>
+          <Data>
+            <r>
+              <c>id</c>
+              <c />
+              <c>first_name</c>
+              <c>last_name</c>
+              <c>email</c>
+              <c>gender</c>
+              <c>concatenate</c>
+              <c>Money</c>
+            </r>
+            <r>
+              <c>1</c>
+              <c>Data</c>
+              <c>Mirabelle</c>
+              <c>Plume</c>
+              <c>mplume7@dedecms.com</c>
+              <c>Female</c>
+              <c>Lizard, blue-tongued</c>
+              <c>$1.16</c>
+            </r>
+            <r>
+              <c>2</c>
+              <c />
+              <c>Delmore</c>
+              <c>Mattaus</c>
+              <c>dmattaus1@soundcloud.com</c>
+              <c>Male</c>
+              <c>Sparrow, house</c>
+              <c>$9.85</c>
+            </r>
+            <r>
+              <c>3</c>
+              <c />
+              <c>Brett</c>
+              <c>Morrell</c>
+              <c>bmorrell2@bloomberg.com</c>
+              <c>Male</c>
+              <c>Common melba finch</c>
+              <c>$1.92</c>
+            </r>
+            <r>
+              <c>4</c>
+              <c />
+              <c>Marissa</c>
+              <c>Symmons</c>
+              <c>msymmons3@yellowpages.com</c>
+              <c>Female</c>
+              <c>Rhinoceros, square-lipped</c>
+              <c>$5.14</c>
+            </r>
+            <r>
+              <c>5</c>
+              <c />
+              <c>Stillmann</c>
+              <c>Hagart</c>
+              <c>shagart4@forbes.com</c>
+              <c>Male</c>
+              <c>Royal tern</c>
+              <c>$8.84</c>
+            </r>
+            <r>
+              <c>6</c>
+              <c />
+              <c>Tammy</c>
+              <c>Bolwell</c>
+              <c>tbolwell5@elegantthemes.com</c>
+              <c>Male</c>
+              <c>Vulture, black</c>
+              <c>$0.26</c>
+            </r>
+            <r>
+              <c>7</c>
+              <c />
+              <c>Prudy</c>
+              <c>Restill</c>
+              <c>prestill6@sohu.com</c>
+              <c>Female</c>
+              <c>Ring-tailed lemur</c>
+              <c>$1.67</c>
+            </r>
+            <r>
+              <c>8</c>
+              <c />
+              <c>Mirabelle</c>
+              <c>Plume</c>
+              <c>mplume7@dedecms.com</c>
+              <c>Female</c>
+              <c>Lizard, blue-tongued</c>
+              <c>$1.16</c>
+            </r>
+            <r>
+              <c>9</c>
+              <c />
+              <c>Doy</c>
+              <c>Bartlomiej</c>
+              <c>dbartlomiej8@godaddy.com</c>
+              <c>Male</c>
+              <c>Lemming, collared</c>
+              <c>$0.90</c>
+            </r>
+            <r>
+              <c>10</c>
+              <c />
+              <c>Martica</c>
+              <c>Swidenbank</c>
+              <c>mswidenbank9@house.gov</c>
+              <c>Female</c>
+              <c>Duck, mountain</c>
+              <c>$2.63</c>
+            </r>
+            <r>
+              <c>11</c>
+              <c>Patch</c>
+              <c>Wallis</c>
+              <c>Pockett</c>
+              <c>wpockettg@digg.com</c>
+              <c>Male</c>
+              <c>Brindled gnu</c>
+              <c>$7.78</c>
+            </r>
+            <r>
+              <c>12</c>
+              <c />
+              <c>Linus</c>
+              <c>Lamburn</c>
+              <c>llamburnb@wisc.edu</c>
+              <c>Male</c>
+              <c>Civet cat</c>
+              <c>$5.12</c>
+            </r>
+            <r>
+              <c>13</c>
+              <c />
+              <c>Chelsea</c>
+              <c>Symon</c>
+              <c>csymonc@canalblog.com</c>
+              <c>Female</c>
+              <c>Two-toed tree sloth</c>
+              <c>$3.98</c>
+            </r>
+            <r>
+              <c>14</c>
+              <c />
+              <c>Jillie</c>
+              <c>Petrashkov</c>
+              <c>jpetrashkovd@wikia.com</c>
+              <c>Female</c>
+              <c>White-eye, pale</c>
+              <c>$6.57</c>
+            </r>
+            <r>
+              <c>15</c>
+              <c />
+              <c>Nero</c>
+              <c>Hasty</c>
+              <c>nhastye@delicious.com</c>
+              <c>Male</c>
+              <c>Neotropic cormorant</c>
+              <c>$6.15</c>
+            </r>
+            <r>
+              <c>16</c>
+              <c />
+              <c>Tammy</c>
+              <c>Moses</c>
+              <c>tmosesf@upenn.edu</c>
+              <c>Male</c>
+              <c>Indian tree pie</c>
+              <c>$6.70</c>
+            </r>
+            <r>
+              <c>17</c>
+              <c />
+              <c>Wallis</c>
+              <c>Pockett</c>
+              <c>wpockettg@digg.com</c>
+              <c>Male</c>
+              <c>Brindled gnu</c>
+              <c>$7.78</c>
+            </r>
+            <r>
+              <c>18</c>
+              <c>Collection</c>
+              <c>Eli</c>
+              <c>Matuszak</c>
+              <c>ematuszakl@slashdot.org</c>
+              <c>Male</c>
+              <c>Antechinus, brown</c>
+              <c>$6.43</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+  </Nodes>
+  <Connections />
+  <Properties>
+    <Memory default="True" />
+    <GlobalRecordLimit value="0" />
+    <TempFiles default="True" />
+    <Annotation on="True" includeToolName="False" />
+    <ConvErrorLimit value="10" />
+    <ConvErrorLimit_Stop value="False" />
+    <CancelOnError value="False" />
+    <DisableBrowse value="False" />
+    <EnablePerformanceProfiling value="False" />
+    <DisableAllOutput value="False" />
+    <ShowAllMacroMessages value="False" />
+    <ShowConnectionStatusIsOn value="True" />
+    <ShowConnectionStatusOnlyWhenRunning value="True" />
+    <ZoomLevel value="0" />
+    <LayoutType>Horizontal</LayoutType>
+    <MetaInfo>
+      <NameIsFileName value="True" />
+      <Name>002 Text Input</Name>
+      <Description />
+      <RootToolName />
+      <ToolVersion />
+      <ToolInDb value="False" />
+      <CategoryName />
+      <SearchTags />
+      <Author />
+      <Company />
+      <Copyright />
+      <DescriptionLink actual="" displayed="" />
+      <Example>
+        <Description />
+        <File />
+      </Example>
+    </MetaInfo>
+    <Events>
+      <Enabled value="True" />
+    </Events>
+  </Properties>
+</AlteryxDocument>

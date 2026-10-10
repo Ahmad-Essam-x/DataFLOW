@@ -3,12 +3,14 @@ from .io import InputDataNode, OutputDataNode, TextInputNode, BrowseNode
 from .preparation import (
     SelectNode, AutoFieldNode, FilterNode, FormulaNode, SortNode,
     CleanNode, UniqueNode, SampleNode, RecordIDNode,
-    MultiRowFormulaNode, MultiFieldFormulaNode
+    MultiRowFormulaNode, MultiFieldFormulaNode,
+    RunningTotalNode, DynamicRenameNode
 )
 from .join import JoinNode, UnionNode, FindReplaceNode, AppendFieldsNode
 from .transform import SummarizeNode, TransposeNode, CrossTabNode
 from .parse import TextToColumnsNode, DateTimeNode
 from .ai import LLMProcessNode
+from .fallback import UnsupportedToolNode
 from .registry import NODE_REGISTRY, TOOL_METADATA
 
 __all__ = [
@@ -30,6 +32,8 @@ __all__ = [
     "UniqueNode",
     "SampleNode",
     "RecordIDNode",
+    "RunningTotalNode",
+    "DynamicRenameNode",
     "MultiRowFormulaNode",
     "MultiFieldFormulaNode",
     "JoinNode",
@@ -42,6 +46,7 @@ __all__ = [
     "TextToColumnsNode",
     "DateTimeNode",
     "LLMProcessNode",
+    "UnsupportedToolNode",
     "NODE_REGISTRY",
     "TOOL_METADATA",
 ]

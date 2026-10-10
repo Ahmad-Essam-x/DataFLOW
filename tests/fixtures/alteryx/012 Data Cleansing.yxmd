@@ -1,0 +1,865 @@
+<?xml version="1.0"?>
+<AlteryxDocument yxmdVer="11.3">
+  <Nodes>
+    <Node ToolID="9">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="184" y="126" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="51" />
+          <Fields>
+            <Field name="States" />
+            <Field name="Entity Number" />
+          </Fields>
+          <Data>
+            <r>
+              <c>#ALABAMA</c>
+              <c>00010</c>
+            </r>
+            <r>
+              <c>#ALASKA</c>
+              <c>00012</c>
+            </r>
+            <r>
+              <c>#ARIZONA</c>
+              <c>09000</c>
+            </r>
+            <r>
+              <c>#ARKANSAS</c>
+              <c>00030</c>
+            </r>
+            <r>
+              <c>#CALIFORNIA</c>
+              <c>00042</c>
+            </r>
+            <r>
+              <c>#COLORADO</c>
+              <c>00014</c>
+            </r>
+            <r>
+              <c>#CONNECTICUT</c>
+              <c>00048</c>
+            </r>
+            <r>
+              <c>#DELAWARE</c>
+              <c>00009</c>
+            </r>
+            <r>
+              <c>#DISTRICT OF COLUMBIA</c>
+              <c>00000</c>
+            </r>
+            <r>
+              <c>#FLORIDA</c>
+              <c>00055</c>
+            </r>
+            <r>
+              <c>#GEORGIA</c>
+              <c>00060</c>
+            </r>
+            <r>
+              <c>#HAWAII</c>
+              <c>00078</c>
+            </r>
+            <r>
+              <c>#IDAHO</c>
+              <c>00098</c>
+            </r>
+            <r>
+              <c>#ILLINOIS</c>
+              <c>00045</c>
+            </r>
+            <r>
+              <c>#INDIANA</c>
+              <c>00016</c>
+            </r>
+            <r>
+              <c>#IOWA</c>
+              <c>00102</c>
+            </r>
+            <r>
+              <c>#KANSAS</c>
+              <c>00072</c>
+            </r>
+            <r>
+              <c>#KENTUCKY</c>
+              <c>00800</c>
+            </r>
+            <r>
+              <c>#LOUISIANA</c>
+              <c>00020</c>
+            </r>
+            <r>
+              <c>#MAINE</c>
+              <c>00084</c>
+            </r>
+            <r>
+              <c>#MONTANA</c>
+              <c>00088</c>
+            </r>
+            <r>
+              <c>#NEBRASKA</c>
+              <c>00069</c>
+            </r>
+            <r>
+              <c>#NEVADA</c>
+              <c>00048</c>
+            </r>
+            <r>
+              <c>#NEW HAMPSHIRE</c>
+              <c>00125</c>
+            </r>
+            <r>
+              <c>#NEW JERSEY</c>
+              <c>00026</c>
+            </r>
+            <r>
+              <c>#NEW MEXICO</c>
+              <c>20000</c>
+            </r>
+            <r>
+              <c>#NEW YORK</c>
+              <c>00168</c>
+            </r>
+            <r>
+              <c>#NORTH CAROLINA</c>
+              <c>00116</c>
+            </r>
+            <r>
+              <c>#NORTH DAKOTA</c>
+              <c>00030</c>
+            </r>
+            <r>
+              <c>#OHIO</c>
+              <c>00031</c>
+            </r>
+            <r>
+              <c>#OKLAHOMA</c>
+              <c>00064</c>
+            </r>
+            <r>
+              <c>#OREGON</c>
+              <c>10000</c>
+            </r>
+            <r>
+              <c>#MARYLAND</c>
+              <c>00136</c>
+            </r>
+            <r>
+              <c>#MASSACHUSETTS</c>
+              <c>00210</c>
+            </r>
+            <r>
+              <c>#MICHIGAN</c>
+              <c>00036</c>
+            </r>
+            <r>
+              <c>#MINNESOTA</c>
+              <c>00037</c>
+            </r>
+            <r>
+              <c>#MISSISSIPPI</c>
+              <c>00152</c>
+            </r>
+            <r>
+              <c>#MISSOURI</c>
+              <c>06000</c>
+            </r>
+            <r>
+              <c>#PENNSYLVANIA</c>
+              <c>00040</c>
+            </r>
+            <r>
+              <c>#RHODE ISLAND</c>
+              <c>00082</c>
+            </r>
+            <r>
+              <c>#SOUTH CAROLINA</c>
+              <c>00042</c>
+            </r>
+            <r>
+              <c>#SOUTH DAKOTA</c>
+              <c>02000</c>
+            </r>
+            <r>
+              <c>#TENNESSEE</c>
+              <c>00220</c>
+            </r>
+            <r>
+              <c>#TEXAS</c>
+              <c>00090</c>
+            </r>
+            <r>
+              <c>#UTAH</c>
+              <c>03000</c>
+            </r>
+            <r>
+              <c>#VERMONT</c>
+              <c>00188</c>
+            </r>
+            <r>
+              <c>#VIRGINIA</c>
+              <c>00288</c>
+            </r>
+            <r>
+              <c>#WASHINGTON</c>
+              <c>04000</c>
+            </r>
+            <r>
+              <c>#WEST VIRGINIA</c>
+              <c>00050</c>
+            </r>
+            <r>
+              <c>#WISCONSIN</c>
+              <c>00153</c>
+            </r>
+            <r>
+              <c>#WYOMING</c>
+              <c>00208</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="10">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="184" y="54.00002" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="51" />
+          <Fields>
+            <Field name="States" />
+            <Field name="Manager" />
+          </Fields>
+          <Data>
+            <r>
+              <c>1 Alabama</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>2 Alaska</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>3 Arizona</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>4 Arkansas</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>5 California</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>6 Colorado</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>7 Connecticut</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>8 Delaware</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>9 District of Columbia</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>10 Florida</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>11 Georgia</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>12 Hawaii</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>13 Idaho</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>14 Illinois</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>15 Indiana</c>
+              <c>Catie</c>
+            </r>
+            <r>
+              <c>16 Iowa</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>17 Kansas</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>18 Kentucky</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>19 Louisiana</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>20 Maine</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>21 Montana</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>22 Nebraska</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>23 Nevada</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>24 New Hampshire</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>25 New Jersey</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>26 New Mexico</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>27 New York</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>28 North Carolina</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>29 North Dakota</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>30 Ohio</c>
+              <c>Sue</c>
+            </r>
+            <r>
+              <c>31 Oklahoma</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>32 Oregon</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>33 Maryland</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>34 Massachusetts</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>35 Michigan</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>36 Minnesota</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>37 Mississippi</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>38 Missouri</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>39 Pennsylvania</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>40 Rhode Island</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>41 South Carolina</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>42 South Dakota</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>43 Tennessee</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>44 Texas</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>45 Utah</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>46 Vermont</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>47 Virginia</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>48 Washington</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>49 West Virginia</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>50 Wisconsin</c>
+              <c>Bob</c>
+            </r>
+            <r>
+              <c>51 Wyoming</c>
+              <c>Bob</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="11">
+      <GuiSettings>
+        <Position x="268" y="126" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="List Box (11)">"States"</Value>
+          <Value name="Check Box (84)">False</Value>
+          <Value name="Check Box (117)">False</Value>
+          <Value name="Check Box (15)">False</Value>
+          <Value name="Check Box (109)">False</Value>
+          <Value name="Check Box (122)">False</Value>
+          <Value name="Check Box (53)">False</Value>
+          <Value name="Check Box (58)">False</Value>
+          <Value name="Check Box (70)">True</Value>
+          <Value name="Check Box (77)">False</Value>
+          <Value name="Drop Down (81)">upper</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="Cleanse.yxmc" />
+    </Node>
+    <Node ToolID="12">
+      <GuiSettings>
+        <Position x="268" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="List Box (11)">"States"</Value>
+          <Value name="Check Box (84)">False</Value>
+          <Value name="Check Box (117)">False</Value>
+          <Value name="Check Box (15)">False</Value>
+          <Value name="Check Box (109)">False</Value>
+          <Value name="Check Box (122)">False</Value>
+          <Value name="Check Box (53)">False</Value>
+          <Value name="Check Box (58)">True</Value>
+          <Value name="Check Box (70)">False</Value>
+          <Value name="Check Box (77)">False</Value>
+          <Value name="Drop Down (81)">upper</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="Cleanse.yxmc" />
+    </Node>
+    <Node ToolID="13">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="54" y="61.00001" width="100" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Numbers</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="14">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="54" y="133" width="112" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Punctuation</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="15">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="184" y="198" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="5" />
+          <Fields>
+            <Field name="Field1" />
+            <Field name="Field2" />
+          </Fields>
+          <Data>
+            <r>
+              <c><![CDATA[        cat]]></c>
+              <c />
+            </r>
+            <r>
+              <c><![CDATA[   dog]]></c>
+              <c />
+            </r>
+            <r>
+              <c>deer</c>
+              <c />
+            </r>
+            <r>
+              <c><![CDATA[    elephant    ]]></c>
+              <c />
+            </r>
+            <r>
+              <c><![CDATA[   rabbit]]></c>
+              <c />
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="16">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="54" y="217" width="112" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>White Space</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="17">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="184" y="270" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="4" />
+          <Fields>
+            <Field name="Field1" />
+            <Field name="Field2" />
+          </Fields>
+          <Data>
+            <r>
+              <c>CaT</c>
+              <c>DOG</c>
+            </r>
+            <r>
+              <c>FisH</c>
+              <c>rabbit</c>
+            </r>
+            <r>
+              <c>PIGS</c>
+              <c>bird</c>
+            </r>
+            <r>
+              <c>Horses</c>
+              <c>ELEPHANT</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="18">
+      <GuiSettings>
+        <Position x="268" y="270" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="List Box (11)">"Field1","Field2"</Value>
+          <Value name="Check Box (84)">False</Value>
+          <Value name="Check Box (117)">False</Value>
+          <Value name="Check Box (15)">False</Value>
+          <Value name="Check Box (109)">False</Value>
+          <Value name="Check Box (122)">False</Value>
+          <Value name="Check Box (53)">False</Value>
+          <Value name="Check Box (58)">False</Value>
+          <Value name="Check Box (70)">False</Value>
+          <Value name="Check Box (77)">True</Value>
+          <Value name="Drop Down (81)">upper</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="Cleanse.yxmc" />
+    </Node>
+    <Node ToolID="19">
+      <GuiSettings>
+        <Position x="268" y="198" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="List Box (11)">"Field1","Field2"</Value>
+          <Value name="Check Box (84)">False</Value>
+          <Value name="Check Box (117)">False</Value>
+          <Value name="Check Box (15)">True</Value>
+          <Value name="Check Box (109)">False</Value>
+          <Value name="Check Box (122)">False</Value>
+          <Value name="Check Box (53)">False</Value>
+          <Value name="Check Box (58)">False</Value>
+          <Value name="Check Box (70)">False</Value>
+          <Value name="Check Box (77)">False</Value>
+          <Value name="Drop Down (81)">upper</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="Cleanse.yxmc" />
+    </Node>
+    <Node ToolID="20">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="54" y="289" width="112" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Modify Case</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="21">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="184" y="342" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="4" />
+          <Fields>
+            <Field name="Field1" />
+            <Field name="Field2" />
+          </Fields>
+          <Data>
+            <r>
+              <c />
+              <c>5</c>
+            </r>
+            <r>
+              <c />
+              <c>6</c>
+            </r>
+            <r>
+              <c>2</c>
+              <c />
+            </r>
+            <r>
+              <c />
+              <c>5</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="22">
+      <GuiSettings>
+        <Position x="268" y="342" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Value name="List Box (11)">"Field1","Field2"</Value>
+          <Value name="Check Box (84)">True</Value>
+          <Value name="Check Box (117)">True</Value>
+          <Value name="Check Box (15)">False</Value>
+          <Value name="Check Box (109)">False</Value>
+          <Value name="Check Box (122)">False</Value>
+          <Value name="Check Box (53)">False</Value>
+          <Value name="Check Box (58)">False</Value>
+          <Value name="Check Box (70)">False</Value>
+          <Value name="Check Box (77)">False</Value>
+          <Value name="Drop Down (81)">upper</Value>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings Macro="Cleanse.yxmc" />
+    </Node>
+    <Node ToolID="23">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="54" y="361" width="112" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Nulls</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+  </Nodes>
+  <Connections>
+    <Connection>
+      <Origin ToolID="9" Connection="Output" />
+      <Destination ToolID="11" Connection="Input2" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="10" Connection="Output" />
+      <Destination ToolID="12" Connection="Input2" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="15" Connection="Output" />
+      <Destination ToolID="19" Connection="Input2" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="17" Connection="Output" />
+      <Destination ToolID="18" Connection="Input2" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="21" Connection="Output" />
+      <Destination ToolID="22" Connection="Input2" />
+    </Connection>
+  </Connections>
+  <Properties>
+    <Memory default="True" />
+    <GlobalRecordLimit value="0" />
+    <TempFiles default="True" />
+    <Annotation on="True" includeToolName="False" />
+    <ConvErrorLimit value="10" />
+    <ConvErrorLimit_Stop value="False" />
+    <CancelOnError value="False" />
+    <DisableBrowse value="False" />
+    <EnablePerformanceProfiling value="False" />
+    <DisableAllOutput value="False" />
+    <ShowAllMacroMessages value="False" />
+    <ShowConnectionStatusIsOn value="True" />
+    <ShowConnectionStatusOnlyWhenRunning value="True" />
+    <ZoomLevel value="0" />
+    <LayoutType>Horizontal</LayoutType>
+    <MetaInfo>
+      <NameIsFileName value="True" />
+      <Name>012 Data Cleansing</Name>
+      <Description />
+      <RootToolName />
+      <ToolVersion />
+      <ToolInDb value="False" />
+      <CategoryName />
+      <SearchTags />
+      <Author />
+      <Company />
+      <Copyright />
+      <DescriptionLink actual="" displayed="" />
+      <Example>
+        <Description />
+        <File />
+      </Example>
+    </MetaInfo>
+    <Events>
+      <Enabled value="True" />
+    </Events>
+  </Properties>
+</AlteryxDocument>

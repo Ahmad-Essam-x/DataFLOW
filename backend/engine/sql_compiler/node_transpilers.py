@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional, Union, Tuple
 
 from backend.engine.sql_compiler.dialects import SQLDialect
 from backend.engine.sql_compiler.formula_transpiler import transpile_expression
+from backend.engine.nodes.transform import sanitize_alteryx_header
 
 
 class NodeTranspileError(Exception):
@@ -57,13 +58,16 @@ def transpile_text_input(
     if not data or not isinstance(data, list):
         return {"O": "SELECT 1 AS empty_stream WHERE 1=0"}
 
-    # Determine columns from first record
+    cfg_cols = config.get("columns") or []
     first = data[0]
     if isinstance(first, dict):
-        cols = list(first.keys())
+        cols = list(cfg_cols) if cfg_cols else list(first.keys())
         rows = [[row.get(c) for c in cols] for row in data]
     elif isinstance(first, list):
-        cols = [f"Field_{i+1}" for i in range(len(first))]
+        if cfg_cols and len(cfg_cols) == len(first):
+            cols = list(cfg_cols)
+        else:
+            cols = [f"Field_{i+1}" for i in range(len(first))]
         rows = data
     else:
         return {"O": "SELECT 1 AS empty_stream WHERE 1=0"}
@@ -552,30 +556,97 @@ def transpile_find_replace(
     context: Dict[str, Any]
 ) -> Dict[str, str]:
     """Transpiles FindReplaceNode into a LEFT JOIN with reference replacement."""
-    find_src = input_sources.get("F")
-    replace_src = input_sources.get("R")
+    find_src = input_sources.get("F") or input_sources.get("I")
+    replace_src = input_sources.get("R") or input_sources.get("Replace") or input_sources.get("Lookup")
 
-    if not find_src or not replace_src:
-        raise NodeTranspileError(f"Find Replace tool ({node.get('id')}) requires Find ('F') and Replace ('R') inputs.")
+    if not find_src:
+        for k, v in input_sources.items():
+            if k not in ("R", "Replace", "Lookup"):
+                find_src = v
+                break
+
+    if not replace_src:
+        for k, v in input_sources.items():
+            if k in ("R", "Replace", "Lookup"):
+                replace_src = v
+                break
+
+    if not find_src:
+        raise NodeTranspileError(f"Find Replace tool ({node.get('id')}) requires Find ('F') input.")
 
     config = node.get("config", {})
-    f_field = config.get("find_field", "")
-    r_field = config.get("replace_field", "")
-    replace_with = config.get("replace_with_field", "")
+    f_field = str(config.get("find_field") or "").strip()
+    r_field = str(config.get("find_value_field") or config.get("replace_field") or config.get("lookup_field") or "").strip()
+    action = str(config.get("action", "replace")).lower().strip()
+    replace_with = str(config.get("replace_with_field") or "").strip()
+    append_fields = config.get("append_fields") or []
+    case_sensitive = bool(config.get("case_sensitive", False))
 
-    if not f_field or not r_field or not replace_with:
+    if not replace_src or not f_field or not r_field or (action == "replace" and not replace_with and not append_fields):
         return {"O": f"SELECT * FROM {find_src}"}
 
     f_quoted = dialect.quote_identifier(f_field)
     r_quoted = dialect.quote_identifier(r_field)
+
+    if case_sensitive:
+        join_cond = f"f.{f_quoted} = r.{r_quoted}"
+    else:
+        join_cond = f"LOWER(CAST(f.{f_quoted} AS VARCHAR)) = LOWER(CAST(r.{r_quoted} AS VARCHAR))"
+
+    node_schemas = context.get("node_schemas", {})
+    find_cols = node_schemas.get(find_src, [])
+
+    if action == "append":
+        target_appends = append_fields if append_fields else ([replace_with] if replace_with else [])
+        app_projs = [f"r.{dialect.quote_identifier(c)}" for c in target_appends if c]
+        if app_projs:
+            query = (
+                f"SELECT\n"
+                f"  f.*,\n"
+                f"  {',\n  '.join(app_projs)}\n"
+                f"FROM {find_src} f\n"
+                f"LEFT JOIN {replace_src} r ON {join_cond}"
+            )
+        else:
+            query = f"SELECT f.* FROM {find_src} f\nLEFT JOIN {replace_src} r ON {join_cond}"
+        return {"O": query}
+
+    # Action is 'replace'
     w_quoted = dialect.quote_identifier(replace_with)
+
+    # DuckDB and Snowflake support clean EXCLUDE syntax
+    if dialect.name in ("duckdb", "snowflake"):
+        query = (
+            f"SELECT\n"
+            f"  f.* EXCLUDE ({f_quoted}),\n"
+            f"  COALESCE(r.{w_quoted}, f.{f_quoted}) AS {f_quoted}\n"
+            f"FROM {find_src} f\n"
+            f"LEFT JOIN {replace_src} r ON {join_cond}"
+        )
+        return {"O": query}
+
+    # If find columns are known in ANSI SQL, project every column explicitly with replacement
+    if find_cols:
+        projections = []
+        for c in find_cols:
+            if c == f_field:
+                projections.append(f"COALESCE(r.{w_quoted}, f.{f_quoted}) AS {f_quoted}")
+            else:
+                projections.append(f"f.{dialect.quote_identifier(c)}")
+        query = (
+            f"SELECT\n"
+            f"  {',\n  '.join(projections)}\n"
+            f"FROM {find_src} f\n"
+            f"LEFT JOIN {replace_src} r ON {join_cond}"
+        )
+        return {"O": query}
 
     query = (
         f"SELECT\n"
         f"  f.*,\n"
-        f"  COALESCE(r.{w_quoted}, f.{f_quoted}) AS {f_quoted}_replaced\n"
+        f"  COALESCE(r.{w_quoted}, f.{f_quoted}) AS {f_quoted}\n"
         f"FROM {find_src} f\n"
-        f"LEFT JOIN {replace_src} r ON f.{f_quoted} = r.{r_quoted}"
+        f"LEFT JOIN {replace_src} r ON {join_cond}"
     )
     return {"O": query}
 
@@ -885,6 +956,322 @@ def transpile_multi_field_formula(
     return {"O": f"SELECT\n  *,\n  {',\n  '.join(projections)}\nFROM {upstream}"}
 
 
+def transpile_transpose(
+    node: Dict[str, Any],
+    input_sources: Dict[str, Any],
+    dialect: SQLDialect,
+    context: Dict[str, Any]
+) -> Dict[str, str]:
+    """
+    Transpiles TransposeNode (Unpivot) from wide to tall format.
+    Supports ANSI SQL (UNION ALL) and native UNPIVOT clauses (DuckDB, Snowflake, BigQuery).
+    """
+    upstream = input_sources.get("I")
+    if not upstream:
+        for val in input_sources.values():
+            if isinstance(val, str) and val:
+                upstream = val
+                break
+    if not upstream:
+        raise NodeTranspileError(f"Transpose tool ({node.get('id')}) has no incoming input.")
+
+    config = node.get("config", {})
+    key_columns = config.get("key_columns") or []
+    data_columns = config.get("data_columns") or []
+    name_column = str(config.get("name_column") or "Name").strip() or "Name"
+    value_column = str(config.get("value_column") or "Value").strip() or "Value"
+
+    # If data_columns not specified, try to infer from context/schema if available
+    if not data_columns:
+        node_schemas = context.get("node_schemas", {})
+        upstream_cols = node_schemas.get(upstream, [])
+        if upstream_cols:
+            data_columns = [c for c in upstream_cols if c not in key_columns]
+
+    if not data_columns:
+        return {"O": f"SELECT * FROM {upstream}"}
+
+    key_quoted = [dialect.quote_identifier(k) for k in key_columns]
+    name_quoted = dialect.quote_identifier(name_column)
+    val_quoted = dialect.quote_identifier(value_column)
+    data_quoted = [dialect.quote_identifier(c) for c in data_columns]
+
+    # Native UNPIVOT for Snowflake and BigQuery
+    if dialect.name in ("snowflake", "bigquery"):
+        key_clause = f"{', '.join(key_quoted)}, " if key_quoted else ""
+        query = (
+            f"SELECT\n"
+            f"  {key_clause}{name_quoted}, {val_quoted}\n"
+            f"FROM {upstream}\n"
+            f"UNPIVOT (\n"
+            f"  {val_quoted} FOR {name_quoted} IN ({', '.join(data_quoted)})\n"
+            f")"
+        )
+        return {"O": query}
+
+    # Native UNPIVOT for DuckDB
+    if dialect.name == "duckdb":
+        key_clause = f"{', '.join(key_quoted)}, " if key_quoted else ""
+        query = (
+            f"SELECT\n"
+            f"  {key_clause}{name_quoted}, {val_quoted}\n"
+            f"FROM {upstream}\n"
+            f"UNPIVOT (\n"
+            f"  {val_quoted} FOR {name_quoted} IN ({', '.join(data_quoted)})\n"
+            f")"
+        )
+        return {"O": query}
+
+    # Universal Standard ANSI SQL (UNION ALL across data columns)
+    # Compatible with ANSI, SQLite, PostgreSQL, and all relational engines
+    union_queries = []
+    for col in data_columns:
+        projections = []
+        for k in key_columns:
+            projections.append(dialect.quote_identifier(k))
+        projections.append(f"{dialect.quote_literal(col)} AS {name_quoted}")
+        projections.append(f"{dialect.quote_identifier(col)} AS {val_quoted}")
+        union_queries.append(f"SELECT\n  {',\n  '.join(projections)}\nFROM {upstream}")
+
+    query = "\nUNION ALL\n".join(union_queries)
+    return {"O": query}
+
+
+def _discover_crosstab_header_values(
+    node: Dict[str, Any],
+    header_field: str,
+    context: Dict[str, Any]
+) -> List[str]:
+    """Discovers unique pivot column values from node config, context cache, or workflow DAG."""
+    config = node.get("config", {})
+    # 1. Config explicit header_values or pivot_values
+    explicit = config.get("header_values") or config.get("headers") or config.get("pivot_values") or config.get("values")
+    if explicit and isinstance(explicit, list):
+        return [str(v) for v in explicit if v is not None and str(v).strip()]
+
+    # 2. Check context node_results / cache if workflow has run
+    node_results = context.get("node_results") or {}
+    for res in node_results.values():
+        if isinstance(res, dict) and "data" in res:
+            data = res.get("data", [])
+            if data and isinstance(data, list) and isinstance(data[0], dict) and header_field in data[0]:
+                vals = []
+                for row in data:
+                    v = row.get(header_field)
+                    if v is not None and str(v) not in vals:
+                        vals.append(str(v))
+                if vals:
+                    return vals
+
+    # 3. Check workflow DAG nodes (text_input or input_data sample files)
+    workflow = context.get("workflow", {})
+    nodes = workflow.get("nodes", []) if isinstance(workflow, dict) else []
+
+    # Check text_input nodes in workflow
+    for n in nodes:
+        if n.get("type") == "text_input":
+            cfg = n.get("config", {})
+            cols = cfg.get("columns", [])
+            data = cfg.get("data", [])
+            if header_field in cols:
+                idx = cols.index(header_field)
+                vals = []
+                for row in data:
+                    if isinstance(row, list) and len(row) > idx:
+                        val = str(row[idx])
+                        if val and val not in vals:
+                            vals.append(val)
+                    elif isinstance(row, dict) and header_field in row:
+                        val = str(row[header_field])
+                        if val and val not in vals:
+                            vals.append(val)
+                if vals:
+                    return vals
+
+    # Check input_data CSVs in data directory
+    for n in nodes:
+        if n.get("type") == "input_data":
+            cfg = n.get("config", {})
+            filepath = cfg.get("filepath") or cfg.get("file_path") or cfg.get("file_name") or ""
+            candidates = [filepath, os.path.join("data", filepath), os.path.join("data", os.path.basename(filepath))]
+            for c_path in candidates:
+                if c_path and os.path.exists(c_path) and c_path.lower().endswith(".csv"):
+                    try:
+                        import csv
+                        with open(c_path, "r", encoding="utf-8", errors="ignore") as fp:
+                            reader = csv.reader(fp)
+                            headers = next(reader, None)
+                            if headers and header_field in headers:
+                                h_idx = headers.index(header_field)
+                                vals = []
+                                for r_idx, row in enumerate(reader):
+                                    if r_idx > 500:
+                                        break
+                                    if len(row) > h_idx:
+                                        val = str(row[h_idx]).strip()
+                                        if val and val not in vals:
+                                            vals.append(val)
+                                if vals:
+                                    return vals
+                    except Exception:
+                        pass
+
+    return []
+
+
+def transpile_crosstab(
+    node: Dict[str, Any],
+    input_sources: Dict[str, Any],
+    dialect: SQLDialect,
+    context: Dict[str, Any]
+) -> Dict[str, str]:
+    """
+    Transpiles CrossTabNode (Pivot) from tall to wide format.
+    Supports native PIVOT (DuckDB, Snowflake) and ANSI SQL conditional aggregations (CASE WHEN).
+    """
+    upstream = input_sources.get("I")
+    if not upstream:
+        for val in input_sources.values():
+            if isinstance(val, str) and val:
+                upstream = val
+                break
+    if not upstream:
+        raise NodeTranspileError(f"Cross Tab tool ({node.get('id')}) has no incoming input.")
+
+    config = node.get("config", {})
+    group_by = config.get("group_by") or []
+    if isinstance(group_by, str):
+        group_by = [group_by]
+    header_field = str(config.get("header_field") or "").strip()
+    value_field = str(config.get("value_field") or "").strip()
+    clean_headers = bool(config.get("clean_headers", True))
+
+    if not header_field or not value_field:
+        return {"O": f"SELECT * FROM {upstream}"}
+
+    # Map aggregation function to SQL aggregate
+    agg_cfg = config.get("agg_func") or config.get("agg_methods") or "sum"
+    if isinstance(agg_cfg, list) and agg_cfg:
+        op = str(agg_cfg[0]).lower().strip()
+    else:
+        op = str(agg_cfg).lower().strip()
+
+    if op in ("mean", "avg", "average"):
+        agg_sql = "AVG"
+    elif op == "sum":
+        agg_sql = "SUM"
+    elif op in ("count", "count_non_null", "count_without_nulls"):
+        agg_sql = "COUNT"
+    elif op == "min":
+        agg_sql = "MIN"
+    elif op == "max":
+        agg_sql = "MAX"
+    elif op == "concat":
+        agg_sql = "LISTAGG" if dialect.name == "snowflake" else "STRING_AGG"
+    else:
+        agg_sql = "SUM"
+
+    h_quoted = dialect.quote_identifier(header_field)
+    v_quoted = dialect.quote_identifier(value_field)
+    grp_quoted = [dialect.quote_identifier(g) for g in group_by]
+    grp_clause = f"GROUP BY {', '.join(grp_quoted)}" if grp_quoted else ""
+
+    # Native Dynamic PIVOT for DuckDB (no compile-time values required)
+    if dialect.name == "duckdb":
+        grp_spec = f"\nGROUP BY {', '.join(grp_quoted)}" if grp_quoted else ""
+        query = (
+            f"PIVOT {upstream}\n"
+            f"ON {h_quoted}\n"
+            f"USING {agg_sql}({v_quoted})"
+            f"{grp_spec}"
+        )
+        return {"O": query}
+
+    # Discover header values for Snowflake PIVOT or ANSI conditional aggregation
+    header_values = _discover_crosstab_header_values(node, header_field, context)
+
+    # Native PIVOT for Snowflake
+    if dialect.name == "snowflake" and header_values:
+        in_literals = [f"'{str(v).replace(chr(39), chr(39)*2)}'" for v in header_values]
+        grp_select = f"{', '.join(grp_quoted)}, " if grp_quoted else ""
+        query = (
+            f"SELECT\n"
+            f"  {grp_select}*\n"
+            f"FROM {upstream}\n"
+            f"PIVOT (\n"
+            f"  {agg_sql}({v_quoted}) FOR {h_quoted} IN ({', '.join(in_literals)})\n"
+            f")"
+        )
+        return {"O": query}
+
+    # Standard ANSI SQL / PostgreSQL / SQLite / BigQuery
+    # Uses conditional aggregation (CASE WHEN)
+    projections = list(grp_quoted)
+
+    if header_values:
+        for val in header_values:
+            alias = sanitize_alteryx_header(val) if clean_headers else str(val)
+            alias_quoted = dialect.quote_identifier(alias)
+            val_literal = dialect.quote_literal(val)
+            case_expr = f"{agg_sql}(CASE WHEN {h_quoted} = {val_literal} THEN {v_quoted} END) AS {alias_quoted}"
+            projections.append(case_expr)
+    else:
+        # Fallback template if distinct values could not be discovered at compile time
+        projections.append(
+            f"/* Dynamic Pivot: Distinct categories for {h_quoted} */\n"
+            f"  {agg_sql}(CASE WHEN {h_quoted} IS NOT NULL THEN {v_quoted} END) AS {dialect.quote_identifier('Pivot_Value')}"
+        )
+
+    select_clause = ",\n  ".join(projections)
+    query = f"SELECT\n  {select_clause}\nFROM {upstream}"
+    if grp_clause:
+        query += f"\n{grp_clause}"
+
+    return {"O": query}
+
+
+def transpile_join_multiple(
+    node: Dict[str, Any],
+    input_sources: Dict[str, Any],
+    dialect: SQLDialect,
+    context: Dict[str, Any]
+) -> Dict[str, str]:
+    """Transpiles JoinMultipleNode into sequential multi-way joins."""
+    upstreams = []
+    for k in sorted(input_sources.keys()):
+        val = input_sources[k]
+        if isinstance(val, list):
+            upstreams.extend(val)
+        elif isinstance(val, str):
+            upstreams.append(val)
+
+    if not upstreams:
+        raise NodeTranspileError(f"Join Multiple tool ({node.get('id')}) has no incoming streams.")
+    if len(upstreams) == 1:
+        return {"J": f"SELECT * FROM {upstreams[0]}"}
+
+    config = node.get("config", {})
+    join_type = str(config.get("join_type", "inner")).lower().strip()
+    sql_join = "INNER JOIN" if join_type in ("inner", "join_all_only") else "FULL OUTER JOIN"
+    join_keys = config.get("join_keys", [])
+
+    base = upstreams[0]
+    join_clauses = []
+    for idx, next_src in enumerate(upstreams[1:], start=2):
+        alias = f"t{idx}"
+        on_parts = []
+        if join_keys:
+            for k in join_keys:
+                q_k = dialect.quote_identifier(k)
+                on_parts.append(f"t1.{q_k} = {alias}.{q_k}")
+        else:
+            on_parts.append("1=1")
+        join_clauses.append(f"{sql_join} {next_src} {alias} ON {' AND '.join(on_parts)}")
+
+    query = f"SELECT * FROM {base} t1\n" + "\n".join(join_clauses)
+    return {"J": query}
+
+
 NODE_TRANSPILER_REGISTRY = {
     "input_data": transpile_input_data,
     "text_input": transpile_text_input,
@@ -902,9 +1289,12 @@ NODE_TRANSPILER_REGISTRY = {
     "sample": transpile_sample,
     "record_id": transpile_record_id,
     "join": transpile_join,
+    "join_multiple": transpile_join_multiple,
     "union": transpile_union,
     "append_fields": transpile_append_fields,
     "find_replace": transpile_find_replace,
+    "transpose": transpile_transpose,
+    "crosstab": transpile_crosstab,
     "summarize": transpile_summarize,
     "text_to_columns": transpile_text_to_columns,
     "date_time": transpile_date_time,

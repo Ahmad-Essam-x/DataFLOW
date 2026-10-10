@@ -1,0 +1,354 @@
+{
+  "name": "Multi-Row Tool Mastery",
+  "description": "Imported from Alteryx workflow 'Multi-Row.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_1",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 126,
+      "y": 138,
+      "config": {
+        "columns": [
+          "Family",
+          "Name",
+          "Total Screen Time"
+        ],
+        "data": [
+          [
+            "Lannister",
+            "Tyrion",
+            "337"
+          ],
+          [
+            "",
+            "Cersei",
+            "236"
+          ],
+          [
+            "",
+            "Jaime",
+            "199"
+          ],
+          [
+            "Stark",
+            "Sansa",
+            "238"
+          ],
+          [
+            "",
+            "Arya",
+            "224"
+          ],
+          [
+            "",
+            "Ned",
+            "100"
+          ],
+          [
+            "Targaryen",
+            "Aegon",
+            "338"
+          ],
+          [
+            "",
+            "Daenerys",
+            "276"
+          ],
+          [
+            "",
+            "Viserys",
+            "20"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_2",
+      "type": "multi_row_formula",
+      "name": "iif(isnull([Family]),[Row-1:Family],[Family])",
+      "x": 126,
+      "y": 222,
+      "config": {
+        "create_new_field": false,
+        "output_field": "",
+        "expression": "iif(isnull([Family]),[Row-1:Family],[Family])",
+        "group_by_fields": []
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_3",
+      "type": "browse",
+      "name": "Browse",
+      "x": 126,
+      "y": 306,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_5",
+      "type": "multi_row_formula",
+      "name": "[Row-1:ID]+1",
+      "x": 378,
+      "y": 426,
+      "config": {
+        "create_new_field": false,
+        "output_field": "",
+        "expression": "[Row-1:ID]+1",
+        "group_by_fields": [
+          "Family"
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_6",
+      "type": "browse",
+      "name": "Browse",
+      "x": 378,
+      "y": 522,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_10",
+      "type": "multi_row_formula",
+      "name": "[Row-2:Total Screen Time]+[Row-1:Total Screen Time]+[Total Sc...",
+      "x": 630,
+      "y": 630,
+      "config": {
+        "create_new_field": false,
+        "output_field": "",
+        "expression": "[Row-2:Total Screen Time]+[Row-1:Total Screen Time]+[Total Screen Time]",
+        "group_by_fields": [
+          "Family"
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_11",
+      "type": "browse",
+      "name": "Browse",
+      "x": 630,
+      "y": 822,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_12",
+      "type": "multi_row_formula",
+      "name": "iif([ID]=3,average([Row-2:Total Screen Time],[Row-1:Total Scr...",
+      "x": 630,
+      "y": 726,
+      "config": {
+        "create_new_field": false,
+        "output_field": "",
+        "expression": "iif([ID]=3,average([Row-2:Total Screen Time],[Row-1:Total Screen Time],[Total Screen Time]),iif([ID]=2,average([Row-1:Total Screen Time],[Total Screen Time],[Row+1:Total Screen Time]),average([Row+2:Total Screen Time],[Row+1:Total Screen Time],[Total Screen Time])))",
+        "group_by_fields": [
+          "Family"
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_13",
+      "type": "browse",
+      "name": "Browse",
+      "x": 894,
+      "y": 1110,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_16",
+      "type": "multi_row_formula",
+      "name": "[Total Screen Time]-[Row-1:Total Screen Time]",
+      "x": 894,
+      "y": 1026,
+      "config": {
+        "create_new_field": false,
+        "output_field": "",
+        "expression": "[Total Screen Time]-[Row-1:Total Screen Time]",
+        "group_by_fields": []
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_17",
+      "type": "sort",
+      "name": "Total Screen Time - Descending",
+      "x": 894,
+      "y": 942,
+      "config": {
+        "fields": [
+          {
+            "field": "Total Screen Time",
+            "order": "desc"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_1_O_alteryx_2_I_1",
+      "source": "alteryx_1",
+      "sourceHandle": "O",
+      "target": "alteryx_2",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_2_O_alteryx_3_I_2",
+      "source": "alteryx_2",
+      "sourceHandle": "O",
+      "target": "alteryx_3",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_2_O_alteryx_5_I_3",
+      "source": "alteryx_2",
+      "sourceHandle": "O",
+      "target": "alteryx_5",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_5_O_alteryx_6_I_4",
+      "source": "alteryx_5",
+      "sourceHandle": "O",
+      "target": "alteryx_6",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_5_O_alteryx_10_I_5",
+      "source": "alteryx_5",
+      "sourceHandle": "O",
+      "target": "alteryx_10",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_10_O_alteryx_12_I_6",
+      "source": "alteryx_10",
+      "sourceHandle": "O",
+      "target": "alteryx_12",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_12_O_alteryx_11_I_7",
+      "source": "alteryx_12",
+      "sourceHandle": "O",
+      "target": "alteryx_11",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_12_O_alteryx_17_I_8",
+      "source": "alteryx_12",
+      "sourceHandle": "O",
+      "target": "alteryx_17",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_16_O_alteryx_13_I_9",
+      "source": "alteryx_16",
+      "sourceHandle": "O",
+      "target": "alteryx_13",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_17_O_alteryx_16_I_10",
+      "source": "alteryx_17",
+      "sourceHandle": "O",
+      "target": "alteryx_16",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_15",
+      "text": "-Difference From Previous-\nThis changes the value for the row that doesn't exist so that a difference can be calculated.",
+      "color": "#c5e9cf",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 858,
+      "y": 858,
+      "width": 228,
+      "height": 312
+    },
+    {
+      "id": "alteryx_7",
+      "text": "-Create Unique ID for Each Person In Group-\nThis Multi-Row Formula tool adds an ID for each person in each family.",
+      "color": "#ffdcb9",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 342,
+      "y": 342,
+      "width": 240,
+      "height": 240
+    },
+    {
+      "id": "alteryx_4",
+      "text": "-\u201cFilling down\u201d a field-\nThis Multi-Row Formula tool fills in null values  with the correct family.",
+      "color": "#ffcccc",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 90,
+      "y": 90,
+      "width": 228,
+      "height": 276
+    },
+    {
+      "id": "alteryx_8",
+      "text": "Source of data: http://www.imdb.com/list/ls076752033/",
+      "color": "#e1e1e1",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 54,
+      "y": 54,
+      "width": 300,
+      "height": 60
+    },
+    {
+      "id": "alteryx_9",
+      "text": "-Make Calculations-\nHere, multiple rows are used to create running totals and averages.",
+      "color": "#ffffb7",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 606,
+      "y": 558,
+      "width": 228,
+      "height": 324
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:03:16",
+    "updated_at": "2026-10-09T23:03:16",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow 'Multi-Row.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "Multi-Row.yxmd",
+    "total_tools": 11,
+    "mapped_tools": 11,
+    "fallback_tools": 0
+  }
+}

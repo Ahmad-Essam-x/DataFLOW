@@ -1,0 +1,495 @@
+{
+  "name": "Challenge 11 Atcodedog05 Solution",
+  "description": "Imported from Alteryx workflow 'challenge_11_atcodedog05_Solution.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_3",
+      "type": "input_data",
+      "name": "input_data_new_sample.xlsx\nTable=`Sheet1$`",
+      "x": 78,
+      "y": 306,
+      "config": {
+        "file_path": "input_data_new_sample.xlsx",
+        "delimiter": ",",
+        "has_header": true,
+        "record_limit": null,
+        "alteryx_raw_file": "input_data_new_sample.xlsx|||`Sheet1$`"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_4",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 78,
+      "y": 426,
+      "config": {
+        "columns": [
+          "Search",
+          "Bucket"
+        ],
+        "data": [
+          [
+            "beep",
+            "Tones"
+          ],
+          [
+            "screen",
+            "Screen"
+          ],
+          [
+            "trigger",
+            "Trigger"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_6",
+      "type": "browse",
+      "name": "Browse",
+      "x": 174,
+      "y": 306,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_7",
+      "type": "browse",
+      "name": "Browse",
+      "x": 174,
+      "y": 426,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_9",
+      "type": "browse",
+      "name": "Browse",
+      "x": 582,
+      "y": 354,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_47",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 474,
+      "y": 354,
+      "config": {
+        "columns": [
+          "Bucket(s)",
+          "Count"
+        ],
+        "data": [
+          [
+            "Screen",
+            "7"
+          ],
+          [
+            "Tones,Screen",
+            "1"
+          ],
+          [
+            "Trigger",
+            "1"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_49",
+      "type": "input_data",
+      "name": "input_data_new_sample.xlsx\nTable=`Sheet1$`",
+      "x": 66,
+      "y": 546,
+      "config": {
+        "file_path": "input_data_new_sample.xlsx",
+        "delimiter": ",",
+        "has_header": true,
+        "record_limit": null,
+        "alteryx_raw_file": "input_data_new_sample.xlsx|||`Sheet1$`"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_50",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 186,
+      "y": 594,
+      "config": {
+        "columns": [
+          "Search",
+          "Bucket"
+        ],
+        "data": [
+          [
+            "beep",
+            "Tones"
+          ],
+          [
+            "screen",
+            "Screen"
+          ],
+          [
+            "trigger",
+            "Trigger"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_54",
+      "type": "clean",
+      "name": "Clean",
+      "x": 126,
+      "y": 546,
+      "config": {
+        "columns": [
+          "Field_6"
+        ],
+        "replace_nulls_numeric": false,
+        "replace_nulls_string": false,
+        "trim_whitespace": false,
+        "remove_tabs_linebreaks": false,
+        "remove_all_ws": false,
+        "remove_letters": false,
+        "remove_numbers": true,
+        "remove_punctuation": true,
+        "case_mode": "lower"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_56",
+      "type": "record_id",
+      "name": "Record Id",
+      "x": 186,
+      "y": 546,
+      "config": {
+        "field_name": "Comment ID",
+        "start_value": 1
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_57",
+      "type": "text_to_columns",
+      "name": "Text To Columns",
+      "x": 246,
+      "y": 546,
+      "config": {
+        "column": "Field_6",
+        "delimiter": ",",
+        "num_columns": 1,
+        "split_to": "columns"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_58",
+      "type": "find_replace",
+      "name": "Find Replace",
+      "x": 306,
+      "y": 558,
+      "config": {
+        "find_in_field": "Field_6",
+        "find_field": "",
+        "replace_with_field": "",
+        "match_type": "entire"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_60",
+      "type": "filter",
+      "name": "!IsNull([Bucket])",
+      "x": 366,
+      "y": 558,
+      "config": {
+        "mode": "basic",
+        "conditions": [
+          {
+            "column": "Bucket",
+            "operator": "IsNotNull",
+            "value": ""
+          }
+        ],
+        "logical_op": "AND"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_61",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 486,
+      "y": 534,
+      "config": {
+        "actions": [
+          {
+            "field": "Comment ID",
+            "action": "GroupBy",
+            "output_name": "Comment ID",
+            "rename": "Comment ID"
+          },
+          {
+            "field": "Bucket",
+            "action": "Concat",
+            "output_name": "Bucket",
+            "rename": "Bucket"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_62",
+      "type": "unique",
+      "name": "Unique",
+      "x": 426,
+      "y": 546,
+      "config": {
+        "columns": [
+          "Comment ID",
+          "Bucket"
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_63",
+      "type": "summarize",
+      "name": "Summarize",
+      "x": 546,
+      "y": 534,
+      "config": {
+        "actions": [
+          {
+            "field": "Bucket",
+            "action": "GroupBy",
+            "output_name": "Bucket(s)",
+            "rename": "Bucket(s)"
+          },
+          {
+            "field": "Comment ID",
+            "action": "CountDistinct",
+            "output_name": "Count",
+            "rename": "Count"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_64",
+      "type": "browse",
+      "name": "Browse",
+      "x": 606,
+      "y": 534,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_3_O_alteryx_6_I_1",
+      "source": "alteryx_3",
+      "sourceHandle": "O",
+      "target": "alteryx_6",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_4_O_alteryx_7_I_2",
+      "source": "alteryx_4",
+      "sourceHandle": "O",
+      "target": "alteryx_7",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_47_O_alteryx_9_I_3",
+      "source": "alteryx_47",
+      "sourceHandle": "O",
+      "target": "alteryx_9",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_49_O_alteryx_54_I_4",
+      "source": "alteryx_49",
+      "sourceHandle": "O",
+      "target": "alteryx_54",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_50_O_alteryx_58_R_5",
+      "source": "alteryx_50",
+      "sourceHandle": "O",
+      "target": "alteryx_58",
+      "targetHandle": "R"
+    },
+    {
+      "id": "conn_alteryx_57_O_alteryx_58_F_6",
+      "source": "alteryx_57",
+      "sourceHandle": "O",
+      "target": "alteryx_58",
+      "targetHandle": "F"
+    },
+    {
+      "id": "conn_alteryx_54_O_alteryx_56_I_7",
+      "source": "alteryx_54",
+      "sourceHandle": "O",
+      "target": "alteryx_56",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_56_O_alteryx_57_I_8",
+      "source": "alteryx_56",
+      "sourceHandle": "O",
+      "target": "alteryx_57",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_58_O_alteryx_60_I_9",
+      "source": "alteryx_58",
+      "sourceHandle": "O",
+      "target": "alteryx_60",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_60_T_alteryx_62_I_10",
+      "source": "alteryx_60",
+      "sourceHandle": "T",
+      "target": "alteryx_62",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_61_O_alteryx_63_I_11",
+      "source": "alteryx_61",
+      "sourceHandle": "O",
+      "target": "alteryx_63",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_62_U_alteryx_61_I_12",
+      "source": "alteryx_62",
+      "sourceHandle": "U",
+      "target": "alteryx_61",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_63_O_alteryx_64_I_13",
+      "source": "alteryx_63",
+      "sourceHandle": "O",
+      "target": "alteryx_64",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_65",
+      "text": "My Solution",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 54,
+      "y": 510,
+      "width": 612,
+      "height": 144
+    },
+    {
+      "id": "alteryx_43",
+      "text": "Output",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 450,
+      "y": 270,
+      "width": 216,
+      "height": 228
+    },
+    {
+      "id": "alteryx_42",
+      "text": "Input",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 54,
+      "y": 270,
+      "width": 216,
+      "height": 228
+    },
+    {
+      "id": "alteryx_44",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 54,
+      "y": 54,
+      "width": 324,
+      "height": 72
+    },
+    {
+      "id": "alteryx_45",
+      "text": "Weekly Challenge #11",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 16,
+      "x": 450,
+      "y": 66,
+      "width": 300,
+      "height": 60
+    },
+    {
+      "id": "alteryx_46",
+      "text": "A manufacturing company receives customer complaint data on a daily basis from their call centers about the medical parts they distribute to their customers. The company monitors these comments to understand which parts and part groups have the highest complaint rate. This helps the company prioritize which parts to focus on from a development standpoint.\n\nIn this exercise, take the customer complaint data and identify which bucket the complaint falls within. The complaint can fall into multiple buckets and needs to be flagged as these complaints take highest priority. Create an aggregate view of which buckets or bucket pairings have the highest # of complaints.\n\nThis is only a subset of data so all records will not be assigned to buckets and can be ignored.",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 7,
+      "x": 54,
+      "y": 114,
+      "width": 612,
+      "height": 144
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow 'challenge_11_atcodedog05_Solution.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "challenge_11_atcodedog05_Solution.yxmd",
+    "total_tools": 17,
+    "mapped_tools": 17,
+    "fallback_tools": 0
+  }
+}

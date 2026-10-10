@@ -1,0 +1,412 @@
+{
+  "name": "019 Union",
+  "description": "Imported from Alteryx workflow '020 Union.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_26",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 150,
+      "y": 90,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2",
+          "Field3",
+          "Field4"
+        ],
+        "data": [
+          [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          [
+            "2",
+            "2",
+            "2",
+            "2"
+          ],
+          [
+            "3",
+            "3",
+            "3",
+            "3"
+          ],
+          [
+            "4",
+            "4",
+            "4",
+            "4"
+          ],
+          [
+            "5",
+            "5",
+            "5",
+            "5"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_27",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 150,
+      "y": 150,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2",
+          "Field3",
+          "Field4"
+        ],
+        "data": [
+          [
+            "6",
+            "6",
+            "6",
+            "6"
+          ],
+          [
+            "7",
+            "7",
+            "7",
+            "7"
+          ],
+          [
+            "8",
+            "8",
+            "8",
+            "8"
+          ],
+          [
+            "9",
+            "9",
+            "9",
+            "9"
+          ],
+          [
+            "10",
+            "10",
+            "10",
+            "10"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_33",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 486,
+      "y": 330,
+      "config": {
+        "columns": [
+          "Region",
+          "Tax Month",
+          "Total Tax Expense"
+        ],
+        "data": [
+          [
+            "China",
+            "2001-01-01",
+            "13993.4"
+          ],
+          [
+            "China",
+            "2001-02-01",
+            "14933.94"
+          ],
+          [
+            "Japan",
+            "2016-04-01",
+            "88727.18"
+          ],
+          [
+            "Japan",
+            "2016-07-01",
+            "89818.09"
+          ],
+          [
+            "South Korea",
+            "2008-10-01",
+            "61702.5"
+          ],
+          [
+            "South Korea",
+            "2008-12-01",
+            "65976.27"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_34",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 486,
+      "y": 210,
+      "config": {
+        "columns": [
+          "Place",
+          "Time",
+          "Tax"
+        ],
+        "data": [
+          [
+            "Brazil",
+            "2014-01-01",
+            "48100"
+          ],
+          [
+            "Brazil",
+            "2014-02-01",
+            "50505"
+          ],
+          [
+            "Colombia",
+            "2016-11-01",
+            "1793.89"
+          ],
+          [
+            "Colombia",
+            "2016-12-01",
+            "1435.11"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_35",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 486,
+      "y": 90,
+      "config": {
+        "columns": [
+          "Country",
+          "Month",
+          "Tax Expense"
+        ],
+        "data": [
+          [
+            "United States",
+            "2014-01-01",
+            "100000"
+          ],
+          [
+            "United States",
+            "2014-02-01",
+            "105000"
+          ],
+          [
+            "United States",
+            "2014-03-01",
+            "110250"
+          ],
+          [
+            "Canada",
+            "2016-07-01",
+            "264375"
+          ],
+          [
+            "Canada",
+            "2016-08-01",
+            "216200"
+          ],
+          [
+            "Canada",
+            "2016-09-01",
+            "220900"
+          ],
+          [
+            "Canada",
+            "2016-10-01",
+            "225600"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_44",
+      "type": "union",
+      "name": "Union",
+      "x": 246,
+      "y": 114,
+      "config": {
+        "mode": "by_name"
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_45",
+      "type": "union",
+      "name": "Union",
+      "x": 642,
+      "y": 198,
+      "config": {
+        "mode": "by_pos"
+      },
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_26_O_alteryx_44_I_1",
+      "source": "alteryx_26",
+      "sourceHandle": "O",
+      "target": "alteryx_44",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_27_O_alteryx_44_I_2",
+      "source": "alteryx_27",
+      "sourceHandle": "O",
+      "target": "alteryx_44",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_33_O_alteryx_45_I_3",
+      "source": "alteryx_33",
+      "sourceHandle": "O",
+      "target": "alteryx_45",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_34_O_alteryx_45_I_4",
+      "source": "alteryx_34",
+      "sourceHandle": "O",
+      "target": "alteryx_45",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_35_O_alteryx_45_I_5",
+      "source": "alteryx_35",
+      "sourceHandle": "O",
+      "target": "alteryx_45",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_29",
+      "text": "Dataset 1",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 102,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_30",
+      "text": "Dataset 2",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 162,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_31",
+      "text": "Same Column Names",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 114,
+      "y": 54,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "alteryx_32",
+      "text": "Different Column Names",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 462,
+      "y": 54,
+      "width": 228,
+      "height": 60
+    },
+    {
+      "id": "alteryx_38",
+      "text": "Dataset 1",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 390,
+      "y": 102,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_39",
+      "text": "Dataset 2",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 390,
+      "y": 222,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_40",
+      "text": "Dataset 3",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 390,
+      "y": 342,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_41",
+      "text": "Manually Configure Fields to map out column names in correct positions",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 486,
+      "y": 450,
+      "width": 180,
+      "height": 96
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '020 Union.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "020 Union.yxmd",
+    "total_tools": 7,
+    "mapped_tools": 7,
+    "fallback_tools": 0
+  }
+}

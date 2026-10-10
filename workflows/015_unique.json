@@ -1,0 +1,173 @@
+{
+  "name": "015 Unique",
+  "description": "Imported from Alteryx workflow '015 Unique.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_2",
+      "type": "unique",
+      "name": "Unique: City",
+      "x": 318,
+      "y": 90,
+      "config": {
+        "columns": [
+          "City"
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_3",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 210,
+      "y": 90,
+      "config": {
+        "columns": [
+          "City",
+          "Population",
+          "Sport",
+          "Team"
+        ],
+        "data": [
+          [
+            "Chicago",
+            "2695598",
+            "Baseball",
+            "Cubs"
+          ],
+          [
+            "Chicago",
+            "2695598",
+            "Baseball",
+            "Cubs"
+          ],
+          [
+            "Chicago",
+            "2695598",
+            "Baseball",
+            "White Sox"
+          ],
+          [
+            "Chicago",
+            "2695598",
+            "Basketball",
+            "Bulls"
+          ],
+          [
+            "Chicago",
+            "2695598",
+            "Football",
+            "Bears"
+          ],
+          [
+            "Chicago",
+            "2695598",
+            "Hockey",
+            "Blackhawks"
+          ],
+          [
+            "Los Angeles",
+            "3792622",
+            "Baseball",
+            "Dodgers"
+          ],
+          [
+            "Los Angeles",
+            "3792622",
+            "Baseball",
+            "Angels"
+          ],
+          [
+            "New York",
+            "8175133",
+            "Baseball",
+            "Yankees"
+          ],
+          [
+            "New York",
+            "8175133",
+            "Baseball",
+            "Mets"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_4",
+      "type": "browse",
+      "name": "Browse",
+      "x": 414,
+      "y": 54,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_5",
+      "type": "browse",
+      "name": "Browse",
+      "x": 414,
+      "y": 138,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_2_U_alteryx_4_I_1",
+      "source": "alteryx_2",
+      "sourceHandle": "U",
+      "target": "alteryx_4",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_2_D_alteryx_5_I_2",
+      "source": "alteryx_2",
+      "sourceHandle": "D",
+      "target": "alteryx_5",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_3_O_alteryx_2_I_3",
+      "source": "alteryx_3",
+      "sourceHandle": "O",
+      "target": "alteryx_2",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_1",
+      "text": "Indentify any duplicate records",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 54,
+      "y": 102,
+      "width": 160,
+      "height": 60
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '015 Unique.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "015 Unique.yxmd",
+    "total_tools": 4,
+    "mapped_tools": 4,
+    "fallback_tools": 0
+  }
+}

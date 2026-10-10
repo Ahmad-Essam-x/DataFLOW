@@ -3172,6 +3172,11 @@ class Canvas {
     // 7. Re-render DOM elements and wires
     this.renderAll();
 
+    // Auto-fit viewport if newly imported Alteryx workflow or no viewport persisted
+    if (this.workflowMetadata?.source_format === 'Alteryx .yxmd' || !workflow.viewport) {
+      setTimeout(() => this.zoomToFit(80), 50);
+    }
+
     // 8. Select first node if available
     if (this.nodes.length > 0) {
       this.selectNode(this.nodes[0].id);
@@ -3339,6 +3344,47 @@ class Canvas {
             window.showToast('error', 'Import Failed', err.message);
           }
         });
+        continue;
+      }
+
+      // Check if dropped file is an Alteryx Workflow (.yxmd)
+      if (ext === 'yxmd') {
+        if (typeof window.importYxmdWorkflow === 'function') {
+          window.importYxmdWorkflow(file);
+        } else {
+          const formData = new FormData();
+          formData.append('file', file);
+          if (window.showToast) window.showToast('info', 'Importing Alteryx Workflow', `Converting '${file.name}'...`, 3000);
+          fetch('/api/workflow/import-yxmd', {
+            method: 'POST',
+            body: formData
+          })
+          .then(r => r.json())
+          .then(res => {
+            if (res.success && res.workflow) {
+              const wfName = res.workflow.name || file.name.replace(/\.yxmd$/i, '');
+              if (typeof window.openWorkflowData === 'function') {
+                window.openWorkflowData(res.workflow, file.name, null, null);
+              } else if (typeof window.handleWorkflowLoaded === 'function') {
+                window.handleWorkflowLoaded(res.workflow, wfName);
+              } else {
+                this.loadWorkflow(res.workflow);
+                const nameInput = document.getElementById('workflow-name-input');
+                if (nameInput) nameInput.value = wfName;
+              }
+              if (window.showToast) {
+                const stats = res.stats || {};
+                const coverage = stats.coverage_pct !== undefined ? `${stats.coverage_pct}%` : '100%';
+                window.showToast('success', 'Alteryx Workflow Imported', `Mapped ${stats.mapped_tools || 0} tools (${stats.fallback_tools || 0} fallbacks). Coverage: ${coverage}`);
+              }
+            } else {
+              if (window.showToast) window.showToast('error', 'Import Failed', res.error || 'Failed to import Alteryx workflow.');
+            }
+          })
+          .catch(err => {
+            if (window.showToast) window.showToast('error', 'Import Failed', err.message);
+          });
+        }
         continue;
       }
 
@@ -3862,6 +3908,11 @@ class Canvas {
         return 'Auto-detect types';
       case 'browse':
         return '';
+      case 'unsupported_tool': {
+        const orig = cfg.original_tool || 'Alteryx Tool';
+        const tid = cfg.tool_id ? ` (#${cfg.tool_id})` : '';
+        return trunc(`Fallback: ${orig}${tid}`);
+      }
       default:
         return '';
     }
@@ -3946,6 +3997,16 @@ class Canvas {
     warningBadge.style.display = 'none';
     warningBadge.title = '';
     nodeEl.appendChild(warningBadge);
+
+    // Unsupported Tool Amber Fallback Badge
+    if (node.type === 'unsupported_tool') {
+      const fallbackBadge = document.createElement('div');
+      fallbackBadge.className = 'node-fallback-badge';
+      fallbackBadge.innerHTML = '⚠️';
+      fallbackBadge.style.cssText = 'position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#ffffff;border-radius:50%;width:18px;height:18px;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);z-index:10;cursor:pointer;';
+      fallbackBadge.title = `Unsupported Alteryx Tool: ${node.config?.original_tool || 'Preserved Tool'}. Running as non-destructive passthrough.`;
+      nodeEl.appendChild(fallbackBadge);
+    }
 
     // Tool label / annotation rendered cleanly underneath
     const annot = document.createElement('div');

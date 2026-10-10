@@ -1,0 +1,311 @@
+{
+  "name": "017 Formula",
+  "description": "Imported from Alteryx workflow '017 Formula.yxmd'",
+  "viewport": {
+    "zoom": 1.0,
+    "panX": 0.0,
+    "panY": 0.0
+  },
+  "nodes": [
+    {
+      "id": "alteryx_9",
+      "type": "formula",
+      "name": "New Field = [Field1]+[Field2]",
+      "x": 150,
+      "y": 318,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "New Field",
+            "field": "New Field",
+            "expression": "[Field1]+[Field2]",
+            "type": "string"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_10",
+      "type": "formula",
+      "name": "New Field = [Field1]-[Field2]",
+      "x": 150,
+      "y": 210,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "New Field",
+            "field": "New Field",
+            "expression": "[Field1]-[Field2]",
+            "type": "string"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_11",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 54,
+      "y": 210,
+      "config": {
+        "columns": [
+          "Field1",
+          "Field2"
+        ],
+        "data": [
+          [
+            "5",
+            "10"
+          ],
+          [
+            "10",
+            "10"
+          ],
+          [
+            "20",
+            "10"
+          ],
+          [
+            "30",
+            "10"
+          ],
+          [
+            "40",
+            "10"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_14",
+      "type": "formula",
+      "name": "New Field = Replace([data], \"$\", \"\")",
+      "x": 150,
+      "y": 54,
+      "config": {
+        "formulas": [
+          {
+            "output_field": "New Field",
+            "field": "New Field",
+            "expression": "Replace([data], \"$\", \"\")",
+            "type": "string"
+          }
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_15",
+      "type": "text_input",
+      "name": "Text Input",
+      "x": 54,
+      "y": 54,
+      "config": {
+        "columns": [
+          "TransactionID",
+          "data"
+        ],
+        "data": [
+          [
+            "50001",
+            "$100000"
+          ],
+          [
+            "50002",
+            "$105000"
+          ],
+          [
+            "50003",
+            "$110250"
+          ],
+          [
+            "50004",
+            "$115762.5"
+          ],
+          [
+            "50005",
+            "$121550.63"
+          ],
+          [
+            "50006",
+            "$127628.16"
+          ],
+          [
+            "50007",
+            "$134009.56"
+          ],
+          [
+            "50008",
+            "$175887.55"
+          ],
+          [
+            "50009",
+            "$147745.54"
+          ],
+          [
+            "50010",
+            "$155132.82"
+          ],
+          [
+            "50011",
+            "$162889.46"
+          ],
+          [
+            "50012",
+            "$171033.94"
+          ],
+          [
+            "50299",
+            "$53434.59"
+          ],
+          [
+            "50300",
+            "$56498.67"
+          ]
+        ]
+      },
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_17",
+      "type": "browse",
+      "name": "Browse",
+      "x": 246,
+      "y": 54,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_18",
+      "type": "browse",
+      "name": "Browse",
+      "x": 246,
+      "y": 210,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    },
+    {
+      "id": "alteryx_19",
+      "type": "browse",
+      "name": "Browse",
+      "x": 246,
+      "y": 318,
+      "config": {},
+      "container_id": null,
+      "is_cached": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_alteryx_9_O_alteryx_19_I_1",
+      "source": "alteryx_9",
+      "sourceHandle": "O",
+      "target": "alteryx_19",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_10_O_alteryx_18_I_2",
+      "source": "alteryx_10",
+      "sourceHandle": "O",
+      "target": "alteryx_18",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_11_O_alteryx_9_I_3",
+      "source": "alteryx_11",
+      "sourceHandle": "O",
+      "target": "alteryx_9",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_11_O_alteryx_10_I_4",
+      "source": "alteryx_11",
+      "sourceHandle": "O",
+      "target": "alteryx_10",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_14_O_alteryx_17_I_5",
+      "source": "alteryx_14",
+      "sourceHandle": "O",
+      "target": "alteryx_17",
+      "targetHandle": "I"
+    },
+    {
+      "id": "conn_alteryx_15_O_alteryx_14_I_6",
+      "source": "alteryx_15",
+      "sourceHandle": "O",
+      "target": "alteryx_14",
+      "targetHandle": "I"
+    }
+  ],
+  "containers": [],
+  "comments": [
+    {
+      "id": "alteryx_8",
+      "text": "Math Calculations\nSubtracting",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 342,
+      "y": 222,
+      "width": 216,
+      "height": 60
+    },
+    {
+      "id": "alteryx_12",
+      "text": "",
+      "color": "#fef08a",
+      "textColor": "#1e293b",
+      "fontSize": 8,
+      "x": 510,
+      "y": 54,
+      "width": 408,
+      "height": 60
+    },
+    {
+      "id": "alteryx_13",
+      "text": "Remove the $",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 342,
+      "y": 66,
+      "width": 160,
+      "height": 60
+    },
+    {
+      "id": "alteryx_16",
+      "text": "Math Calculations\nAdding",
+      "color": "#ffff80",
+      "textColor": "#1e293b",
+      "fontSize": 12,
+      "x": 342,
+      "y": 318,
+      "width": 216,
+      "height": 60
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-10-09T23:30:48",
+    "updated_at": "2026-10-09T23:30:48",
+    "version": "2.1.0",
+    "author": "Ahmed Gad",
+    "description": "Imported from Alteryx workflow '017 Formula.yxmd'",
+    "source_format": "Alteryx .yxmd",
+    "imported_from": "017 Formula.yxmd",
+    "total_tools": 8,
+    "mapped_tools": 8,
+    "fallback_tools": 0
+  }
+}

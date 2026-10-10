@@ -438,6 +438,66 @@ def import_workflow_package():
         return jsonify({"success": False, "error": f"Failed to import package: {str(e)}"}), 400
 
 
+@bp.route("/api/workflow/import-yxmd", methods=["POST"])
+def import_alteryx_workflow():
+    """Uploads and converts an Alteryx .yxmd workflow into DataFlow schema."""
+    from backend.engine.alteryx import parse_yxmd_content, parse_yxmd_file
+
+    filename = "alteryx_workflow.yxmd"
+    xml_content = None
+
+    if "file" in request.files:
+        uploaded = request.files["file"]
+        if not uploaded or not uploaded.filename:
+            return jsonify({"success": False, "error": "Empty filename."}), 400
+        filename = uploaded.filename
+        xml_content = uploaded.read().decode("utf-8-sig", errors="replace")
+    else:
+        data = request.get_json(silent=True) or {}
+        if "xml" in data:
+            xml_content = data["xml"]
+            filename = data.get("filename", filename)
+        elif "path" in data or "filepath" in data:
+            target_path = data.get("path") or data.get("filepath")
+            try:
+                parse_res = parse_yxmd_file(target_path)
+                normalized, norm_warns = ext.workflow_manager.validate_and_normalize(parse_res.workflow)
+                all_warns = [w.to_dict() for w in parse_res.warnings] + [{"tool_id": "system", "tool_name": "Validation", "severity": "info", "message": w} for w in norm_warns]
+                return jsonify({
+                    "success": True,
+                    "workflow": normalized,
+                    "filename": os.path.basename(target_path),
+                    "path": target_path.replace("\\", "/"),
+                    "stats": parse_res.to_dict()["stats"],
+                    "warnings": all_warns
+                })
+            except Exception as e:
+                return jsonify({"success": False, "error": f"Failed to import .yxmd from path: {str(e)}"}), 400
+
+    if not xml_content:
+        return jsonify({"success": False, "error": "No .yxmd file or XML content provided."}), 400
+
+    try:
+        parse_res = parse_yxmd_content(xml_content, source_name=filename)
+        normalized, norm_warns = ext.workflow_manager.validate_and_normalize(parse_res.workflow)
+        all_warns = [w.to_dict() for w in parse_res.warnings] + [{"tool_id": "system", "tool_name": "Validation", "severity": "info", "message": w} for w in norm_warns]
+        
+        # Save into WORKFLOWS_DIR
+        save_res = ext.workflow_manager.save_workflow(normalized)
+
+        return jsonify({
+            "success": True,
+            "workflow": normalized,
+            "filename": save_res["filename"],
+            "path": save_res["path"],
+            "stats": parse_res.to_dict()["stats"],
+            "warnings": all_warns,
+            "message": f"Successfully imported '{normalized['name']}' ({parse_res.mapped_tools} mapped, {parse_res.fallback_tools} fallbacks)."
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to convert Alteryx workflow: {str(e)}"}), 400
+
+
 @bp.route("/api/workflow/dependencies", methods=["POST"])
 def inspect_workflow_dependencies():
     """Inspects external data assets referenced in a workflow payload."""

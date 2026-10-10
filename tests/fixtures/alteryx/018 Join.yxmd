@@ -1,0 +1,1162 @@
+<?xml version="1.0"?>
+<AlteryxDocument yxmdVer="2018.1">
+  <Nodes>
+    <Node ToolID="16">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="138" y="90" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="3" />
+          <Fields>
+            <Field name="City" />
+            <Field name="Population" />
+          </Fields>
+          <Data>
+            <r>
+              <c>Chicago</c>
+              <c>2695598</c>
+            </r>
+            <r>
+              <c>Los Angeles</c>
+              <c>3792622</c>
+            </r>
+            <r>
+              <c>New York</c>
+              <c>8175133</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>List of CITY and POPULATION</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="17">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="138" y="186" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="8" />
+          <Fields>
+            <Field name="City" />
+            <Field name="Sport" />
+            <Field name="Team" />
+          </Fields>
+          <Data>
+            <r>
+              <c>Chicago</c>
+              <c>Baseball</c>
+              <c>Cubs</c>
+            </r>
+            <r>
+              <c>Chicago</c>
+              <c>Baseball</c>
+              <c>White Sox</c>
+            </r>
+            <r>
+              <c>Los Angeles</c>
+              <c>Baseball</c>
+              <c>Dodgers</c>
+            </r>
+            <r>
+              <c>Los Angeles</c>
+              <c>Baseball</c>
+              <c>Angels</c>
+            </r>
+            <r>
+              <c>New York</c>
+              <c>Baseball</c>
+              <c>Yankees</c>
+            </r>
+            <r>
+              <c>New York</c>
+              <c>Baseball</c>
+              <c>Mets</c>
+            </r>
+            <r>
+              <c>Boston</c>
+              <c>Baseball</c>
+              <c>Red Sox</c>
+            </r>
+            <r>
+              <c>Tampa</c>
+              <c>Baseball</c>
+              <c>Devil Rays</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>List of CITY, SPORT, and TEAM</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="18">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="630" y="90" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="56" />
+          <Fields>
+            <Field name="Product" />
+            <Field name="Quarter" />
+            <Field name="Sales" />
+          </Fields>
+          <Data>
+            <r>
+              <c>Product 1</c>
+              <c>Q1</c>
+              <c>7557.41</c>
+            </r>
+            <r>
+              <c>Product 1</c>
+              <c>Q2</c>
+              <c>3528.7</c>
+            </r>
+            <r>
+              <c>Product 1</c>
+              <c>Q3</c>
+              <c>4157.25</c>
+            </r>
+            <r>
+              <c>Product 1</c>
+              <c>Q4</c>
+              <c>15797.4</c>
+            </r>
+            <r>
+              <c>Product 10</c>
+              <c>Q1</c>
+              <c>415.05</c>
+            </r>
+            <r>
+              <c>Product 10</c>
+              <c>Q2</c>
+              <c>377.25</c>
+            </r>
+            <r>
+              <c>Product 10</c>
+              <c>Q3</c>
+              <c>543.38</c>
+            </r>
+            <r>
+              <c>Product 10</c>
+              <c>Q4</c>
+              <c>1618.63</c>
+            </r>
+            <r>
+              <c>Product 11</c>
+              <c>Q1</c>
+              <c>3573.11</c>
+            </r>
+            <r>
+              <c>Product 11</c>
+              <c>Q2</c>
+              <c>856.75</c>
+            </r>
+            <r>
+              <c>Product 11</c>
+              <c>Q3</c>
+              <c>1536.33</c>
+            </r>
+            <r>
+              <c>Product 11</c>
+              <c>Q4</c>
+              <c>4549.38</c>
+            </r>
+            <r>
+              <c>Product 12</c>
+              <c>Q1</c>
+              <c>45</c>
+            </r>
+            <r>
+              <c>Product 12</c>
+              <c>Q2</c>
+              <c>1145.25</c>
+            </r>
+            <r>
+              <c>Product 12</c>
+              <c>Q3</c>
+              <c>1168.41</c>
+            </r>
+            <r>
+              <c>Product 12</c>
+              <c>Q4</c>
+              <c>1553.53</c>
+            </r>
+            <r>
+              <c>Product 13</c>
+              <c>Q1</c>
+              <c />
+            </r>
+            <r>
+              <c>Product 13</c>
+              <c>Q2</c>
+              <c>596.88</c>
+            </r>
+            <r>
+              <c>Product 13</c>
+              <c>Q3</c>
+              <c>1420.53</c>
+            </r>
+            <r>
+              <c>Product 13</c>
+              <c>Q4</c>
+              <c>1202.46</c>
+            </r>
+            <r>
+              <c>Product 14</c>
+              <c>Q1</c>
+              <c>2073.54</c>
+            </r>
+            <r>
+              <c>Product 14</c>
+              <c>Q2</c>
+              <c>936.75</c>
+            </r>
+            <r>
+              <c>Product 14</c>
+              <c>Q3</c>
+              <c>1429.75</c>
+            </r>
+            <r>
+              <c>Product 14</c>
+              <c>Q4</c>
+              <c>2266.55</c>
+            </r>
+            <r>
+              <c>Product 15</c>
+              <c>Q1</c>
+              <c />
+            </r>
+            <r>
+              <c>Product 15</c>
+              <c>Q2</c>
+              <c>240.63</c>
+            </r>
+            <r>
+              <c>Product 15</c>
+              <c>Q3</c>
+              <c>1018.75</c>
+            </r>
+            <r>
+              <c>Product 15</c>
+              <c>Q4</c>
+              <c>1245.29</c>
+            </r>
+            <r>
+              <c>Product 2</c>
+              <c>Q1</c>
+              <c>5342.76</c>
+            </r>
+            <r>
+              <c>Product 2</c>
+              <c>Q2</c>
+              <c>3670.16</c>
+            </r>
+            <r>
+              <c>Product 2</c>
+              <c>Q3</c>
+              <c>4851.31</c>
+            </r>
+            <r>
+              <c>Product 2</c>
+              <c>Q4</c>
+              <c>6262.98</c>
+            </r>
+            <r>
+              <c>Product 3</c>
+              <c>Q1</c>
+              <c>9844.21</c>
+            </r>
+            <r>
+              <c>Product 3</c>
+              <c>Q2</c>
+              <c>6197.73</c>
+            </r>
+            <r>
+              <c>Product 3</c>
+              <c>Q3</c>
+              <c>7916.88</c>
+            </r>
+            <r>
+              <c>Product 3</c>
+              <c>Q4</c>
+              <c>16499.83</c>
+            </r>
+            <r>
+              <c>Product 4</c>
+              <c>Q1</c>
+              <c>3379.05</c>
+            </r>
+            <r>
+              <c>Product 4</c>
+              <c>Q2</c>
+              <c>2200.5</c>
+            </r>
+            <r>
+              <c>Product 4</c>
+              <c>Q3</c>
+              <c>2866.16</c>
+            </r>
+            <r>
+              <c>Product 4</c>
+              <c>Q4</c>
+              <c>6226.1</c>
+            </r>
+            <r>
+              <c>Product 5</c>
+              <c>Q1</c>
+              <c>3000</c>
+            </r>
+            <r>
+              <c>Product 5</c>
+              <c>Q2</c>
+              <c>533.75</c>
+            </r>
+            <r>
+              <c>Product 5</c>
+              <c>Q3</c>
+              <c>1252</c>
+            </r>
+            <r>
+              <c>Product 5</c>
+              <c>Q4</c>
+              <c>5658.52</c>
+            </r>
+            <r>
+              <c>Product 7</c>
+              <c>Q1</c>
+              <c>100</c>
+            </r>
+            <r>
+              <c>Product 7</c>
+              <c>Q2</c>
+              <c>1090.83</c>
+            </r>
+            <r>
+              <c>Product 7</c>
+              <c>Q3</c>
+              <c>1912.31</c>
+            </r>
+            <r>
+              <c>Product 7</c>
+              <c>Q4</c>
+              <c>4874.79</c>
+            </r>
+            <r>
+              <c>Product 8</c>
+              <c>Q1</c>
+              <c />
+            </r>
+            <r>
+              <c>Product 8</c>
+              <c>Q2</c>
+              <c>522.38</c>
+            </r>
+            <r>
+              <c>Product 8</c>
+              <c>Q3</c>
+              <c>809</c>
+            </r>
+            <r>
+              <c>Product 8</c>
+              <c>Q4</c>
+              <c>1721.09</c>
+            </r>
+            <r>
+              <c>Product 9</c>
+              <c>Q1</c>
+              <c>3635.54</c>
+            </r>
+            <r>
+              <c>Product 9</c>
+              <c>Q2</c>
+              <c>1803</c>
+            </r>
+            <r>
+              <c>Product 9</c>
+              <c>Q3</c>
+              <c>1563</c>
+            </r>
+            <r>
+              <c>Product 9</c>
+              <c>Q4</c>
+              <c>7628.88</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>Quarterly Sales by Product
+PRODUCT, QUARTER, SALES</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="19">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.TextInput.TextInput">
+        <Position x="630" y="210" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <NumRows value="56" />
+          <Fields>
+            <Field name="Item" />
+            <Field name="Product" />
+            <Field name="Quarter" />
+            <Field name="Gross Margin" />
+          </Fields>
+          <Data>
+            <r>
+              <c>Socks</c>
+              <c>Product 1</c>
+              <c>Q1</c>
+              <c>5290.19</c>
+            </r>
+            <r>
+              <c>Socks</c>
+              <c>Product 1</c>
+              <c>Q2</c>
+              <c>2470.09</c>
+            </r>
+            <r>
+              <c>Socks</c>
+              <c>Product 1</c>
+              <c>Q3</c>
+              <c>2910.07</c>
+            </r>
+            <r>
+              <c>Socks</c>
+              <c>Product 1</c>
+              <c>Q4</c>
+              <c>11058.18</c>
+            </r>
+            <r>
+              <c>Shoes</c>
+              <c>Product 10</c>
+              <c>Q1</c>
+              <c>290.53</c>
+            </r>
+            <r>
+              <c>Shoes</c>
+              <c>Product 10</c>
+              <c>Q2</c>
+              <c>264.07</c>
+            </r>
+            <r>
+              <c>Shoes</c>
+              <c>Product 10</c>
+              <c>Q3</c>
+              <c>380.36</c>
+            </r>
+            <r>
+              <c>Shoes</c>
+              <c>Product 10</c>
+              <c>Q4</c>
+              <c>1133.04</c>
+            </r>
+            <r>
+              <c>Shirts</c>
+              <c>Product 11</c>
+              <c>Q1</c>
+              <c>2501.18</c>
+            </r>
+            <r>
+              <c>Shirts</c>
+              <c>Product 11</c>
+              <c>Q2</c>
+              <c>599.72</c>
+            </r>
+            <r>
+              <c>Shirts</c>
+              <c>Product 11</c>
+              <c>Q3</c>
+              <c>1075.43</c>
+            </r>
+            <r>
+              <c>Shirts</c>
+              <c>Product 11</c>
+              <c>Q4</c>
+              <c>3184.56</c>
+            </r>
+            <r>
+              <c>Jeans</c>
+              <c>Product 12</c>
+              <c>Q1</c>
+              <c>31.5</c>
+            </r>
+            <r>
+              <c>Jeans</c>
+              <c>Product 12</c>
+              <c>Q2</c>
+              <c>801.67</c>
+            </r>
+            <r>
+              <c>Jeans</c>
+              <c>Product 12</c>
+              <c>Q3</c>
+              <c>817.89</c>
+            </r>
+            <r>
+              <c>Jeans</c>
+              <c>Product 12</c>
+              <c>Q4</c>
+              <c>1087.47</c>
+            </r>
+            <r>
+              <c>Skirts</c>
+              <c>Product 13</c>
+              <c>Q1</c>
+              <c>0</c>
+            </r>
+            <r>
+              <c>Skirts</c>
+              <c>Product 13</c>
+              <c>Q2</c>
+              <c>417.81</c>
+            </r>
+            <r>
+              <c>Skirts</c>
+              <c>Product 13</c>
+              <c>Q3</c>
+              <c>994.37</c>
+            </r>
+            <r>
+              <c>Skirts</c>
+              <c>Product 13</c>
+              <c>Q4</c>
+              <c>841.72</c>
+            </r>
+            <r>
+              <c>Gloves</c>
+              <c>Product 14</c>
+              <c>Q1</c>
+              <c>1451.48</c>
+            </r>
+            <r>
+              <c>Gloves</c>
+              <c>Product 14</c>
+              <c>Q2</c>
+              <c>655.72</c>
+            </r>
+            <r>
+              <c>Gloves</c>
+              <c>Product 14</c>
+              <c>Q3</c>
+              <c>1000.82</c>
+            </r>
+            <r>
+              <c>Gloves</c>
+              <c>Product 14</c>
+              <c>Q4</c>
+              <c>1586.59</c>
+            </r>
+            <r>
+              <c>Hats</c>
+              <c>Product 15</c>
+              <c>Q1</c>
+              <c>0</c>
+            </r>
+            <r>
+              <c>Hats</c>
+              <c>Product 15</c>
+              <c>Q2</c>
+              <c>168.44</c>
+            </r>
+            <r>
+              <c>Hats</c>
+              <c>Product 15</c>
+              <c>Q3</c>
+              <c>713.13</c>
+            </r>
+            <r>
+              <c>Hats</c>
+              <c>Product 15</c>
+              <c>Q4</c>
+              <c>871.7</c>
+            </r>
+            <r>
+              <c>Belts</c>
+              <c>Product 2</c>
+              <c>Q1</c>
+              <c>3739.93</c>
+            </r>
+            <r>
+              <c>Belts</c>
+              <c>Product 2</c>
+              <c>Q2</c>
+              <c>2569.11</c>
+            </r>
+            <r>
+              <c>Belts</c>
+              <c>Product 2</c>
+              <c>Q3</c>
+              <c>3395.92</c>
+            </r>
+            <r>
+              <c>Belts</c>
+              <c>Product 2</c>
+              <c>Q4</c>
+              <c>4384.08</c>
+            </r>
+            <r>
+              <c>Bikini</c>
+              <c>Product 3</c>
+              <c>Q1</c>
+              <c>6890.95</c>
+            </r>
+            <r>
+              <c>Bikini</c>
+              <c>Product 3</c>
+              <c>Q2</c>
+              <c>4338.41</c>
+            </r>
+            <r>
+              <c>Bikini</c>
+              <c>Product 3</c>
+              <c>Q3</c>
+              <c>5541.81</c>
+            </r>
+            <r>
+              <c>Bikini</c>
+              <c>Product 3</c>
+              <c>Q4</c>
+              <c>11549.88</c>
+            </r>
+            <r>
+              <c>Earings</c>
+              <c>Product 4</c>
+              <c>Q1</c>
+              <c>2365.34</c>
+            </r>
+            <r>
+              <c>Earings</c>
+              <c>Product 4</c>
+              <c>Q2</c>
+              <c>1540.35</c>
+            </r>
+            <r>
+              <c>Earings</c>
+              <c>Product 4</c>
+              <c>Q3</c>
+              <c>2006.31</c>
+            </r>
+            <r>
+              <c>Earings</c>
+              <c>Product 4</c>
+              <c>Q4</c>
+              <c>4358.27</c>
+            </r>
+            <r>
+              <c>Rings</c>
+              <c>Product 5</c>
+              <c>Q1</c>
+              <c>2100</c>
+            </r>
+            <r>
+              <c>Rings</c>
+              <c>Product 5</c>
+              <c>Q2</c>
+              <c>373.63</c>
+            </r>
+            <r>
+              <c>Rings</c>
+              <c>Product 5</c>
+              <c>Q3</c>
+              <c>876.4</c>
+            </r>
+            <r>
+              <c>Rings</c>
+              <c>Product 5</c>
+              <c>Q4</c>
+              <c>3960.97</c>
+            </r>
+            <r>
+              <c>Purse</c>
+              <c>Product 7</c>
+              <c>Q1</c>
+              <c>70</c>
+            </r>
+            <r>
+              <c>Purse</c>
+              <c>Product 7</c>
+              <c>Q2</c>
+              <c>763.58</c>
+            </r>
+            <r>
+              <c>Purse</c>
+              <c>Product 7</c>
+              <c>Q3</c>
+              <c>1338.62</c>
+            </r>
+            <r>
+              <c>Purse</c>
+              <c>Product 7</c>
+              <c>Q4</c>
+              <c>3412.35</c>
+            </r>
+            <r>
+              <c>Backpacks</c>
+              <c>Product 8</c>
+              <c>Q1</c>
+              <c>0</c>
+            </r>
+            <r>
+              <c>Backpacks</c>
+              <c>Product 8</c>
+              <c>Q2</c>
+              <c>365.66</c>
+            </r>
+            <r>
+              <c>Backpacks</c>
+              <c>Product 8</c>
+              <c>Q3</c>
+              <c>566.3</c>
+            </r>
+            <r>
+              <c>Backpacks</c>
+              <c>Product 8</c>
+              <c>Q4</c>
+              <c>1204.76</c>
+            </r>
+            <r>
+              <c>Wallet</c>
+              <c>Product 9</c>
+              <c>Q1</c>
+              <c>2544.88</c>
+            </r>
+            <r>
+              <c>Wallet</c>
+              <c>Product 9</c>
+              <c>Q2</c>
+              <c>1262.1</c>
+            </r>
+            <r>
+              <c>Wallet</c>
+              <c>Product 9</c>
+              <c>Q3</c>
+              <c>1094.1</c>
+            </r>
+            <r>
+              <c>Wallet</c>
+              <c>Product 9</c>
+              <c>Q4</c>
+              <c>5340.21</c>
+            </r>
+          </Data>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <AnnotationText>Quarterly GM by Product
+FIELD1, PRODUCT, QUARTER, GROSS MARGIN</AnnotationText>
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxTextInput" />
+    </Node>
+    <Node ToolID="20">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.Join.Join">
+        <Position x="258" y="138" />
+      </GuiSettings>
+      <Properties>
+        <Configuration joinByRecordPos="False">
+          <JoinInfo connection="Left">
+            <Field field="City" />
+          </JoinInfo>
+          <JoinInfo connection="Right">
+            <Field field="City" />
+          </JoinInfo>
+          <SelectConfiguration>
+            <Configuration outputConnection="Join">
+              <OrderChanged value="False" />
+              <CommaDecimal value="False" />
+              <SelectFields>
+                <SelectField field="Right_City" selected="True" rename="Right_City" />
+                <SelectField field="*Unknown" selected="True" />
+              </SelectFields>
+            </Configuration>
+          </SelectConfiguration>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxJoin" />
+    </Node>
+    <Node ToolID="21">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.Join.Join">
+        <Position x="750" y="138" />
+      </GuiSettings>
+      <Properties>
+        <Configuration joinByRecordPos="False">
+          <JoinInfo connection="Left">
+            <Field field="Product" />
+          </JoinInfo>
+          <JoinInfo connection="Right">
+            <Field field="Product" />
+          </JoinInfo>
+          <SelectConfiguration>
+            <Configuration outputConnection="Join">
+              <OrderChanged value="False" />
+              <CommaDecimal value="False" />
+              <SelectFields>
+                <SelectField field="Right_Product" selected="True" rename="Right_Product" />
+                <SelectField field="Right_Quarter" selected="True" rename="Right_Quarter" />
+                <SelectField field="*Unknown" selected="True" />
+              </SelectFields>
+            </Configuration>
+          </SelectConfiguration>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxJoin" />
+    </Node>
+    <Node ToolID="22">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="54" y="102" width="76" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Left</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="23">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="54" y="210" width="76" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Right</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="24">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="546" y="114" width="76" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Left</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="25">
+      <GuiSettings Plugin="AlteryxGuiToolkit.TextBox.TextBox">
+        <Position x="546" y="222" width="76" height="24" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <Text>Right</Text>
+          <Font name="Segoe UI" size="12" style="1" />
+          <TextColor name="Black" />
+          <FillColor r="255" g="255" b="128" />
+          <Shape shape="0" />
+          <Justification Justification="4" />
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+    </Node>
+    <Node ToolID="26">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="354" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_16556_ab9d9a3ad21d4273ac4fb2fd7eaf900e_\Engine_18940_8ca07553760e48ebb5edfa0b81619607_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="27">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="354" y="138" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_16556_ab9d9a3ad21d4273ac4fb2fd7eaf900e_\Engine_18940_1e954a96dde44381856e5ead7892ad78_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="28">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="354" y="222" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_16556_ab9d9a3ad21d4273ac4fb2fd7eaf900e_\Engine_18940_d919ae97f8e84e93bab6015c32e1a6b6_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="29">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="846" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_16556_ab9d9a3ad21d4273ac4fb2fd7eaf900e_\Engine_18940_1f6759d772d64fd0a65c44b403eb6d05_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="30">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="846" y="138" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_16556_ab9d9a3ad21d4273ac4fb2fd7eaf900e_\Engine_18940_5676f0a08c954dc99e43761a3daca340_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+    <Node ToolID="31">
+      <GuiSettings Plugin="AlteryxBasePluginsGui.BrowseV2.BrowseV2">
+        <Position x="846" y="222" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <TempFile>C:\Users\kpen002\AppData\Local\Temp\Engine_16556_ab9d9a3ad21d4273ac4fb2fd7eaf900e_\Engine_18940_e49fdfe2437441278ea585ab4dd7fdc7_.yxdb</TempFile>
+          <TempFileDataProfiling />
+          <Layout>
+            <ViewMode>Single</ViewMode>
+            <ViewSize value="100" />
+            <View1>
+              <DefaultTab>Profile</DefaultTab>
+              <Hints>
+                <Table />
+              </Hints>
+            </View1>
+            <View2 />
+          </Layout>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxBasePluginsEngine.dll" EngineDllEntryPoint="AlteryxBrowseV2" />
+    </Node>
+  </Nodes>
+  <Connections>
+    <Connection>
+      <Origin ToolID="16" Connection="Output" />
+      <Destination ToolID="20" Connection="Left" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="17" Connection="Output" />
+      <Destination ToolID="20" Connection="Right" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="18" Connection="Output" />
+      <Destination ToolID="21" Connection="Left" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="19" Connection="Output" />
+      <Destination ToolID="21" Connection="Right" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="20" Connection="Left" />
+      <Destination ToolID="26" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="20" Connection="Join" />
+      <Destination ToolID="27" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="20" Connection="Right" />
+      <Destination ToolID="28" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="21" Connection="Left" />
+      <Destination ToolID="29" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="21" Connection="Join" />
+      <Destination ToolID="30" Connection="Input" />
+    </Connection>
+    <Connection>
+      <Origin ToolID="21" Connection="Right" />
+      <Destination ToolID="31" Connection="Input" />
+    </Connection>
+  </Connections>
+  <Properties>
+    <Memory default="True" />
+    <GlobalRecordLimit value="0" />
+    <TempFiles default="True" />
+    <Annotation on="True" includeToolName="False" />
+    <ConvErrorLimit value="10" />
+    <ConvErrorLimit_Stop value="False" />
+    <CancelOnError value="False" />
+    <DisableBrowse value="False" />
+    <EnablePerformanceProfiling value="False" />
+    <DisableAllOutput value="False" />
+    <ShowAllMacroMessages value="False" />
+    <ShowConnectionStatusIsOn value="True" />
+    <ShowConnectionStatusOnlyWhenRunning value="True" />
+    <ZoomLevel value="0" />
+    <LayoutType>Horizontal</LayoutType>
+    <MetaInfo>
+      <NameIsFileName value="True" />
+      <Name>018 Join</Name>
+      <Description />
+      <RootToolName />
+      <ToolVersion />
+      <ToolInDb value="False" />
+      <CategoryName />
+      <SearchTags />
+      <Author />
+      <Company />
+      <Copyright />
+      <DescriptionLink actual="" displayed="" />
+      <Example>
+        <Description />
+        <File />
+      </Example>
+    </MetaInfo>
+    <Events>
+      <Enabled value="True" />
+    </Events>
+  </Properties>
+</AlteryxDocument>
