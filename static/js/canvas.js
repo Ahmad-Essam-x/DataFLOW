@@ -782,12 +782,17 @@ class Canvas {
           this.draggingNode.y = newY;
           this.updateNodeElementPosition(this.draggingNode);
 
-          // Check if hovering over an existing wire for splice preview
-          const wireCandidate = this.findWireNear(newX + 28, newY + 28, 28);
+          // Check if hovering over an existing wire for splice preview (only if tool has no wires connected yet)
           this.clearWireSplicePreviews();
-          if (wireCandidate && wireCandidate.source !== this.draggingNode.id && wireCandidate.target !== this.draggingNode.id) {
-            const wEl = document.getElementById(`wire-${wireCandidate.id}`);
-            if (wEl) wEl.classList.add('wire-splice-preview');
+          if (!this.hasNodeConnections(this.draggingNode.id)) {
+            const meta = this.toolRegistry[this.draggingNode.type] || { inputs: ['I'], outputs: ['O'] };
+            if (meta.inputs && meta.inputs.length >= 1 && meta.outputs && meta.outputs.length >= 1) {
+              const wireCandidate = this.findWireNear(newX + 28, newY + 28, 28);
+              if (wireCandidate && wireCandidate.source !== this.draggingNode.id && wireCandidate.target !== this.draggingNode.id) {
+                const wEl = document.getElementById(`wire-${wireCandidate.id}`);
+                if (wEl) wEl.classList.add('wire-splice-preview');
+              }
+            }
           }
         }
 
@@ -950,8 +955,8 @@ class Canvas {
         this.renderWires();
         this.onWorkflowChange();
 
-        // Check if dropped onto a wire for auto-splice
-        if (this.dragMoved && this.selectedNodeIds.size === 1 && movedNode) {
+        // Check if dropped onto a wire for auto-splice (only if tool has no wires connected yet)
+        if (this.dragMoved && this.selectedNodeIds.size === 1 && movedNode && !this.hasNodeConnections(movedNode.id)) {
           const wireCandidate = this.findWireNear(movedNode.x + 28, movedNode.y + 28, 28);
           this.clearWireSplicePreviews();
           if (wireCandidate && wireCandidate.source !== movedNode.id && wireCandidate.target !== movedNode.id) {
@@ -1816,6 +1821,11 @@ class Canvas {
     return bestPort;
   }
 
+  hasNodeConnections(nodeId) {
+    if (!nodeId) return false;
+    return this.connections.some(c => c.source === nodeId || c.target === nodeId);
+  }
+
   clearWireSplicePreviews() {
     const scope = this.wiresGroup || document;
     scope.querySelectorAll('.wire-splice-preview').forEach(w => w.classList.remove('wire-splice-preview'));
@@ -1825,6 +1835,7 @@ class Canvas {
     const conn = this.connections.find(c => c.id === connId);
     const newNode = this.nodes.find(n => n.id === newNodeId);
     if (!conn || !newNode) return false;
+    if (this.hasNodeConnections(newNodeId)) return false;
 
     const meta = this.toolRegistry[newNode.type] || { inputs: ['I'], outputs: ['O'] };
     const inputs = meta.inputs || [];
