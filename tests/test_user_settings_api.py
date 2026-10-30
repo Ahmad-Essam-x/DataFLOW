@@ -4,7 +4,7 @@ import sys
 import unittest
 import tempfile
 
-sys.path.insert(0, r'c:\Users\Ahmed Gad\Documents\antigravity\quick-noether')
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Point settings file at a temp location before importing app
 import backend.app as app_module

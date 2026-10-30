@@ -1,0 +1,59 @@
+{
+  "name": "rename, drop and reorder",
+  "tool": "select",
+  "provenance": "derived",
+  "source": "Alteryx Select: keep, rename and order columns; unselected columns are dropped",
+  "config": {
+    "fields": [
+      {
+        "original": "b",
+        "keep": true,
+        "rename": "B2",
+        "type": "none"
+      },
+      {
+        "original": "a",
+        "keep": true,
+        "rename": "a",
+        "type": "none"
+      },
+      {
+        "original": "c",
+        "keep": false,
+        "rename": "c",
+        "type": "none"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "a",
+        "b",
+        "c"
+      ],
+      "rows": [
+        [
+          1,
+          2,
+          3
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "B2",
+        "a"
+      ],
+      "rows": [
+        [
+          2,
+          1
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

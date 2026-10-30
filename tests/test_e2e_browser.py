@@ -8,6 +8,8 @@ import time
 import socket
 import threading
 import pytest
+
+pytest.importorskip("playwright")
 from playwright.sync_api import sync_playwright
 
 from backend.app import app
@@ -23,7 +25,7 @@ def _find_free_port():
 def live_server():
     """Starts the Flask server in a daemon thread on an ephemeral port."""
     import os
-    settings_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "user_settings.json")
+    from backend.app import USER_SETTINGS_FILE as settings_file  # temp home under pytest, never the repo's
     if os.path.exists(settings_file):
         try:
             os.remove(settings_file)
@@ -32,6 +34,11 @@ def live_server():
 
     port = _find_free_port()
     server_url = f"http://127.0.0.1:{port}"
+
+    # Run with the same Host/Origin/session-cookie guard the shipped app uses, so e2e covers the real fetch flow.
+    prev_guard = (app.config.get("ENFORCE_LOCAL_GUARD"), app.config.get("LOCAL_GUARD_PORT"))
+    app.config["ENFORCE_LOCAL_GUARD"] = True
+    app.config["LOCAL_GUARD_PORT"] = port
 
     server_thread = threading.Thread(
         target=lambda: app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False),
@@ -44,13 +51,15 @@ def live_server():
     max_retries = 30
     for _ in range(max_retries):
         try:
-            with urllib.request.urlopen(f"{server_url}/api/tools") as resp:
+            with urllib.request.urlopen(f"{server_url}/healthz") as resp:
                 if resp.status == 200:
                     break
         except Exception:
             time.sleep(0.1)
 
     yield server_url
+
+    app.config["ENFORCE_LOCAL_GUARD"], app.config["LOCAL_GUARD_PORT"] = prev_guard
 
     if os.path.exists(settings_file):
         try:
@@ -63,7 +72,8 @@ def live_server():
 def clean_autosave_state():
     """Ensures workflows/.autosave is empty so crash recovery modals never block E2E interactions."""
     import os
-    autosave_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "workflows", ".autosave")
+    from backend.app import WORKFLOWS_DIR
+    autosave_dir = os.path.join(WORKFLOWS_DIR, ".autosave")
     if os.path.exists(autosave_dir):
         for f in os.listdir(autosave_dir):
             try:
@@ -103,6 +113,7 @@ def browser_context():
 def test_e2e_page_loads_and_palette_rendered(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
 
     # Verify document title and core layout elements
     assert "Antigravity DataFlow" in page.title()
@@ -125,6 +136,7 @@ def test_e2e_page_loads_and_palette_rendered(live_server, browser_context):
 def test_e2e_theme_toggle(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
 
     body = page.locator("body")
     initial_class = body.get_attribute("class") or ""
@@ -147,6 +159,7 @@ def test_e2e_theme_toggle(live_server, browser_context):
 def test_e2e_load_and_run_workflow(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
 
     # Click Run button
     run_btn = page.locator("#btn-run")
@@ -169,6 +182,7 @@ def test_e2e_load_and_run_workflow(live_server, browser_context):
 def test_e2e_output_tool_windows_explorer_controls(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
 
     # Drag or trigger an Output Data tool configuration check
     # Check that config panel scripts and Explorer API bindings are present in window
@@ -186,6 +200,7 @@ def test_e2e_output_tool_windows_explorer_controls(live_server, browser_context)
 def test_e2e_results_panel_tabs_navigation(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
 
     # Verify tabs in results panel
     tabs = page.locator(".results-tab")
@@ -208,6 +223,7 @@ def test_e2e_results_panel_tabs_navigation(live_server, browser_context):
 def test_e2e_container_frame_wire_persistence_and_layering(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector("#canvas-container")
 
     # Verify CSS z-index and overflow layering
@@ -281,6 +297,7 @@ def test_e2e_container_frame_wire_persistence_and_layering(live_server, browser_
 def test_e2e_multitab_creation_and_switching(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
 
     # Step 1: Initial Tab
@@ -332,6 +349,7 @@ def test_e2e_multitab_creation_and_switching(live_server, browser_context):
 def test_e2e_multitab_tool_addition_and_execution_isolation(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
 
     # Step 1: Capture Tab 1 initial state (wait for default sample workflow nodes to load)
@@ -435,6 +453,7 @@ def test_e2e_multitab_tool_addition_and_execution_isolation(live_server, browser
 def test_e2e_overview_minimap_interactivity(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
 
     # Step 1: Verify Minimap class and instance exist
@@ -506,6 +525,7 @@ def test_e2e_overview_minimap_interactivity(live_server, browser_context):
 def test_e2e_canvas_infinite_dynamic_workspace_and_zoom(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes.length > 0", timeout=10000)
     page.wait_for_timeout(300)
@@ -609,6 +629,7 @@ def test_e2e_canvas_infinite_dynamic_workspace_and_zoom(live_server, browser_con
 def test_e2e_wire_rendering_and_visibility(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.connections && window.appCanvas.connections.length >= 10")
     page.wait_for_selector(".wire", state="attached")
@@ -692,6 +713,7 @@ def test_e2e_wire_rendering_and_visibility(live_server, browser_context):
 def test_e2e_results_panel_column_sorting(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes && window.appCanvas.nodes.length > 0")
     page.wait_for_selector(".node-card")
@@ -703,7 +725,7 @@ def test_e2e_results_panel_column_sorting(live_server, browser_context):
         c.selectNode(n.id);
         window.appResultsPanel.showNodeResults(n);
     }""")
-    page.wait_for_timeout(600)
+    page.wait_for_selector(".data-table td[data-col-idx=\"0\"]", timeout=15000)
 
     # 1. Verify sort buttons are present on table headers
     check_headers = page.evaluate("""() => {
@@ -832,6 +854,7 @@ def test_e2e_results_panel_column_sorting(live_server, browser_context):
 def test_e2e_alignment_and_distribution(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
 
@@ -927,6 +950,7 @@ def test_e2e_alignment_and_distribution(live_server, browser_context):
 def test_e2e_wireless_connections_and_semantic_tooltips(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
 
@@ -1057,6 +1081,7 @@ def test_e2e_wireless_connections_and_semantic_tooltips(live_server, browser_con
 def test_e2e_auto_connect_and_wire_snapping(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
 
@@ -1120,6 +1145,7 @@ def test_e2e_auto_connect_and_wire_snapping(live_server, browser_context):
 def test_e2e_interactive_data_cleansing_from_data_view(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes && window.appCanvas.nodes.length > 0")
     page.wait_for_selector(".node-card")
@@ -1131,7 +1157,7 @@ def test_e2e_interactive_data_cleansing_from_data_view(live_server, browser_cont
         c.selectNode(n.id);
         window.appResultsPanel.showNodeResults(n);
     }""")
-    page.wait_for_timeout(600)
+    page.wait_for_selector(".data-table td[data-col-idx=\"0\"]", timeout=15000)
 
     # 1. Test Cell Context Menu Cleansing Options
     cell_menu_res = page.evaluate("""() => {
@@ -1247,6 +1273,7 @@ def test_e2e_interactive_data_cleansing_from_data_view(live_server, browser_cont
 def test_e2e_view_menu_tooltip_toggles_and_config_persistence(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
 
@@ -1466,6 +1493,7 @@ def test_e2e_view_menu_tooltip_toggles_and_config_persistence(live_server, brows
 def test_e2e_design_time_schema_propagation_and_select_intelligence(live_server, browser_context):
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card")
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes")
 
@@ -1651,6 +1679,7 @@ def test_e2e_align_selected_tools_locally(live_server, browser_context):
     """
     page = browser_context.new_page()
     page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
     page.wait_for_selector(".tool-card", timeout=15000)
     page.wait_for_function("() => window.appCanvas && window.appCanvas.nodes && window.appCanvas.nodes.length > 0", timeout=10000)
 
@@ -1757,3 +1786,72 @@ def test_e2e_align_selected_tools_locally(live_server, browser_context):
 
 
 
+
+
+# ----------------------------------------------------------------------
+# 20. Running Total and Dynamic Rename are usable from the UI (palette, panel, schema, annotation, run)
+# ----------------------------------------------------------------------
+def test_e2e_running_total_and_dynamic_rename_are_usable(live_server, browser_context):
+    page = browser_context.new_page()
+    page.goto(live_server)
+    page.wait_for_function("() => window.appReady === true", timeout=30000)
+    page.wait_for_selector(".tool-card")
+
+    # Both tools are in the palette
+    for tool_type in ("running_total", "dynamic_rename"):
+        assert page.locator(f".tool-card[data-tool-type='{tool_type}']").count() == 1, tool_type
+
+    ids = page.evaluate("""() => {
+        const c = window.appCanvas;
+        c.loadWorkflow({ nodes: [], connections: [] });
+        const inp = c.addNode('text_input', 80, 120);
+        inp.config.columns = ['Region', 'Sales'];
+        inp.config.data = [['N', 10], ['N', 5], ['S', 7], ['N', 1]];
+        const rt = c.addNode('running_total', 320, 120);
+        const dr = c.addNode('dynamic_rename', 560, 120);
+        const sel = c.addNode('select', 800, 120);
+        c.addConnection(inp.id, 'O', rt.id, 'I');
+        c.addConnection(rt.id, 'O', dr.id, 'I');
+        c.addConnection(dr.id, 'O', sel.id, 'I');
+        return { inp: inp.id, rt: rt.id, dr: dr.id, sel: sel.id };
+    }""")
+
+    # Running Total panel: pick a field and a group, via the real checkboxes
+    page.evaluate("(id) => window.appCanvas.selectNode(id)", ids["rt"])
+    page.wait_for_selector(".rt-field-chk", timeout=10000)
+    page.locator(".rt-field-chk[value='Sales']").check()
+    page.locator(".rt-group-chk[value='Region']").check()
+    cfg = page.evaluate("(id) => window.appCanvas.nodes.find(n => n.id === id).config", ids["rt"])
+    assert cfg["running_total_fields"] == ["Sales"] and cfg["group_by_fields"] == ["Region"]
+
+    # Dynamic Rename panel: prefix mode
+    page.evaluate("(id) => window.appCanvas.selectNode(id)", ids["dr"])
+    page.wait_for_selector("#cfg-dr-mode", timeout=10000)
+    page.select_option("#cfg-dr-mode", "prefix")
+    page.fill("#cfg-dr-prefix", "Q_")
+
+    # Design-time schema propagation: downstream Select already sees the new, renamed columns (no run needed)
+    page.evaluate("(id) => window.appCanvas.selectNode(id)", ids["sel"])
+    page.wait_for_selector(".select-field-row", timeout=10000)
+    downstream = page.evaluate("(id) => window.appConfigPanel.getUpstreamColumns(id)", ids["sel"])
+    assert downstream == ["Q_Region", "Q_Sales", "Q_RunTot_Sales"]
+
+    # Canvas annotations summarize the settings (they render when a workflow is opened, so reload its saved form)
+    page.evaluate("""() => { const c = window.appCanvas; c.loadWorkflow(JSON.parse(JSON.stringify(c.getWorkflowData()))); }""")
+    page.wait_for_selector(".node-card")
+    notes = page.evaluate("""() => Array.from(document.querySelectorAll('.node-card')).map(n => n.innerText).join(' | ')""")
+    assert "Σ [Sales]" in notes and "prefix Q_" in notes
+
+    # Run end-to-end: group-wise cumulative sums, then the rename
+    page.evaluate("() => { window.appLastResult = null; }")
+    page.click("#btn-run")
+    page.wait_for_function("() => window.appLastResult !== null", timeout=30000)
+    result = page.evaluate("""() => {
+        const r = window.appLastResult;
+        const dr = window.appCanvas.nodes.find(n => n.type === 'dynamic_rename');  // ids change when a workflow is reloaded
+        return { ok: r.success, err: r.error, cols: r.node_results[dr.id].columns['O'] };
+    }""")
+    assert result["ok"] is True, result["err"]
+    assert result["cols"] == ["Q_Region", "Q_Sales", "Q_RunTot_Sales"]
+
+    page.close()

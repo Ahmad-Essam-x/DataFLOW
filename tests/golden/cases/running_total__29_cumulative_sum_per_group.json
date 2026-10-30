@@ -1,0 +1,72 @@
+{
+  "name": "cumulative sum per group",
+  "tool": "running_total",
+  "provenance": "derived",
+  "source": "Alteryx Running Total: cumulative sum within each group, in record order",
+  "config": {
+    "running_total_fields": [
+      "n"
+    ],
+    "group_by_fields": [
+      "g"
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "g",
+        "n"
+      ],
+      "rows": [
+        [
+          "a",
+          1
+        ],
+        [
+          "b",
+          10
+        ],
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          20
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "g",
+        "n",
+        "RunTot_n"
+      ],
+      "rows": [
+        [
+          "a",
+          1,
+          1.0
+        ],
+        [
+          "b",
+          10,
+          10.0
+        ],
+        [
+          "a",
+          2,
+          3.0
+        ],
+        [
+          "b",
+          20,
+          30.0
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

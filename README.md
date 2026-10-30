@@ -1,93 +1,63 @@
-# Antigravity DataFlow (Alteryx-like Visual ETL Local App)
+# Antigravity DataFlow
 
-A drag-and-drop data processing application that reproduces the core workflow, node canvas, and data profiling experience of Alteryx Designer. Completely local, fast, and powered by Python (Pandas & OpenPyXL).
+A visual data-preparation tool for Windows. Build a workflow by dragging tools onto a canvas and connecting them, then run it and inspect the data after every step. It runs on your computer: your files are not uploaded anywhere.
 
----
+DataFlow is inspired by Alteryx Designer and can open Alteryx `.yxmd` workflows. It is **not** a drop-in replacement: see [Alteryx compatibility](docs/ALTERYX_COMPATIBILITY.md) for what is covered and where results can differ.
 
-## Quick Start
+## Install
 
-### 1. Launch the Application
+Windows 10 or 11 (64-bit). No Python and no administrator rights needed.
 
-**Option A: Double-click `run.bat` (Windows)**
+1. Download `AntigravityDataFlow_Setup_<version>.exe` and its `.sha256` file from the team's release location.
+2. Run the installer. If Windows shows *"Windows protected your PC"*, choose **More info > Run anyway** (this appears until the installer is code-signed).
+3. Start **Antigravity DataFlow** from the Start Menu.
 
-**Option B: Terminal Command**
-```powershell
-& "C:\Users\Ahmed Gad\anaconda3\python.exe" run.py
-```
-Or if Python is in your PATH:
-```bash
-python run.py
-```
+Full instructions, upgrade, uninstall and troubleshooting: [DISTRIBUTION_GUIDE.md](DISTRIBUTION_GUIDE.md).
 
-The application will start the local server and automatically open your default browser at:
-`http://127.0.0.1:5000`
+## Your first workflow (about 10 minutes)
 
----
+1. **Open a sample.** *File > Workflow Templates...* lists ready-made workflows; open **Customer Sales Analysis**. The canvas shows the tools, connected left to right.
+2. **Run it.** Press **Ctrl + Enter** (or the **Run** button in the toolbar). Each tool shows its record count.
+3. **Look at the data.** Click any tool. The results panel at the bottom shows its output as a grid, with a profile of every column. Tools with several outputs (for example Filter's True / False, Join's Joined / Left / Right) have a tab per output.
+4. **Change something.** Click the Filter tool, change its condition, and run again.
+5. **Build your own.** Drag **Input Data** from the palette, choose a CSV or Excel file, then add Select, Filter, Formula, Join, Summarize and so on. Drag from one tool's output dot to the next tool's input dot to connect them. End with **Output Data** to write a file.
+6. **Save.** Press **Ctrl + S**. Workflows are plain `.json` files; your work is also auto-saved so it can be recovered after a crash.
 
-## Key Features & Tool Palette
+## What you can do
 
-### 1. In / Out (Green)
-* **Input Data**: Ingest data from CSV, TSV, or Excel (`.xlsx`, `.xls`) files. Includes automatic header detection, delimiter choices, and sheet selection.
-* **Output Data**: Export your pipeline results directly to CSV or Excel (`.xlsx`).
+- **Bring data in:** CSV, TSV, Excel, Parquet, wildcard sets of files, and (optionally) databases.
+- **Prepare it:** select and rename columns, filter, formulas, sort, clean text, find duplicates, sample, number records, running totals.
+- **Combine it:** joins (matched / unmatched outputs), union, lookups, append.
+- **Reshape it:** summarize, pivot (Cross Tab), unpivot (Transpose), split text, convert dates.
+- **Use AI (optional):** *LLM Process* and *Schema Fit* call a language model you choose. A local model (Ollama, LM Studio) keeps everything on your PC; any other host must be approved once, because row values are sent to it.
+- **Inspect everything:** data grid, column profiler, charts and an execution log for every tool.
+- **Open Alteryx workflows:** *File > Open* a `.yxmd` file. Tools DataFlow cannot run are replaced by a placeholder and listed in a warning: review them before trusting the output.
 
-### 2. Preparation (Blue)
-* **Select**: Check/uncheck columns to keep or drop, rename column headers, reorder fields, and cast data types (`String`, `Integer`, `Float`, `Boolean`, `DateTime`).
-* **Filter**: Visual condition builder with AND/OR logic (`=, !=, >, <, >=, <=, contains, starts_with, ends_with, is_null, not_null, in`) or custom expressions. Features Alteryx-authentic dual output anchors:
-  * `T` (True): Records matching the filter criteria.
-  * `F` (False): Records not matching the filter criteria.
-* **Formula**: Compute new columns or update existing ones using math expressions (`+ - * /`), string functions (`UPPER`, `LOWER`, `TRIM`, `LENGTH`, `CONTAINS`, `REGEX`), DateTime math, and conditionals (`IF...THEN...ELSEIF...ENDIF`). See the [Formula Tool Reference Guide](docs/FORMULA_REFERENCE.md).
-* **Sort**: Multi-column sorting in ascending or descending sequence.
-* **Data Clean**: Trim whitespace, normalize casing (UPPERCASE, lowercase, Title Case), remove empty rows, and impute null values (fill with constant, mean, or median).
-* **Unique**: Identify duplicate rows based on key columns with dual output anchors:
-  * `U` (Unique): First unique occurrence of each record.
-  * `D` (Duplicate): All duplicate records.
+Every tool is described in the [Tool Reference](docs/TOOL_REFERENCE.md); formulas in the [Formula Reference](docs/FORMULA_REFERENCE.md).
 
-### 3. Join (Purple)
-* **Join**: Multi-key join matching with authentic Alteryx 3-way output anchors:
-  * `J` (Joined): Records that matched on key fields.
-  * `L` (Left Unmatched): Unmatched records from Left input.
-  * `R` (Right Unmatched): Unmatched records from Right input.
-* **Union**: Stack multiple datasets vertically by column name or by column position.
-
-### 4. Transform (Orange)
-* **Summarize**: Group by fields and calculate aggregate metrics (`Sum`, `Average/Mean`, `Count`, `Count Distinct`, `Min`, `Max`).
-
----
-
-## Interactive Results & Data Profiling Panel
-
-* **Data View**: Paginated data grid (100 rows per page), column search filtering, sticky headers, and record counts.
-* **Multi-Port Switching**: When viewing tools with multiple output ports (e.g. Filter `T`/`F` or Join `J`/`L`/`R`), click the port tabs to instantly inspect intermediate datasets.
-* **Metadata & Data Profiler**: Comprehensive statistics for each field including non-null counts, null percentages, unique value counts, min/max/mean/median for numbers, and sample frequency bars for strings.
-* **Execution Log**: Step-by-step pipeline execution duration and record count audit trail.
-* **Direct Export**: One-click download of any node's output as CSV or Excel.
-
----
-
-## Keyboard Shortcuts
+## Keyboard shortcuts
 
 | Shortcut | Action |
-| --- | --- |
-| `Ctrl + Enter` | **Run Workflow** |
-| `Delete` / `Backspace` | Delete selected tool or connection wire |
-| Mouse Wheel | Zoom in / Zoom out of canvas |
-| Click & Drag Background | Pan canvas |
-| Double-click Tool in Palette | Place tool at canvas center |
+|---|---|
+| Ctrl + Enter | Run the workflow |
+| Ctrl + S / Ctrl + Shift + S | Save / Save as |
+| Ctrl + O / Ctrl + N | Open / New workflow |
+| Ctrl + T / Ctrl + W | New / close tab |
+| Ctrl + F | Search tools |
+| Delete | Delete the selected tool or wire |
+| Mouse wheel / drag background | Zoom / pan the canvas |
+| F1 | Full shortcut list |
 
----
+## Your data and privacy
 
-## Pre-built Sample Workflows
+- Workflows, settings and logs live in `%LOCALAPPDATA%\AntigravityDataFlow` (back up the `workflows` folder there).
+- API keys for AI providers are stored in Windows Credential Manager, never inside workflow files, so workflows are safe to share.
+- The app only listens on your own computer (`127.0.0.1`) and rejects requests from web pages.
 
-The app comes pre-packaged with sample datasets and ready-to-run workflows accessible from the **Samples** dropdown:
-1. **Customer Sales Analysis**: Ingests customer CSV and order Excel files, joins on CustomerID, computes net revenue with discounts, filters high-value orders, and summarizes total revenue by region and segment.
-2. **Data Cleaning & Deduplication**: Ingests dirty data with whitespace and nulls, trims text, handles missing values, and deduplicates records.
+## Getting help
 
----
+**Help > Export Support Bundle** creates a zip with logs and version information (no workflows, data or keys) to send to whoever supports the tool. The version is shown in **Help > About**.
 
-## Automated Tests
+## For developers
 
-Run test suites using Python:
-```powershell
-& "C:\Users\Ahmed Gad\anaconda3\python.exe" -m unittest tests/test_engine.py
-& "C:\Users\Ahmed Gad\anaconda3\python.exe" -m unittest tests/test_api.py
-```
+Running from source, tests, building the installer: [CONTRIBUTING.md](CONTRIBUTING.md). Changes by version: [CHANGELOG.md](CHANGELOG.md).

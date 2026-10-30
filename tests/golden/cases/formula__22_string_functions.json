@@ -1,0 +1,49 @@
+{
+  "name": "string functions",
+  "tool": "formula",
+  "provenance": "derived",
+  "source": "Alteryx Formula: Uppercase and Trim",
+  "config": {
+    "formulas": [
+      {
+        "output_field": "u",
+        "expression": "Uppercase(Trim([s]))",
+        "type": "string"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "s"
+      ],
+      "rows": [
+        [
+          "  ab "
+        ],
+        [
+          "Cd"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "s",
+        "u"
+      ],
+      "rows": [
+        [
+          "  ab ",
+          "AB"
+        ],
+        [
+          "Cd",
+          "CD"
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

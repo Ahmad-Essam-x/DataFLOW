@@ -176,7 +176,7 @@ class TestTemplateToolCoverage:
 
     def test_complete_engine_tool_coverage(self, client):
         from backend.engine.nodes.registry import NODE_REGISTRY
-        registered_types = set(NODE_REGISTRY.keys()) - {"schema_fit", "llm_override"}
+        registered_types = set(NODE_REGISTRY.keys()) - {"schema_fit", "llm_override", "unsupported_tool"}
 
         res = client.get("/api/templates")
         data = json.loads(res.data)

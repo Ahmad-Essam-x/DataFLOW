@@ -1,0 +1,72 @@
+{
+  "name": "first record of each key is Unique, repeats are Duplicate",
+  "tool": "unique",
+  "provenance": "derived",
+  "source": "Alteryx Unique: U = first of each group, D = the rest",
+  "config": {
+    "columns": [
+      "k"
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "k",
+        "v"
+      ],
+      "rows": [
+        [
+          "a",
+          1
+        ],
+        [
+          "b",
+          2
+        ],
+        [
+          "a",
+          3
+        ],
+        [
+          "a",
+          4
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "U": {
+      "columns": [
+        "k",
+        "v"
+      ],
+      "rows": [
+        [
+          "a",
+          1
+        ],
+        [
+          "b",
+          2
+        ]
+      ]
+    },
+    "D": {
+      "columns": [
+        "k",
+        "v"
+      ],
+      "rows": [
+        [
+          "a",
+          3
+        ],
+        [
+          "a",
+          4
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

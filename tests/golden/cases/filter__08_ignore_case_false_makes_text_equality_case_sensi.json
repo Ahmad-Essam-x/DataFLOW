@@ -1,0 +1,61 @@
+{
+  "name": "ignore_case false makes text equality case-sensitive (as imported Alteryx filters are)",
+  "tool": "filter",
+  "provenance": "derived",
+  "source": "Alteryx Filter: text comparison is case-sensitive; the importer sets ignore_case false",
+  "config": {
+    "mode": "basic",
+    "conditions": [
+      {
+        "column": "s",
+        "operator": "==",
+        "value": "b",
+        "ignore_case": false
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "s"
+      ],
+      "rows": [
+        [
+          "a"
+        ],
+        [
+          "b"
+        ],
+        [
+          "B"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "T": {
+      "columns": [
+        "s"
+      ],
+      "rows": [
+        [
+          "b"
+        ]
+      ]
+    },
+    "F": {
+      "columns": [
+        "s"
+      ],
+      "rows": [
+        [
+          "a"
+        ],
+        [
+          "B"
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

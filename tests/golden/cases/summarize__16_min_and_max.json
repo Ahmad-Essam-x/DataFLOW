@@ -1,0 +1,48 @@
+{
+  "name": "min and max",
+  "tool": "summarize",
+  "provenance": "derived",
+  "source": "Alteryx Summarize: Min and Max",
+  "config": {
+    "actions": [
+      {
+        "field": "n",
+        "action": "Min"
+      },
+      {
+        "field": "n",
+        "action": "Max"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          3
+        ],
+        [
+          1
+        ],
+        [
+          7
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": null,
+      "rows": [
+        [
+          1,
+          7
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

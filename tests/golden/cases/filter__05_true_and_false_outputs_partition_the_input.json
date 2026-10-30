@@ -1,0 +1,77 @@
+{
+  "name": "true and false outputs partition the input",
+  "tool": "filter",
+  "provenance": "derived",
+  "source": "Alteryx Filter: T = records that match, F = records that do not",
+  "config": {
+    "mode": "basic",
+    "conditions": [
+      {
+        "column": "n",
+        "operator": ">",
+        "value": "2"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "n",
+        "s"
+      ],
+      "rows": [
+        [
+          1,
+          "a"
+        ],
+        [
+          2,
+          "b"
+        ],
+        [
+          3,
+          "c"
+        ],
+        [
+          4,
+          "d"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "T": {
+      "columns": [
+        "n",
+        "s"
+      ],
+      "rows": [
+        [
+          3,
+          "c"
+        ],
+        [
+          4,
+          "d"
+        ]
+      ]
+    },
+    "F": {
+      "columns": [
+        "n",
+        "s"
+      ],
+      "rows": [
+        [
+          1,
+          "a"
+        ],
+        [
+          2,
+          "b"
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

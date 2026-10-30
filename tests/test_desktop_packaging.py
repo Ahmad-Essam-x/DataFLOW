@@ -104,24 +104,34 @@ class TestDesktopPackaging(unittest.TestCase):
 
     def test_windows_shortcut_creation(self):
         """Test creating a Windows shortcut file."""
-        with tempfile.TemporaryDirectory() as tmp_dir:
+        # ignore_cleanup_errors: Windows can hold the new .lnk open briefly (shell/AV scan)
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_dir:
             dummy_target = os.path.join(tmp_dir, "dummy_app.exe")
             with open(dummy_target, "w") as f:
                 f.write("test")
-            
+
             shortcut_path = os.path.join(tmp_dir, "TestApp.lnk")
             ok, res_path = create_windows_shortcut(dummy_target, shortcut_path)
-            
+
             self.assertTrue(ok, f"Shortcut creation should succeed: {res_path}")
             self.assertTrue(os.path.exists(shortcut_path), "Shortcut .lnk file should exist")
 
     def test_desktop_shortcuts_installation(self):
-        """Test install_desktop_shortcuts execution."""
-        res = install_desktop_shortcuts()
-        self.assertIn("desktop", res)
-        self.assertIn("start_menu", res)
-        self.assertTrue(res["desktop"][0])
-        self.assertTrue(res["start_menu"][0])
+        """Test install_desktop_shortcuts execution against a fake profile (never the real Desktop/Start Menu)."""
+        from unittest import mock
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as fake_home:
+            fake_appdata = os.path.join(fake_home, "AppData", "Roaming")
+            os.makedirs(os.path.join(fake_home, "Desktop"))
+            os.makedirs(os.path.join(fake_appdata, "Microsoft", "Windows", "Start Menu", "Programs"))
+            env = {"USERPROFILE": fake_home, "HOME": fake_home, "APPDATA": fake_appdata}
+            with mock.patch.dict(os.environ, env):
+                res = install_desktop_shortcuts()
+            self.assertIn("desktop", res)
+            self.assertIn("start_menu", res)
+            self.assertTrue(res["desktop"][0], res["desktop"])
+            self.assertTrue(res["start_menu"][0], res["start_menu"])
+            self.assertTrue(res["desktop"][1].startswith(fake_home), "must not write outside the fake profile")
+            self.assertTrue(res["start_menu"][1].startswith(fake_home), "must not write outside the fake profile")
 
 
 if __name__ == "__main__":

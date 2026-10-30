@@ -1,0 +1,105 @@
+{
+  "name": "inner join splits matched / left-only / right-only",
+  "tool": "join",
+  "provenance": "derived",
+  "source": "Alteryx Join tool: J = matched, L = left unmatched, R = right unmatched",
+  "config": {
+    "join_keys": [
+      {
+        "left_key": "id",
+        "right_key": "id"
+      }
+    ]
+  },
+  "inputs": {
+    "L": {
+      "columns": [
+        "id",
+        "a"
+      ],
+      "rows": [
+        [
+          1,
+          "x"
+        ],
+        [
+          2,
+          "y"
+        ],
+        [
+          3,
+          "z"
+        ]
+      ]
+    },
+    "R": {
+      "columns": [
+        "id",
+        "b"
+      ],
+      "rows": [
+        [
+          2,
+          "B2"
+        ],
+        [
+          3,
+          "B3"
+        ],
+        [
+          4,
+          "B4"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "J": {
+      "columns": [
+        "id",
+        "a",
+        "Right_id",
+        "b"
+      ],
+      "rows": [
+        [
+          2,
+          "y",
+          2,
+          "B2"
+        ],
+        [
+          3,
+          "z",
+          3,
+          "B3"
+        ]
+      ]
+    },
+    "L": {
+      "columns": [
+        "id",
+        "a"
+      ],
+      "rows": [
+        [
+          1,
+          "x"
+        ]
+      ]
+    },
+    "R": {
+      "columns": [
+        "id",
+        "b"
+      ],
+      "rows": [
+        [
+          4,
+          "B4"
+        ]
+      ]
+    }
+  },
+  "ordered": false
+}

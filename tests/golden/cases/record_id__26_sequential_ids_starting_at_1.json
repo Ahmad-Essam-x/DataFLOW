@@ -1,0 +1,52 @@
+{
+  "name": "sequential ids starting at 1",
+  "tool": "record_id",
+  "provenance": "derived",
+  "source": "Alteryx Record ID: new field numbering records from the start value",
+  "config": {
+    "column_name": "RecordID",
+    "start_value": 1,
+    "position": "first"
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "x"
+      ],
+      "rows": [
+        [
+          "a"
+        ],
+        [
+          "b"
+        ],
+        [
+          "c"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "RecordID",
+        "x"
+      ],
+      "rows": [
+        [
+          1,
+          "a"
+        ],
+        [
+          2,
+          "b"
+        ],
+        [
+          3,
+          "c"
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

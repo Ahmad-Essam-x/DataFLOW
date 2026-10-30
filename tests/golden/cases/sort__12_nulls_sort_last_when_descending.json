@@ -1,0 +1,51 @@
+{
+  "name": "nulls sort last when descending",
+  "tool": "sort",
+  "provenance": "derived",
+  "source": "Alteryx Sort places nulls after values in descending order",
+  "config": {
+    "sort_by": [
+      {
+        "column": "n",
+        "ascending": false
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          2
+        ],
+        [
+          null
+        ],
+        [
+          1
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          2
+        ],
+        [
+          1
+        ],
+        [
+          null
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

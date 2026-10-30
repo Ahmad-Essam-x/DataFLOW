@@ -1,0 +1,67 @@
+{
+  "name": "equal keys keep their input order (stable)",
+  "tool": "sort",
+  "provenance": "derived",
+  "source": "Alteryx Sort is stable for equal keys",
+  "config": {
+    "sort_by": [
+      {
+        "column": "g",
+        "ascending": true
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "g",
+        "id"
+      ],
+      "rows": [
+        [
+          "x",
+          1
+        ],
+        [
+          "y",
+          2
+        ],
+        [
+          "x",
+          3
+        ],
+        [
+          "y",
+          4
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "g",
+        "id"
+      ],
+      "rows": [
+        [
+          "x",
+          1
+        ],
+        [
+          "x",
+          3
+        ],
+        [
+          "y",
+          2
+        ],
+        [
+          "y",
+          4
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

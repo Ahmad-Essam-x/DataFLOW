@@ -1,0 +1,59 @@
+{
+  "name": "keys match case-insensitively by default",
+  "tool": "join",
+  "provenance": "derived",
+  "source": "Alteryx Join compares string keys case-insensitively unless told otherwise",
+  "config": {
+    "join_keys": [
+      {
+        "left_key": "k",
+        "right_key": "k"
+      }
+    ]
+  },
+  "inputs": {
+    "L": {
+      "columns": [
+        "k",
+        "a"
+      ],
+      "rows": [
+        [
+          "ABC",
+          1
+        ]
+      ]
+    },
+    "R": {
+      "columns": [
+        "k",
+        "b"
+      ],
+      "rows": [
+        [
+          "abc",
+          2
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "J": {
+      "columns": [
+        "k",
+        "a",
+        "Right_k",
+        "b"
+      ],
+      "rows": [
+        [
+          "ABC",
+          1,
+          "abc",
+          2
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

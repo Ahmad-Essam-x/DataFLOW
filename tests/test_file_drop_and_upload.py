@@ -9,7 +9,7 @@ from backend.engine.executor import WorkflowExecutor
 class TestFileDropAndUpload(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
-        self.executor = WorkflowExecutor()
+        self.executor = WorkflowExecutor(context={"data_dir": DATA_DIR})
         self.created_files = []
 
     def tearDown(self):

@@ -1,0 +1,53 @@
+{
+  "name": "*Unknown row keeps columns that are not listed",
+  "tool": "select",
+  "provenance": "derived",
+  "source": "Alteryx Select: the Unknown row controls fields that appear later",
+  "config": {
+    "fields": [
+      {
+        "original": "a",
+        "keep": false,
+        "rename": "a",
+        "type": "none"
+      },
+      {
+        "original": "*Unknown",
+        "keep": true,
+        "rename": "*Unknown",
+        "type": "none"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "a",
+        "b",
+        "c"
+      ],
+      "rows": [
+        [
+          1,
+          2,
+          3
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "b",
+        "c"
+      ],
+      "rows": [
+        [
+          2,
+          3
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

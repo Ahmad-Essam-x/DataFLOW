@@ -1,0 +1,53 @@
+{
+  "name": "every Nth record",
+  "tool": "sample",
+  "provenance": "derived",
+  "source": "Alteryx Sample: 1 of every N (starting with the first)",
+  "config": {
+    "sample_type": "sample_1_in_n",
+    "n_records": 2
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "x"
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          2
+        ],
+        [
+          3
+        ],
+        [
+          4
+        ],
+        [
+          5
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "x"
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          3
+        ],
+        [
+          5
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

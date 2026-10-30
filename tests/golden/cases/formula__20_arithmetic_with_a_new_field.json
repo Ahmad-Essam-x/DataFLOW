@@ -1,0 +1,55 @@
+{
+  "name": "arithmetic with a new field",
+  "tool": "formula",
+  "provenance": "derived",
+  "source": "Alteryx Formula: [a] * [b] into a new field",
+  "config": {
+    "formulas": [
+      {
+        "output_field": "p",
+        "expression": "[a] * [b]",
+        "type": "double"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "a",
+        "b"
+      ],
+      "rows": [
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          5
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "a",
+        "b",
+        "p"
+      ],
+      "rows": [
+        [
+          2,
+          3,
+          6.0
+        ],
+        [
+          4,
+          5,
+          20.0
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

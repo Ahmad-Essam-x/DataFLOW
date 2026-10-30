@@ -1,0 +1,91 @@
+{
+  "name": "null keys never match each other",
+  "tool": "join",
+  "provenance": "derived",
+  "source": "Alteryx Join: null does not equal null",
+  "config": {
+    "join_keys": [
+      {
+        "left_key": "id",
+        "right_key": "id"
+      }
+    ]
+  },
+  "inputs": {
+    "L": {
+      "columns": [
+        "id",
+        "a"
+      ],
+      "rows": [
+        [
+          null,
+          "x"
+        ],
+        [
+          1,
+          "y"
+        ]
+      ]
+    },
+    "R": {
+      "columns": [
+        "id",
+        "b"
+      ],
+      "rows": [
+        [
+          null,
+          "p"
+        ],
+        [
+          1,
+          "q"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "J": {
+      "columns": [
+        "id",
+        "a",
+        "Right_id",
+        "b"
+      ],
+      "rows": [
+        [
+          1,
+          "y",
+          1,
+          "q"
+        ]
+      ]
+    },
+    "L": {
+      "columns": [
+        "id",
+        "a"
+      ],
+      "rows": [
+        [
+          null,
+          "x"
+        ]
+      ]
+    },
+    "R": {
+      "columns": [
+        "id",
+        "b"
+      ],
+      "rows": [
+        [
+          null,
+          "p"
+        ]
+      ]
+    }
+  },
+  "ordered": false
+}

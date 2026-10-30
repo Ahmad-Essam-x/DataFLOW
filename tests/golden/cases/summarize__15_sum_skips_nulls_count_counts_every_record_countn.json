@@ -1,0 +1,53 @@
+{
+  "name": "sum skips nulls; Count counts every record, CountNonNull only values",
+  "tool": "summarize",
+  "provenance": "derived",
+  "source": "Alteryx Summarize: Sum ignores nulls; Count = number of records; Count Non-Null = records with a value",
+  "config": {
+    "actions": [
+      {
+        "field": "n",
+        "action": "Sum"
+      },
+      {
+        "field": "n",
+        "action": "Count"
+      },
+      {
+        "field": "n",
+        "action": "CountNonNull"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          null
+        ],
+        [
+          4
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": null,
+      "rows": [
+        [
+          5,
+          3,
+          2
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

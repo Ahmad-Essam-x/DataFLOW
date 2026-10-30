@@ -1,0 +1,60 @@
+{
+  "name": "native filters ignore case by default (differs from Alteryx; imported filters do not)",
+  "tool": "filter",
+  "provenance": "derived",
+  "source": "DataFlow default: ignore_case is true unless the condition says otherwise",
+  "config": {
+    "mode": "basic",
+    "conditions": [
+      {
+        "column": "s",
+        "operator": "==",
+        "value": "b"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "s"
+      ],
+      "rows": [
+        [
+          "a"
+        ],
+        [
+          "b"
+        ],
+        [
+          "B"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "T": {
+      "columns": [
+        "s"
+      ],
+      "rows": [
+        [
+          "b"
+        ],
+        [
+          "B"
+        ]
+      ]
+    },
+    "F": {
+      "columns": [
+        "s"
+      ],
+      "rows": [
+        [
+          "a"
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

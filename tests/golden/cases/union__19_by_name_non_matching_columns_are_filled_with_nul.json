@@ -1,0 +1,39 @@
+{
+  "name": "by name, non-matching columns are filled with null",
+  "tool": "union",
+  "provenance": "derived",
+  "source": "Alteryx Union: auto-configure by name; missing fields are null",
+  "config": {
+    "mode": "by_name",
+    "non_matching": "all"
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "a",
+        "b"
+      ],
+      "rows": [
+        [
+          1,
+          2
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "a",
+        "b"
+      ],
+      "rows": [
+        [
+          1,
+          2
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

@@ -1,0 +1,71 @@
+{
+  "name": "ascending sort with a second key breaks ties",
+  "tool": "sort",
+  "provenance": "derived",
+  "source": "Alteryx Sort: records ordered by the first field, ties by the next",
+  "config": {
+    "sort_by": [
+      {
+        "column": "g",
+        "ascending": true
+      },
+      {
+        "column": "n",
+        "ascending": false
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "g",
+        "n"
+      ],
+      "rows": [
+        [
+          "b",
+          1
+        ],
+        [
+          "a",
+          1
+        ],
+        [
+          "a",
+          3
+        ],
+        [
+          "b",
+          2
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "g",
+        "n"
+      ],
+      "rows": [
+        [
+          "a",
+          3
+        ],
+        [
+          "a",
+          1
+        ],
+        [
+          "b",
+          2
+        ],
+        [
+          "b",
+          1
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

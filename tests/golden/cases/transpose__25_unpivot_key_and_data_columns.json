@@ -1,0 +1,70 @@
+{
+  "name": "unpivot key and data columns",
+  "tool": "transpose",
+  "provenance": "derived",
+  "source": "Alteryx Transpose: key columns stay, data columns become Name/Value rows",
+  "config": {
+    "key_columns": [
+      "id"
+    ],
+    "data_columns": [
+      "q1",
+      "q2"
+    ],
+    "name_column": "Name",
+    "value_column": "Value"
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "id",
+        "q1",
+        "q2"
+      ],
+      "rows": [
+        [
+          1,
+          10,
+          20
+        ],
+        [
+          2,
+          30,
+          40
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "id",
+        "Name",
+        "Value"
+      ],
+      "rows": [
+        [
+          1,
+          "q1",
+          10
+        ],
+        [
+          1,
+          "q2",
+          20
+        ],
+        [
+          2,
+          "q1",
+          30
+        ],
+        [
+          2,
+          "q2",
+          40
+        ]
+      ]
+    }
+  },
+  "ordered": false
+}

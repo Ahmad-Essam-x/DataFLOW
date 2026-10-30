@@ -1,0 +1,85 @@
+{
+  "name": "duplicate keys on both sides produce every combination",
+  "tool": "join",
+  "provenance": "derived",
+  "source": "Alteryx Join: many-to-many matches multiply rows",
+  "config": {
+    "join_keys": [
+      {
+        "left_key": "id",
+        "right_key": "id"
+      }
+    ]
+  },
+  "inputs": {
+    "L": {
+      "columns": [
+        "id",
+        "a"
+      ],
+      "rows": [
+        [
+          1,
+          "x1"
+        ],
+        [
+          1,
+          "x2"
+        ]
+      ]
+    },
+    "R": {
+      "columns": [
+        "id",
+        "b"
+      ],
+      "rows": [
+        [
+          1,
+          "y1"
+        ],
+        [
+          1,
+          "y2"
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "J": {
+      "columns": [
+        "id",
+        "a",
+        "Right_id",
+        "b"
+      ],
+      "rows": [
+        [
+          1,
+          "x1",
+          1,
+          "y1"
+        ],
+        [
+          1,
+          "x1",
+          1,
+          "y2"
+        ],
+        [
+          1,
+          "x2",
+          1,
+          "y1"
+        ],
+        [
+          1,
+          "x2",
+          1,
+          "y2"
+        ]
+      ]
+    }
+  },
+  "ordered": false
+}

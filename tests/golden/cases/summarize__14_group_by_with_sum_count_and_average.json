@@ -1,0 +1,68 @@
+{
+  "name": "group by with sum, count and average",
+  "tool": "summarize",
+  "provenance": "derived",
+  "source": "Alteryx Summarize: grouped aggregates",
+  "config": {
+    "actions": [
+      {
+        "field": "g",
+        "action": "GroupBy"
+      },
+      {
+        "field": "n",
+        "action": "Sum"
+      },
+      {
+        "field": "n",
+        "action": "Count"
+      },
+      {
+        "field": "n",
+        "action": "Avg"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "g",
+        "n"
+      ],
+      "rows": [
+        [
+          "a",
+          1
+        ],
+        [
+          "a",
+          3
+        ],
+        [
+          "b",
+          10
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": null,
+      "rows": [
+        [
+          "a",
+          4,
+          2,
+          2.0
+        ],
+        [
+          "b",
+          10,
+          1,
+          10.0
+        ]
+      ]
+    }
+  },
+  "ordered": false
+}

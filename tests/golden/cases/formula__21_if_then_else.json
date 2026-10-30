@@ -1,0 +1,49 @@
+{
+  "name": "IF/THEN/ELSE",
+  "tool": "formula",
+  "provenance": "derived",
+  "source": "Alteryx Formula: IF [n] > 1 THEN 'big' ELSE 'small' ENDIF",
+  "config": {
+    "formulas": [
+      {
+        "output_field": "size",
+        "expression": "IF [n] > 1 THEN 'big' ELSE 'small' ENDIF",
+        "type": "string"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "O": {
+      "columns": [
+        "n",
+        "size"
+      ],
+      "rows": [
+        [
+          1,
+          "small"
+        ],
+        [
+          2,
+          "big"
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

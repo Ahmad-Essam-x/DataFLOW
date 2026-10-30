@@ -1,0 +1,60 @@
+{
+  "name": "null is not greater than anything and lands in False",
+  "tool": "filter",
+  "provenance": "derived",
+  "source": "Alteryx Filter: comparisons with null are false, so the record goes to F",
+  "config": {
+    "mode": "basic",
+    "conditions": [
+      {
+        "column": "n",
+        "operator": ">",
+        "value": "0"
+      }
+    ]
+  },
+  "inputs": {
+    "I": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          null
+        ],
+        [
+          5
+        ]
+      ]
+    }
+  },
+  "expect": {
+    "T": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          5
+        ]
+      ]
+    },
+    "F": {
+      "columns": [
+        "n"
+      ],
+      "rows": [
+        [
+          null
+        ]
+      ]
+    }
+  },
+  "ordered": true
+}

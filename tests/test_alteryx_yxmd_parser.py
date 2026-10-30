@@ -629,7 +629,7 @@ def test_nested_childnodes_container_parsing():
 
 def test_real_union_yxmd_parsing_full():
     """Verify parsing real-world Union.yxmd workflow from Downloads if present."""
-    path = r"C:\Users\Ahmed Gad\Downloads\Union.yxmd"
+    path = os.path.join(os.path.expanduser("~"), "Downloads", "Union.yxmd")
     if not os.path.exists(path):
         pytest.skip("Union.yxmd file not found in Downloads")
 
@@ -651,7 +651,8 @@ def test_real_union_yxmd_parsing_full():
 def test_tool_mastery_workflows_batch():
     """Verify parsing the downloaded suite of real-world Tool Mastery workflows."""
     import glob
-    files = glob.glob("tests/fixtures/alteryx/0*.yxmd")
+    fixtures_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "alteryx")
+    files = glob.glob(os.path.join(fixtures_dir, "0*.yxmd"))
     if not files:
         pytest.skip("No Tool Mastery fixtures found")
 

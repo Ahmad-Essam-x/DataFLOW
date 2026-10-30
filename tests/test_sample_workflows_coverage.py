@@ -160,7 +160,7 @@ class TestSampleWorkflowsCoverage(unittest.TestCase):
                 has_comments = True
 
         # Check all classic offline engine tools from NODE_REGISTRY (excluding external AI runtime nodes and new extension nodes)
-        registered_tools = set(NODE_REGISTRY.keys()) - {"llm_process", "join_multiple", "schema_fit", "llm_override"}
+        registered_tools = set(NODE_REGISTRY.keys()) - {"llm_process", "join_multiple", "schema_fit", "llm_override", "unsupported_tool"}
         missing_tools = registered_tools - found_types
 
         self.assertEqual(
@@ -170,7 +170,7 @@ class TestSampleWorkflowsCoverage(unittest.TestCase):
         )
         self.assertTrue(has_containers, "Tool containers must be represented.")
         self.assertTrue(has_comments, "Comments must be represented.")
-        self.assertEqual(len(found_types), 24, f"Expected 24 tool types, found: {len(found_types)}")
+        self.assertEqual(len(found_types), 26, f"Expected 26 tool types, found: {len(found_types)}")
 
 
 if __name__ == "__main__":
