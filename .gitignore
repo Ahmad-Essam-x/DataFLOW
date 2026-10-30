@@ -62,3 +62,6 @@ workflows/*.json
 !workflows/inventory_supplier_reconciliation.json
 !workflows/sales_operations_pipeline.json
 !workflows/union.json
+
+# Machine-specific interpreter path written by older launchers
+.python_env.bat
