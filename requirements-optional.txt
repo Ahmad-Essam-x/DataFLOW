@@ -1,0 +1,6 @@
+# Optional database connectors (the app starts and runs file-based workflows without them).
+-r requirements.txt
+sqlalchemy==2.1.6
+psycopg2-binary==2.9.13
+snowflake-sqlalchemy==2.1.0
+snowflake-connector-python==5.1.0

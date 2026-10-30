@@ -1,60 +1,133 @@
-name: Antigravity DataFlow CI Quality Gate
+name: Antigravity DataFlow CI
 
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, master ]
 
 jobs:
   test:
-    name: Test Suite & Quality Gate (Python ${{ matrix.python-version }})
+    name: Tests (${{ matrix.os }}, Python 3.12)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12"]
+        os: [windows-latest, ubuntu-latest]
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            pip install -r requirements-dev.txt pytest-cov flake8
+          else
+            # pywebview (desktop window) and PyInstaller are Windows-only concerns
+            grep -v '^pywebview' requirements-dev.txt > /tmp/req-linux.txt || true
+            grep -v '^pywebview' requirements.txt > /tmp/req-base.txt
+            sed -i 's#^-r requirements-optional.txt#-r /tmp/req-opt.txt#' /tmp/req-linux.txt
+            printf -- '-r /tmp/req-base.txt\n' > /tmp/req-opt.txt
+            grep -vE '^(-r|#|pyinstaller)' requirements-optional.txt >> /tmp/req-opt.txt
+            pip install -r /tmp/req-linux.txt pytest-cov flake8
+          fi
+
+      - name: Install Playwright browser (Windows)
+        if: runner.os == 'Windows'
+        run: python -m playwright install chromium
+
+      - name: Lint (hard failures only)
+        run: flake8 backend tests desktop --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Test suite with coverage
+        run: pytest tests -v --ignore=tests/verify_desktop_exe.py --cov=backend --cov-report=term --cov-report=xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: coverage.xml
+
+      - name: Tests must not modify tracked files
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "Test run changed tracked files:"; git status --porcelain --untracked-files=no; exit 1
+          fi
+
+  build-windows:
+    name: Build EXE and installer
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov psutil flake8
+          pip install -r requirements-dev.txt
 
-      - name: Lint and Code Hygiene
-        run: |
-          # Stop build if there are Python syntax errors or undefined names
-          flake8 backend tests --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Exit-zero treats all errors as warnings
-          flake8 backend tests --count --exit-zero --max-complexity=15 --max-line-length=140 --statistics
+      - name: Build the application
+        run: python build_desktop.py
 
-      - name: Run Core & Engine Unit Tests
-        run: |
-          pytest tests/test_engine.py tests/test_formula_functions.py tests/test_data_types.py -v
+      - name: Smoke-test the built EXE
+        run: python -m pytest tests/test_exe_smoke.py -v
+        env:
+          DATAFLOW_EXE: dist/AntigravityDataFlow/AntigravityDataFlow.exe
 
-      - name: Run SQL Pushdown Transpiler & Live Parity Tests
-        run: |
-          pytest tests/test_sql_compiler.py tests/test_live_sql_execution.py -v
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
 
-      - name: Run Security, Sandboxing & Fuzzing Tests
+      - name: Compile installer
+        shell: pwsh
         run: |
-          pytest tests/test_production_and_security.py tests/test_formula_fuzz_and_security.py -v
+          $version = python -c "from backend._version import __version__; print(__version__)"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" installer\DataFlow.iss
+          Get-ChildItem dist\installer\*.exe | ForEach-Object {
+            (Get-FileHash $_.FullName -Algorithm SHA256).Hash | Set-Content "$($_.FullName).sha256" -Encoding ascii
+          }
 
-      - name: Run Performance, Scale & Stress Benchmarks
-        run: |
-          pytest tests/test_performance_and_stress.py -v
+      - name: Upload installer and portable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            dist/installer/*
+            dist/*.zip
+            dist/*.zip.sha256
 
-      - name: Run Full Master Regression Suite
-        run: |
-          pytest tests/ -v
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: release
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/**
+          generate_release_notes: true

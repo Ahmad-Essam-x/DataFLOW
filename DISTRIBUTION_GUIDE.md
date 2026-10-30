@@ -1,83 +1,78 @@
-# Antigravity DataFlow - Distribution, Installation & Diagnostic Guide
+# Antigravity DataFlow - Install, Support and Release Guide
 
-This guide explains how to package, install, run, and diagnose **Antigravity DataFlow** on any Windows machine.
-
----
-
-## 1. Quick Start Installation
-
-**Distribution Bundle**: `dist/AntigravityDataFlow_Windows_x64.zip`  
-**Prerequisites**: Windows 10 or 11 (64-bit). Python is **not required**.
-
-### Step-by-Step Installation:
-1. Transfer `AntigravityDataFlow_Windows_x64.zip` to the target computer.
-2. Right-click and choose **Extract All...** to an uncompressed folder (e.g. `C:\Users\%USERNAME%\AppData\Local\Programs\AntigravityDataFlow` or `C:\AntigravityDataFlow`).
-3. Inside the extracted folder, double-click:
-   - **`Install_DataFlow.bat`**
-4. What the installer does automatically:
-   - **Pre-flight Checks**: Validates Windows OS version, 64-bit architecture, loopback networking on `127.0.0.1`, and file write permissions.
-   - **Shortcuts**: Creates **Desktop** and **Start Menu** shortcuts with high-resolution app icons.
-   - **Dependency Verification**: Confirms Microsoft Edge WebView2 runtime availability.
-   - **Launch Option**: Offers to launch the app immediately.
+For people who install and support DataFlow on Windows, and for whoever builds a release.
 
 ---
 
-## 2. Multi-Tier Visual Fallback Architecture
+## 1. Install (end users)
 
-To ensure the application **never fails silently** and works across diverse enterprise environments, Antigravity DataFlow uses an intelligent 3-tier visual fallback hierarchy:
+**Requirements:** Windows 10 or 11, 64-bit. Python is **not** needed. No administrator rights are needed.
 
-| Tier | Engine | Description |
-|---|---|---|
-| **Tier 1 (Preferred)** | **Microsoft Edge WebView2 (PyWebView)** | Chromeless native desktop application window with full hardware acceleration and system integration. |
-| **Tier 2 (Fallback 1)** | **Microsoft Edge App Mode** | If WebView2 runtime is missing or blocked, automatically launches standalone chromeless Edge (`msedge.exe --app=http://127.0.0.1:<port>`). |
-| **Tier 3 (Fallback 2)** | **Default Web Browser** | If Microsoft Edge is unavailable, automatically routes to the user's default browser (Google Chrome, Firefox, Brave, etc.). |
-| **Fatal Handler** | **Native Windows Dialog (`MessageBoxW`)** | If local socket binding fails or a catastrophic error occurs, a native Windows modal error dialog appears with the exact cause, directing the user to the log and diagnostic tool. |
+1. Get `AntigravityDataFlow_Setup_<version>.exe` and its `.sha256` file from the team's release location.
+2. Check the file is intact (optional but recommended). In PowerShell:
+   ```powershell
+   (Get-FileHash .\AntigravityDataFlow_Setup_<version>.exe -Algorithm SHA256).Hash
+   ```
+   The result must match the value in the `.sha256` file.
+3. Double-click the installer and follow the steps. It installs for your user only, to `%LOCALAPPDATA%\Programs\AntigravityDataFlow`, and adds a Start Menu entry (desktop shortcut is optional).
+4. **Windows SmartScreen:** until the installer is code-signed, Windows may show *"Windows protected your PC"*. Choose **More info**, then **Run anyway**. This warning goes away once a signing certificate is in place.
+5. Start **Antigravity DataFlow** from the Start Menu.
 
----
+**Upgrade:** run the newer installer. It replaces the program files and keeps your workflows and settings.
+**Uninstall:** Settings > Apps > Antigravity DataFlow > Uninstall. You are asked whether to also delete your data; the default is to keep it.
 
-## 3. Troubleshooting & 1-Click Diagnostics
+### Where things are stored
+| What | Where |
+|---|---|
+| Program | `%LOCALAPPDATA%\Programs\AntigravityDataFlow` |
+| Your workflows, settings, saved connections, outputs | `%LOCALAPPDATA%\AntigravityDataFlow` |
+| Logs | `%LOCALAPPDATA%\AntigravityDataFlow\logs` |
 
-If the application does not launch or you encounter environment issues:
+To back up your work, copy the `workflows` folder under `%LOCALAPPDATA%\AntigravityDataFlow`.
 
-### 1-Click Diagnostic Tool:
-Double-click **`Diagnose_DataFlow.bat`** in the application folder, or run:
-```cmd
-AntigravityDataFlow.exe --diagnose
-```
-This prints an instant system report evaluating:
-- `[PASS / FAIL]` Operating System & Architecture
-- `[PASS / WARN]` Microsoft Edge WebView2 Evergreen Runtime
-- `[PASS / WARN]` Microsoft Edge Executable Path
-- `[PASS / WARN]` Default Web Browser Registration
-- `[PASS / FAIL]` Loopback Socket Binding on `127.0.0.1`
-- `[PASS / FAIL]` File Storage & Write Permissions (`%LOCALAPPDATA%\AntigravityDataFlow`)
-- `[PASS / WARN]` System Resources (RAM and Disk Space)
-
-### Persistent Launch Logs:
-All launch events, port assignments, and errors are continuously logged to:
-```
-%LOCALAPPDATA%\AntigravityDataFlow\logs\launch.log
-```
-Pressing `1` inside `Diagnose_DataFlow.bat` immediately opens this log file in Notepad.
-
-### Common Solutions:
-1. **WebView2 Runtime Missing**:
-   - Run `Diagnose_DataFlow.bat` and press `2` to open Microsoft's official download page, or download directly from:  
-     `https://go.microsoft.com/fwlink/p/?LinkId=2124703`
-2. **Loopback Blocked by Antivirus / Firewall**:
-   - Ensure your firewall allows local loopback TCP traffic between processes on `127.0.0.1`.
-3. **Port Conflict**:
-   - The application automatically scans and binds to the first open port starting at `5000`. You can also specify a custom port:
-     ```cmd
-     AntigravityDataFlow.exe --port 5050
-     ```
+### Privacy and AI features
+- DataFlow runs on your computer. Workflows and data stay on it.
+- **LLM Process** and **Schema Fit** send cell values to the AI endpoint you configure. A local endpoint (Ollama or LM Studio on this PC) sends nothing off the machine. For any other host - including company servers on your network - DataFlow asks you to approve the host once before it sends data.
+- API keys are kept in the Windows Credential Manager, never in workflow files.
 
 ---
 
-## 4. Building the Standalone Package
+## 2. Troubleshooting and support
 
-To rebuild the standalone Windows distribution from source:
+If the app does not open or misbehaves:
+
+1. In the app: **Help > Export Support Bundle**. It creates a zip with logs, version and system information. It does **not** contain workflows, data or keys, but logs can mention file names and folder paths, so check it before sending outside your organization.
+2. If the app will not open, run `Diagnose_DataFlow.bat` from the program folder (or `AntigravityDataFlow.exe --diagnose`). It checks Windows version, WebView2, networking on `127.0.0.1`, folder permissions and memory/disk.
+3. Logs: `%LOCALAPPDATA%\AntigravityDataFlow\logs\app.log` (errors show a reference id also shown in the app) and `launch.log`.
+
+Common causes:
+- **WebView2 runtime missing:** install it from <https://go.microsoft.com/fwlink/p/?LinkId=2124703>. Without it DataFlow falls back to an Edge window or your default browser.
+- **"DataFlow is already running":** only one window per Windows user is allowed; switch to the existing window.
+- **Security software blocks the app:** allow `AntigravityDataFlow.exe` and loopback (`127.0.0.1`) traffic.
+
+---
+
+## 3. Building a release (maintainers)
+
+One-time setup (Python 3.12):
 ```powershell
-python build_desktop.py
+py -3.12 -m venv .venv312
+.\.venv312\Scripts\python.exe -m pip install -r requirements-dev.txt
 ```
-This builds `AntigravityDataFlow.exe`, includes all helper batch scripts, bundles assets/workflows/data, and outputs `dist/AntigravityDataFlow_Windows_x64.zip`.
+
+Test, build, package:
+```powershell
+.\.venv312\Scripts\python.exe -m pytest tests
+.\.venv312\Scripts\python.exe build_desktop.py                 # dist\AntigravityDataFlow\ and a portable zip
+ISCC.exe /DAppVersion=<version> installer\DataFlow.iss          # dist\installer\AntigravityDataFlow_Setup_<version>.exe
+```
+- The version comes from `backend/_version.py`. Update it and `CHANGELOG.md` first.
+- The build ships only git-tracked files and only the curated workflows (see `RELEASE_WORKFLOWS` in `build_desktop.py`). `tests/test_release_payload.py` fails if a personal path, customer file or API key would be included.
+- Publish a SHA-256 next to the installer: `(Get-FileHash <installer> -Algorithm SHA256).Hash`.
+- **Code signing:** request a code-signing certificate from IT, then enable `SignTool` in `installer/DataFlow.iss` and sign `AntigravityDataFlow.exe` and the installer.
+
+### Release checklist
+1. Version and changelog updated; all tests pass.
+2. Build and installer succeed; SHA-256 recorded.
+3. On a clean Windows machine, as a standard user: install, open a sample workflow and run it, **Help > Export Support Bundle**, upgrade over the previous version, uninstall (data kept).
+4. Tag the release in git and publish installer and checksum.

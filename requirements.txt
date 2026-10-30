@@ -1,21 +1,21 @@
-# Antigravity DataFlow - Core Dependencies
-flask>=3.0.0
-werkzeug>=3.0.0
-pandas>=2.0.0
-numpy>=1.24.0
-waitress>=2.1.0
-openpyxl>=3.1.0
-python-calamine>=0.8.0
-pyarrow>=14.0.0
-jinja2>=3.1.0
-pywebview>=5.0.0
+# Antigravity DataFlow - runtime dependencies (Python 3.12).
+# Exact versions: these are the versions the full test suite passed on. Update deliberately, then re-run the suite.
+flask==3.1.3
+werkzeug==3.1.9
+jinja2==3.1.6
+waitress==3.0.2
+pandas==2.3.3
+numpy==2.5.4
+pyarrow==26.0.0
+duckdb==2.0.0
+openpyxl==3.1.5
+python-calamine==0.9.0
+pydantic==2.14.2
+requests==2.34.2
+psutil==7.2.2
+pillow==13.0.0
+keyring==25.7.0
+pywebview==6.2.1
 
-# DuckDB — fast-path execution engine + streaming file I/O
-duckdb>=0.10.0
-
-# Database connectors
-keyring>=24.0.0
-sqlalchemy>=2.0.0
-psycopg2-binary>=2.9.0
-snowflake-sqlalchemy>=1.5.0
-snowflake-connector-python>=3.0.0
+# Database connectors (Snowflake / PostgreSQL / SQL via SQLAlchemy) are optional:
+#   pip install -r requirements-optional.txt

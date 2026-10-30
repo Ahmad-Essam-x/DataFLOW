@@ -11,7 +11,9 @@ echo.
 set "PY_CMD="
 
 :: 1. Check local virtual environment (.venv or venv)
-if exist "%~dp0.venv\Scripts\python.exe" (
+if exist "%~dp0.venv312\Scripts\python.exe" (
+    set "PY_CMD=%~dp0.venv312\Scripts\python.exe"
+) else if exist "%~dp0.venv\Scripts\python.exe" (
     set "PY_CMD=%~dp0.venv\Scripts\python.exe"
 ) else if exist "%~dp0venv\Scripts\python.exe" (
     set "PY_CMD=%~dp0venv\Scripts\python.exe"
@@ -27,8 +29,6 @@ if not defined PY_CMD (
         set "PY_CMD=%LOCALAPPDATA%\anaconda3\python.exe"
     ) else if exist "C:\ProgramData\anaconda3\python.exe" (
         set "PY_CMD=C:\ProgramData\anaconda3\python.exe"
-    ) else if exist "C:\Users\Ahmed Gad\anaconda3\python.exe" (
-        set "PY_CMD=C:\Users\Ahmed Gad\anaconda3\python.exe"
     )
 )
 
@@ -71,11 +71,11 @@ if !errorlevel! neq 0 (
     )
 )
 
-:: 6. Launch Application
+:: 6. Launch Application (native desktop window; pass --browser to use the default browser instead)
 echo [OK] Using Python environment: "!PY_CMD!"
-echo [INFO] Starting web application and launching browser...
+echo [INFO] Starting Antigravity DataFlow desktop window...
 echo.
-"!PY_CMD!" run.py
+"!PY_CMD!" desktop_app.py %*
 
 if !errorlevel! neq 0 (
     echo.
