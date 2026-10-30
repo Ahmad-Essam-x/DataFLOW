@@ -18,9 +18,34 @@ from backend.blueprints.dialogs import _run_dialog_safe
 
 
 class TestArchitectureAndLineage(unittest.TestCase):
+    # Small neutral workflows the file-lookup tests open by name; created here so the tests do not depend on
+    # (or force the repository to contain) anyone's real workflow files.
+    FIXTURE_FILES = ("spotify analytics.json", "spotify_analytics.json", "customer_sales_analysis.json")
+
     def setUp(self):
         app.config["TESTING"] = True
         self.client = app.test_client()
+        from backend.app import WORKFLOWS_DIR
+        self._created = []
+        wf = {
+            "name": "Spotify Analytics",
+            "nodes": [{"id": "n1", "type": "text_input", "name": "Input", "x": 0, "y": 0,
+                       "config": {"columns": ["a"], "data": [[1]]}}],
+            "connections": [],
+        }
+        for name in self.FIXTURE_FILES:
+            path = os.path.join(WORKFLOWS_DIR, name)
+            if not os.path.exists(path):
+                with open(path, "w", encoding="utf-8") as fh:
+                    json.dump(wf, fh)
+                self._created.append(path)
+
+    def tearDown(self):
+        for path in self._created:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
     def test_blueprint_route_coverage(self):
         """Verify endpoints across all 6 registered blueprints respond with valid HTTP statuses."""

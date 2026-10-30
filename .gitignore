@@ -12,6 +12,7 @@ dist/
 # Virtual environments
 venv/
 .venv/
+.venv312/
 env/
 ENV/
 
@@ -46,3 +47,18 @@ data/[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]_*
 Thumbs.db
 .vscode/
 .idea/
+
+# Workflows: only the curated samples are tracked. Any other workflow saved here is private by default
+# (it may hold local file paths or customer data). To publish a new sample, add it to the allowlist below.
+workflows/*.json
+!workflows/sales_customer_enrichment.json
+!workflows/inventory_supplier_reconciliation.json
+!workflows/marketing_campaign_attribution.json
+!workflows/multijoin_expense_reconciliation.json
+!workflows/0[0-9][0-9]_*.json
+!workflows/challenge_*.json
+!workflows/multi-row_tool_mastery.json
+!workflows/marketing_attribution_survey_matrix.json
+!workflows/inventory_supplier_reconciliation.json
+!workflows/sales_operations_pipeline.json
+!workflows/union.json

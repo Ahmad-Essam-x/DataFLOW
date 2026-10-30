@@ -8,7 +8,9 @@
     "find_replace",
     "transpose",
     "crosstab",
-    "multi_field"
+    "multi_field",
+    "running_total",
+    "dynamic_rename"
   ],
   "difficulty": "intermediate",
   "containers": [
@@ -18,7 +20,7 @@
       "x": 60,
       "y": 60,
       "width": 1760,
-      "height": 420,
+      "height": 520,
       "color": "rgba(249, 115, 22, 0.08)",
       "headerColor": "#f97316",
       "collapsed": false,
@@ -301,6 +303,32 @@
         "format": "csv",
         "write_mode": "overwrite"
       }
+    },
+    {
+      "id": "node_mkt_runtot",
+      "type": "running_total",
+      "name": "Running Score by Region",
+      "x": 1420,
+      "y": 420,
+      "config": {
+        "running_total_fields": [
+          "Score"
+        ],
+        "group_by_fields": [
+          "Region"
+        ]
+      }
+    },
+    {
+      "id": "node_mkt_rename",
+      "type": "dynamic_rename",
+      "name": "Prefix Running Columns",
+      "x": 1620,
+      "y": 420,
+      "config": {
+        "rename_mode": "prefix",
+        "prefix": "Mkt_"
+      }
     }
   ],
   "connections": [
@@ -372,6 +400,20 @@
       "source": "node_mkt_crosstab",
       "sourceHandle": "O",
       "target": "node_mkt_out",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm_rt1",
+      "source": "node_mkt_sample",
+      "sourceHandle": "O",
+      "target": "node_mkt_runtot",
+      "targetHandle": "I"
+    },
+    {
+      "id": "cm_rt2",
+      "source": "node_mkt_runtot",
+      "sourceHandle": "O",
+      "target": "node_mkt_rename",
       "targetHandle": "I"
     }
   ]
