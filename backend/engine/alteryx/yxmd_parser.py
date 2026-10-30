@@ -298,8 +298,8 @@ def parse_yxmd_content(xml_content: str, source_name: str = "Workflow") -> YxmdP
             warnings.append(ConversionWarning(
                 tool_id=tool_id,
                 tool_name=short_name,
-                severity="info",
-                message=f"Alteryx tool '{short_name}' ({plugin or 'Unknown Plugin'}) is preserved as a passthrough fallback node."
+                severity="warning",
+                message=f"Alteryx tool '{short_name}' ({plugin or 'Unknown Plugin'}) is not supported. It is kept as a placeholder that passes data through unchanged, so results may differ from Alteryx."
             ))
 
         node_id_to_type[dataflow_node_id] = node_type

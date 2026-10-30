@@ -5,6 +5,7 @@ collects execution telemetry, and provides profiling and pagination utilities.
 """
 import os
 import re
+import json
 import uuid
 import time
 import threading
@@ -51,7 +52,7 @@ class WorkflowExecutor:
     def __init__(self, context: Optional[Dict[str, Any]] = None, cache_manager: Optional[SessionRunCacheManager] = None):
         self.context = dict(context or {})
         if "data_dir" not in self.context:
-            default_data = os.path.join(os.getcwd(), "data")
+            default_data = os.path.join(os.environ.get("DATAFLOW_HOME") or os.getcwd(), "data")
             if os.path.exists(default_data):
                 self.context["data_dir"] = default_data
         self.cache_manager: SessionRunCacheManager = cache_manager or SessionRunCacheManager()
@@ -71,11 +72,40 @@ class WorkflowExecutor:
         except Exception:
             pass
 
+    # ------------------------------------------------------------------
+    # Locked-node cache identity: node ids are only unique within one workflow, so persisted data is tagged
+    # with a fingerprint of the node (type + config) and is ignored if the node has since changed.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def node_fingerprint(node: Dict[str, Any]) -> str:
+        import hashlib
+        material = json.dumps(
+            {"type": node.get("type"), "config": node.get("config") or {}},
+            sort_keys=True, default=str, separators=(",", ":"),
+        )
+        return hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
+
+    def _register_fingerprints(self, nodes: List[Dict[str, Any]]) -> None:
+        fps = getattr(self, "_node_fingerprints", None)
+        if fps is None:
+            fps = self._node_fingerprints = {}
+        for n in nodes:
+            if isinstance(n, dict) and n.get("id"):
+                fps[n["id"]] = self.node_fingerprint(n)
+
+    def _meta_path(self, node_id: str) -> str:
+        safe_nid = re.sub(r"[^\w\-_\.]", "_", node_id)
+        return os.path.join(self.persistent_cache_dir, f"{safe_nid}__meta.json")
+
     def persist_locked_node(self, node_id: str, outputs: Dict[str, pd.DataFrame]):
         """Serializes locked outputs to persistent disk storage (data/.cache/) using Feather or Parquet."""
         if not outputs:
             return
         try:
+            fp = getattr(self, "_node_fingerprints", {}).get(node_id)
+            if fp:
+                from backend.fileio import atomic_write_json
+                atomic_write_json(self._meta_path(node_id), {"fingerprint": fp})
             safe_nid = re.sub(r"[^\w\-_\.]", "_", node_id)
             for port, val in outputs.items():
                 if isinstance(val, pd.DataFrame):
@@ -93,12 +123,25 @@ class WorkflowExecutor:
             pass
 
     def load_persisted_locked_node(self, node_id: str) -> Optional[Dict[str, pd.DataFrame]]:
-        """Loads locked outputs from persistent disk storage into memory if available."""
+        """Loads locked outputs from persistent disk storage into memory if available.
+
+        Data is only reused when its fingerprint matches the node as it exists in the current workflow.
+        """
         try:
             safe_nid = re.sub(r"[^\w\-_\.]", "_", node_id)
             prefix = f"{safe_nid}_"
             if not os.path.exists(self.persistent_cache_dir):
                 return None
+
+            expected = getattr(self, "_node_fingerprints", {}).get(node_id)
+            if expected:
+                try:
+                    with open(self._meta_path(node_id), "r", encoding="utf-8") as fh:
+                        stored = json.load(fh).get("fingerprint")
+                except Exception:
+                    stored = None
+                if stored != expected:
+                    return None  # edited node, different workflow reusing the id, or legacy cache: do not reuse
 
             loaded_ports: Dict[str, pd.DataFrame] = {}
             for fname in os.listdir(self.persistent_cache_dir):
@@ -207,6 +250,7 @@ class WorkflowExecutor:
 
         nodes = workflow.get("nodes", [])
         connections = workflow.get("connections", [])
+        self._register_fingerprints(nodes)
 
         if not nodes:
             result.success = True
@@ -284,7 +328,13 @@ class WorkflowExecutor:
 
         # --- DuckDB fast-path: whole-workflow SQL execution (no pandas overhead) ---
         from backend.engine.duckdb_executor import can_use_duckdb, run_duckdb_workflow
-        if can_use_duckdb(active_nodes):
+        # Frozen/locked/cached nodes need the pandas engine, which owns the frozen-node cache.
+        uses_node_cache = bool(
+            workflow.get("cached_node_ids")
+            or workflow.get("auto_cache_upstream")
+            or any(n.get("is_cached") or n.get("cached") or n.get("locked") for n in active_nodes)
+        )
+        if not uses_node_cache and can_use_duckdb(active_nodes):
             result.logs.append({
                 "time": time.strftime("%H:%M:%S"),
                 "level": "INFO",
@@ -486,6 +536,7 @@ class WorkflowExecutor:
         """
         nodes = workflow.get("nodes", [])
         connections = workflow.get("connections", [])
+        self._register_fingerprints(nodes)
         node_map = {n["id"]: n for n in nodes}
 
         actual_session_id = session_id or workflow.get("session_id")

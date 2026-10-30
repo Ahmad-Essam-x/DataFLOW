@@ -7,26 +7,36 @@ and adding an entry to TOOL_METADATA for palette display.
 """
 import importlib
 import inspect
-from pathlib import Path
+import pkgutil
 from typing import Dict, Type, Any, List
 
 from .base import BaseNode
 
+# Modules that define nodes. pkgutil finds new files automatically in a source checkout; this list is the
+# guarantee for frozen (PyInstaller) builds, where modules live in an archive and are also bundled explicitly via
+# hidden imports. test_node_modules_are_listed fails if a new node module is missing from it.
+NODE_MODULES = (
+    'ai', 'fallback', 'io', 'join', 'llm_override', 'parse', 'preparation', 'schema_fit', 'transform',
+)
+
+
+def _node_module_names() -> List[str]:
+    names = set(NODE_MODULES)
+    package = importlib.import_module(__package__)
+    for info in pkgutil.iter_modules(package.__path__):
+        names.add(info.name)
+    return sorted(names - {'base', 'registry', '__init__'})
+
 
 def _discover_nodes() -> Dict[str, Type[BaseNode]]:
-    """Auto-register every concrete BaseNode subclass found in the nodes/ directory.
+    """Auto-register every concrete BaseNode subclass defined in the nodes package.
 
-    Scans *.py files, skipping base/registry/__init__. Imports each module and
-    registers classes that inherit BaseNode and define a non-default type_name.
-    First registration wins on name collision (sorted alphabetically by filename).
+    Imports each node module and registers classes that inherit BaseNode and define a non-default type_name.
+    First registration wins on name collision (sorted alphabetically by module name).
     """
     registry: Dict[str, Type[BaseNode]] = {}
-    nodes_dir = Path(__file__).parent
-    skip = {'base', 'registry', '__init__'}
-    for py_file in sorted(nodes_dir.glob('*.py')):
-        if py_file.stem in skip:
-            continue
-        mod = importlib.import_module(f'.{py_file.stem}', package=__package__)
+    for name in _node_module_names():
+        mod = importlib.import_module(f'.{name}', package=__package__)
         for _, cls in inspect.getmembers(mod, inspect.isclass):
             if (
                 issubclass(cls, BaseNode)
@@ -190,6 +200,26 @@ TOOL_METADATA: List[Dict[str, Any]] = [
         "inputs": ["I"],
         "outputs": ["O"],
         "description": "Assign a unique sequential identifier to each record"
+    },
+    {
+        "type": "running_total",
+        "name": "Running Total",
+        "category": "preparation",
+        "color": "#0369a1",
+        "icon": "sigma",
+        "inputs": ["I"],
+        "outputs": ["O"],
+        "description": "Add a cumulative sum of numeric fields, optionally restarting per group"
+    },
+    {
+        "type": "dynamic_rename",
+        "name": "Dynamic Rename",
+        "category": "preparation",
+        "color": "#0369a1",
+        "icon": "edit",
+        "inputs": ["I"],
+        "outputs": ["O"],
+        "description": "Rename columns from the first data row, or add a prefix/suffix to every column"
     },
     {
         "type": "join",

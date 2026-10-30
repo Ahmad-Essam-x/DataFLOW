@@ -584,12 +584,12 @@ def _get_curated_templates():
             "name": "Marketing Attribution & Survey Matrix",
             "description": "Unions web and mobile survey streams, replaces campaign codes with friendly names, selects key attributes, unpivots quarterly ratings with Transpose, samples records, and pivots into a Regional cross-tab matrix.",
             "category": "marketing",
-            "tags": ["marketing", "union", "find_replace", "transpose", "crosstab", "multi_field"],
+            "tags": ["marketing", "union", "find_replace", "transpose", "crosstab", "multi_field", "running_total", "dynamic_rename"],
             "difficulty": "intermediate",
             "containers": [
                 {
                     "id": "container_mkt_1", "title": "Marketing Attribution & Pivoting Pipeline",
-                    "x": 60, "y": 60, "width": 1760, "height": 420,
+                    "x": 60, "y": 60, "width": 1760, "height": 520,
                     "color": "rgba(249, 115, 22, 0.08)", "headerColor": "#f97316",
                     "collapsed": False, "disabled": False
                 }
@@ -691,6 +691,16 @@ def _get_curated_templates():
                     "id": "node_mkt_out", "type": "output_data", "name": "Export Attribution Matrix",
                     "x": 1620, "y": 240,
                     "config": {"filename": "campaign_attribution_matrix", "format": "csv", "write_mode": "overwrite"}
+                },
+                {
+                    "id": "node_mkt_runtot", "type": "running_total", "name": "Running Score by Region",
+                    "x": 1420, "y": 420,
+                    "config": {"running_total_fields": ["Score"], "group_by_fields": ["Region"]}
+                },
+                {
+                    "id": "node_mkt_rename", "type": "dynamic_rename", "name": "Prefix Running Columns",
+                    "x": 1620, "y": 420,
+                    "config": {"rename_mode": "prefix", "prefix": "Mkt_"}
                 }
             ],
             "connections": [
@@ -703,7 +713,9 @@ def _get_curated_templates():
                 {"id": "cm6_b", "source": "node_mkt_multifield", "sourceHandle": "O", "target": "node_mkt_transpose", "targetHandle": "I"},
                 {"id": "cm7", "source": "node_mkt_transpose", "sourceHandle": "O", "target": "node_mkt_sample", "targetHandle": "I"},
                 {"id": "cm8", "source": "node_mkt_sample", "sourceHandle": "O", "target": "node_mkt_crosstab", "targetHandle": "I"},
-                {"id": "cm9", "source": "node_mkt_crosstab", "sourceHandle": "O", "target": "node_mkt_out", "targetHandle": "I"}
+                {"id": "cm9", "source": "node_mkt_crosstab", "sourceHandle": "O", "target": "node_mkt_out", "targetHandle": "I"},
+                {"id": "cm_rt1", "source": "node_mkt_sample", "sourceHandle": "O", "target": "node_mkt_runtot", "targetHandle": "I"},
+                {"id": "cm_rt2", "source": "node_mkt_runtot", "sourceHandle": "O", "target": "node_mkt_rename", "targetHandle": "I"}
             ]
         },
 

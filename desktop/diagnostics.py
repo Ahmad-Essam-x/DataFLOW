@@ -82,7 +82,8 @@ def setup_persistent_logger(log_file: Optional[str] = None, level: int = logging
     if not has_file_handler:
         try:
             os.makedirs(os.path.dirname(os.path.abspath(resolved_path)), exist_ok=True)
-            file_handler = logging.FileHandler(resolved_path, mode="a", encoding="utf-8")
+            from logging.handlers import RotatingFileHandler
+            file_handler = RotatingFileHandler(resolved_path, mode="a", maxBytes=1024 * 1024, backupCount=3, encoding="utf-8")
             file_handler.setLevel(level)
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
@@ -484,7 +485,7 @@ def show_native_error_dialog(title: str, message: str, log_path: Optional[str] =
     full_msg = message
     if log_path:
         full_msg += f"\n\nDiagnostic Log:\n{log_path}"
-    full_msg += "\n\nTip: Run 'Diagnose_DataFlow.bat' in the application folder for complete pre-flight diagnosis."
+    full_msg += "\n\nTip: use Help > Export Support Bundle, or run 'Diagnose_DataFlow.bat' in the application folder."
 
     if platform.system() == "Windows":
         try:

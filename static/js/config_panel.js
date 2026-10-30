@@ -268,6 +268,12 @@ export class ConfigPanel {
       case 'record_id':
         this.renderRecordIDConfig(toolBody, node, upstreamCols);
         break;
+      case 'running_total':
+        this.renderRunningTotalConfig(toolBody, node, upstreamCols);
+        break;
+      case 'dynamic_rename':
+        this.renderDynamicRenameConfig(toolBody, node);
+        break;
       case 'find_replace':
         this.renderFindReplaceConfig(toolBody, node);
         break;
@@ -587,6 +593,36 @@ export class ConfigPanel {
             columnMeta: [recMeta, ...cleanMeta]
           };
         }
+      }
+
+      case 'running_total': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const cols = [...upstream.columns];
+        const meta = [...upstream.columnMeta];
+        (cfg.running_total_fields || []).forEach(f => {
+          const out = `RunTot_${f}`;
+          if (upstream.columns.includes(f) && !cols.includes(out)) {
+            cols.push(out);
+            meta.push(normalizeMeta(out, 'numeric', 'Double'));
+          }
+        });
+        return { columns: cols, columnMeta: meta };
+      }
+
+      case 'dynamic_rename': {
+        const upstream = getUpstream('I');
+        const cfg = node.config || {};
+        const mode = (cfg.rename_mode || 'firstrow').toLowerCase();
+        if (mode === 'prefix' || mode === 'add_prefix') {
+          const pfx = cfg.prefix || '';
+          return { columns: upstream.columns.map(c => `${pfx}${c}`), columnMeta: upstream.columnMeta.map(m => ({ ...m, name: `${pfx}${m.name}` })) };
+        }
+        if (mode === 'suffix' || mode === 'add_suffix') {
+          const sfx = cfg.suffix || '';
+          return { columns: upstream.columns.map(c => `${c}${sfx}`), columnMeta: upstream.columnMeta.map(m => ({ ...m, name: `${m.name}${sfx}` })) };
+        }
+        return upstream; // first-row headers are only known at run time
       }
 
       case 'datetime':
@@ -8493,6 +8529,77 @@ export class ConfigPanel {
   // --------------------------------------------------------------------
   // 14. Record ID Tool
   // --------------------------------------------------------------------
+
+  renderRunningTotalConfig(container, node, upstreamCols) {
+    const cfg = node.config || (node.config = {});
+    const fields = Array.isArray(cfg.running_total_fields) ? cfg.running_total_fields : [];
+    const groupBy = Array.isArray(cfg.group_by_fields) ? cfg.group_by_fields : [];
+    const list = (cls, selected) => upstreamCols.length > 0 ? upstreamCols.map(col => `
+          <label class="form-check" style="margin-bottom: 6px;">
+            <input type="checkbox" class="${cls}" value="${this.escapeHtml(col)}" ${selected.includes(col) ? 'checked' : ''}>
+            <span>${this.escapeHtml(col)}</span>
+          </label>`).join('') : '<span class="form-hint">Connect input to see column list.</span>';
+    const box = 'max-height: 180px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 8px; background: var(--bg-main);';
+
+    container.innerHTML = `
+      <div class="cfg-section-title">Fields to Total</div>
+      <div style="${box}">${list('rt-field-chk', fields)}</div>
+      <div class="form-hint" style="margin-top: 6px;">Each selected field gets a new <code>RunTot_&lt;field&gt;</code> column with the cumulative sum.</div>
+
+      <div class="cfg-section-title" style="margin-top: 12px;">Group By (Optional)</div>
+      <div style="${box}">${list('rt-group-chk', groupBy)}</div>
+      <div class="form-hint" style="margin-top: 6px;">With Group By, the total restarts for each distinct group. Records keep their original order.</div>
+    `;
+
+    const collect = (cls) => Array.from(container.querySelectorAll('.' + cls + ':checked')).map(el => el.value);
+    container.querySelectorAll('.rt-field-chk').forEach(el => el.addEventListener('change', () => {
+      node.config.running_total_fields = collect('rt-field-chk');
+      this.canvas.onWorkflowChange();
+    }));
+    container.querySelectorAll('.rt-group-chk').forEach(el => el.addEventListener('change', () => {
+      node.config.group_by_fields = collect('rt-group-chk');
+      this.canvas.onWorkflowChange();
+    }));
+  }
+
+  renderDynamicRenameConfig(container, node) {
+    const cfg = node.config || (node.config = {});
+    const mode = cfg.rename_mode || 'firstrow';
+    container.innerHTML = `
+      <div class="form-group">
+        <label>Rename Mode</label>
+        <select class="form-control" id="cfg-dr-mode">
+          <option value="firstrow" ${mode === 'firstrow' ? 'selected' : ''}>Use first data row as headers</option>
+          <option value="prefix" ${mode === 'prefix' ? 'selected' : ''}>Add prefix to all columns</option>
+          <option value="suffix" ${mode === 'suffix' ? 'selected' : ''}>Add suffix to all columns</option>
+        </select>
+      </div>
+      <div class="form-group" id="cfg-dr-prefix-row" style="display: ${mode === 'prefix' ? 'block' : 'none'};">
+        <label>Prefix</label>
+        <input type="text" class="form-control" id="cfg-dr-prefix" value="${this.escapeHtml(cfg.prefix || '')}" placeholder="e.g. Src_">
+      </div>
+      <div class="form-group" id="cfg-dr-suffix-row" style="display: ${mode === 'suffix' ? 'block' : 'none'};">
+        <label>Suffix</label>
+        <input type="text" class="form-control" id="cfg-dr-suffix" value="${this.escapeHtml(cfg.suffix || '')}" placeholder="e.g. _raw">
+      </div>
+      <div class="form-hint">First-row mode promotes the first record to the column names and removes it from the data.</div>
+    `;
+    container.querySelector('#cfg-dr-mode').addEventListener('change', (e) => {
+      node.config.rename_mode = e.target.value;
+      container.querySelector('#cfg-dr-prefix-row').style.display = e.target.value === 'prefix' ? 'block' : 'none';
+      container.querySelector('#cfg-dr-suffix-row').style.display = e.target.value === 'suffix' ? 'block' : 'none';
+      this.canvas.onWorkflowChange();
+    });
+    container.querySelector('#cfg-dr-prefix').addEventListener('input', (e) => {
+      node.config.prefix = e.target.value;
+      this.canvas.onWorkflowChange();
+    });
+    container.querySelector('#cfg-dr-suffix').addEventListener('input', (e) => {
+      node.config.suffix = e.target.value;
+      this.canvas.onWorkflowChange();
+    });
+  }
+
   renderRecordIDConfig(container, node, upstreamCols) {
     const cfg = node.config || {};
     const colName = cfg.column_name || 'RecordID';
@@ -10053,7 +10160,7 @@ export class ConfigPanel {
 
           <div id="cfg-llm-auth-row" style="margin-bottom: 8px; display: ${['openai', 'gemini', 'azure_openai'].includes(cfg.provider_type) ? 'block' : 'none'};">
             <label class="form-label" style="font-size: 11px; margin-bottom: 3px;">API Key</label>
-            <input type="password" id="cfg-llm-api-key" class="form-control form-control-sm" value="${this.escapeHtml(cfg.connection.api_key)}" placeholder="Paste API key here..." style="font-size: 11.5px;">
+            <input type="password" id="cfg-llm-api-key" class="form-control form-control-sm" value="${this.escapeHtml(cfg.connection.api_key)}" placeholder="${cfg.connection.key_stored ? 'Stored securely (leave blank to keep)' : 'Paste API key here...'}" style="font-size: 11.5px;">
           </div>
 
           <div style="display: flex; gap: 8px; align-items: flex-end; margin-bottom: 10px;">
@@ -11173,7 +11280,7 @@ export class ConfigPanel {
             </div>
             <div class="form-group">
               <label for="cfg-sf-api-key" style="font-size: 11px;">API Key</label>
-              <input type="password" id="cfg-sf-api-key" class="form-control" value="${this.escapeHtml(cfg.connection.api_key || '')}" placeholder="Required for Gemini / OpenAI" style="font-size: 11px; padding: 4px 8px;">
+              <input type="password" id="cfg-sf-api-key" class="form-control" value="${this.escapeHtml(cfg.connection.api_key || '')}" placeholder="${cfg.connection.key_stored ? 'Stored securely (leave blank to keep)' : 'Required for Gemini / OpenAI'}" style="font-size: 11px; padding: 4px 8px;">
             </div>
           `}
         </div>
@@ -11402,7 +11509,7 @@ export class ConfigPanel {
 
           <div class="form-group">
             <label for="cfg-lo-api-key" style="font-weight: 500;">API Key</label>
-            <input type="password" id="cfg-lo-api-key" class="form-control" value="${this.escapeHtml(cfg.connection.api_key || '')}" placeholder="sk-..." style="font-size: 12px;">
+            <input type="password" id="cfg-lo-api-key" class="form-control" value="${this.escapeHtml(cfg.connection.api_key || '')}" placeholder="${cfg.connection.key_stored ? 'Stored securely (leave blank to keep)' : 'sk-...'}" style="font-size: 12px;">
             <span class="form-hint" style="font-size: 10px; color: var(--text-muted);">Required for cloud providers (Gemini, OpenAI).</span>
           </div>
 

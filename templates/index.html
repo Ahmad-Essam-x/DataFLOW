@@ -405,6 +405,12 @@
             </span>
             <span class="action-label">Workflow Templates...</span>
           </button>
+          <button class="menubar-action" data-action="help:export-diagnostics">
+            <span class="action-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </span>
+            <span class="action-label">Export Support Bundle...</span>
+          </button>
           <div class="menubar-divider"></div>
           <button class="menubar-action" data-action="help:about">
             <span class="action-icon">
@@ -1193,7 +1199,7 @@
       <div class="modal-body about-body">
         <div class="about-hero">
           <h3 class="about-app-name">Antigravity DataFlow</h3>
-          <p class="about-version">Version 2.0.0 &bull; Desktop Visual ETL Designer</p>
+          <p class="about-version">Version <span id="about-version-number">&hellip;</span> &bull; Desktop Visual ETL Designer</p>
         </div>
         <p class="about-desc">
           An authentic, ultra-fast visual data prep and ETL studio inspired by Alteryx Designer.

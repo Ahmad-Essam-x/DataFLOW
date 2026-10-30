@@ -229,7 +229,9 @@ def map_filter(config: ET.Element, tool_id: str, warnings: List[ConversionWarnin
                 "conditions": [{
                     "column": field,
                     "operator": mapped_op,
-                    "value": val
+                    "value": val,
+                    # Alteryx compares text case-sensitively; DataFlow's own default is to ignore case.
+                    "ignore_case": False
                 }],
                 "logical_op": "AND"
             }

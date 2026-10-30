@@ -107,14 +107,30 @@ def transpile_select(
     projections = []
     has_deselected = False
 
+    # Mirror SelectNode (pandas): name key is original/name/field, flag is keep or selected.
+    unknown_item = next(
+        (it for it in fields if (it.get("original") or it.get("name") or it.get("field")) == "*Unknown"),
+        None,
+    )
+    keep_unknown = False
+    if unknown_item is not None:
+        keep_unknown = bool(unknown_item.get("keep") if "keep" in unknown_item else unknown_item.get("selected", True))
+        if keep_unknown and not dialect.supports_star_exclude:
+            # Unlisted columns cannot be enumerated portably in SQL; keep the passthrough.
+            return {"O": f"SELECT * FROM {upstream}"}
+
+    listed = []  # every explicitly named column, kept or dropped (never counts as "unknown")
+
     for item in fields:
-        selected = item.get("selected", True)
+        selected = item.get("keep") if "keep" in item else item.get("selected", True)
+        orig = item.get("original") or item.get("name") or item.get("field")
+        if orig and orig != "*Unknown":
+            listed.append(orig)
         if not selected:
             has_deselected = True
             continue
 
-        orig = item.get("name") or item.get("field")
-        if not orig:
+        if not orig or orig == "*Unknown":
             continue
 
         rename = str(item.get("rename") or "").strip()
@@ -131,6 +147,12 @@ def transpile_select(
             projections.append(f"{orig_quoted} AS {out_quoted}")
         else:
             projections.append(orig_quoted)
+
+    if keep_unknown and listed:
+        # Pass through columns not named in the field list (the *Unknown row), exactly like SelectNode.
+        excluded = ", ".join(dialect.quote_identifier(c) for c in dict.fromkeys(listed))
+        star = f"* EXCLUDE ({excluded})"
+        return {"O": f"SELECT\n  {',\n  '.join(projections + [star])}\nFROM {upstream}"}
 
     if not projections:
         if has_deselected:

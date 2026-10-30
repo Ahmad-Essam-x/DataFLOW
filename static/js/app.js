@@ -1541,7 +1541,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           break;
 
         case 'help:about':
+          fetch('/api/app-info').then(r => r.json()).then(info => {
+            const el = document.getElementById('about-version-number');
+            if (el && info.version) el.textContent = info.version;
+          }).catch(() => {});
           if (window.appMenuBar) window.appMenuBar.openModal('modal-about');
+          break;
+
+        case 'help:export-diagnostics':
+          // Logs + version + redacted settings only; never workflows, data or keys.
+          if (window.safeDownloadFile) window.safeDownloadFile('/api/diagnostics/export', 'dataflow_support_bundle.zip');
           break;
 
         // --- WORKFLOW EXECUTION ---
@@ -1696,6 +1705,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (err) {
     console.error('Metadata fetch error:', err);
+  } finally {
+    // Startup (metadata, initial/sample workflow load) is finished; UI automation can rely on this.
+    window.appReady = true;
   }
 });
 

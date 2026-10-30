@@ -10,6 +10,7 @@ import threading
 from flask import Blueprint, request, jsonify
 
 import backend.extensions as ext
+from backend.fileio import atomic_write_json
 
 bp = Blueprint("settings", __name__)
 
@@ -42,8 +43,7 @@ def save_user_settings():
     if not isinstance(data, dict):
         return jsonify({"error": "Settings must be a JSON object."}), 400
     try:
-        with open(settings_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+        atomic_write_json(settings_file, data)
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"error": f"Failed to save settings: {str(e)}"}), 500
@@ -64,8 +64,7 @@ def manage_recent_workflows():
     if request.method == "DELETE":
         settings["recent_workflows"] = []
         try:
-            with open(settings_file, "w", encoding="utf-8") as f:
-                json.dump(settings, f, indent=2)
+            atomic_write_json(settings_file, settings)
             return jsonify({"success": True, "cleared": True})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
@@ -110,8 +109,7 @@ def manage_recent_workflows():
             settings["recent_workflows"] = recent_list[:12]
 
         try:
-            with open(settings_file, "w", encoding="utf-8") as f:
-                json.dump(settings, f, indent=2)
+            atomic_write_json(settings_file, settings)
             return jsonify({"success": True, "recent_workflows": settings["recent_workflows"]})
         except Exception as e:
             return jsonify({"error": str(e)}), 500

@@ -16,6 +16,7 @@ class SQLDialect:
     supports_ilike: bool = False
     supports_filter_clause: bool = False
     supports_read_csv: bool = False
+    supports_star_exclude: bool = False
 
     TYPE_MAP: Dict[str, str] = {
         "string": "VARCHAR",
@@ -159,6 +160,7 @@ class DuckDBDialect(SQLDialect):
     supports_try_cast = True
     supports_ilike = True
     supports_read_csv = True
+    supports_star_exclude = True
 
     TYPE_MAP = {
         "string": "VARCHAR",

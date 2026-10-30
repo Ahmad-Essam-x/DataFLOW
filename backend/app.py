@@ -12,6 +12,11 @@ from backend.engine.executor import WorkflowExecutor
 from backend.engine.cache_manager import SessionRunCacheManager
 from backend.engine.workflow_manager import WorkflowManager
 from backend.samples.generator import ensure_sample_data
+from backend.logging_setup import setup_logging, new_error_id
+import logging
+
+LOG_FILE = setup_logging()
+log = logging.getLogger("dataflow")
 
 # ----------------------------------------------------------------------
 # 1. Path Resolution (Source vs PyInstaller Frozen Bundle)
@@ -20,16 +25,37 @@ IS_FROZEN = getattr(sys, "frozen", False)
 if IS_FROZEN:
     BUNDLE_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     EXE_DIR = os.path.dirname(sys.executable)
-    # Check if executable directory is writable for portable mode
-    test_write = os.path.join(EXE_DIR, ".write_test")
-    try:
-        with open(test_write, "w") as f:
-            f.write("1")
-        os.remove(test_write)
-        USER_DATA_ROOT = EXE_DIR
-    except Exception:
-        USER_DATA_ROOT = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "AntigravityDataFlow")
-        os.makedirs(USER_DATA_ROOT, exist_ok=True)
+    # One data root per Windows user, never inside the install folder.
+    USER_DATA_ROOT = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "AntigravityDataFlow")
+    os.makedirs(USER_DATA_ROOT, exist_ok=True)
+
+    def _migrate_legacy_data(root):
+        """One-time copy of data written by earlier builds (next to the EXE, or under %APPDATA%)."""
+        marker = os.path.join(root, ".migrated")
+        if os.path.exists(marker):
+            return
+        legacy_roots = [EXE_DIR, os.path.join(os.environ.get("APPDATA", ""), "AntigravityDataFlow")]
+        for legacy in legacy_roots:
+            if not legacy or os.path.normcase(legacy) == os.path.normcase(root) or not os.path.isdir(legacy):
+                continue
+            for name in ("workflows", "data", "settings", "user_settings.json"):
+                src, dst = os.path.join(legacy, name), os.path.join(root, name)
+                if not os.path.exists(src) or os.path.exists(dst):
+                    continue
+                try:
+                    if os.path.isdir(src):
+                        shutil.copytree(src, dst)
+                    else:
+                        shutil.copy2(src, dst)
+                except Exception:
+                    pass
+        try:
+            with open(marker, "w") as f:
+                f.write("1")
+        except OSError:
+            pass
+
+    _migrate_legacy_data(USER_DATA_ROOT)
 
     BASE_DIR = USER_DATA_ROOT
     DATA_DIR = os.path.join(USER_DATA_ROOT, "data")
@@ -41,14 +67,16 @@ if IS_FROZEN:
     BUNDLED_DATA_DIR = os.path.join(BUNDLE_DIR, "data")
     BUNDLED_WORKFLOWS_DIR = os.path.join(BUNDLE_DIR, "workflows")
 else:
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    CODE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # DATAFLOW_HOME redirects all user data (tests use a temp folder); code assets stay in the repo.
+    BASE_DIR = os.environ.get("DATAFLOW_HOME") or CODE_DIR
     DATA_DIR = os.path.join(BASE_DIR, "data")
     OUTPUT_DIR = os.path.join(DATA_DIR, "outputs")
     WORKFLOWS_DIR = os.path.join(BASE_DIR, "workflows")
-    STATIC_DIR = os.path.join(BASE_DIR, "static")
-    TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
-    BUNDLED_DATA_DIR = DATA_DIR
-    BUNDLED_WORKFLOWS_DIR = WORKFLOWS_DIR
+    STATIC_DIR = os.path.join(CODE_DIR, "static")
+    TEMPLATES_DIR = os.path.join(CODE_DIR, "templates")
+    BUNDLED_DATA_DIR = os.path.join(CODE_DIR, "data")
+    BUNDLED_WORKFLOWS_DIR = os.path.join(CODE_DIR, "workflows")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -115,6 +143,14 @@ from backend.engine.connections.manager import ConnectionManager
 connection_manager = ConnectionManager(config_dir=os.path.join(BASE_DIR, "settings"))
 ext.connection_manager = connection_manager
 
+try:
+    from backend.engine.ai.migrate_keys import scrub_saved_workflows
+    _scrubbed = scrub_saved_workflows(WORKFLOWS_DIR)
+    if _scrubbed:
+        log.warning("Moved LLM API keys out of %d saved workflow file(s) into the credential store.", len(_scrubbed))
+except Exception:  # never block startup on cleanup
+    log.exception("Could not scrub saved workflows for API keys")
+
 INITIAL_WORKFLOW_FILE = None
 _app_dirty_state = ext._app_dirty_state
 
@@ -150,9 +186,17 @@ def create_app():
     app_instance.register_blueprint(ai_bp)
     app_instance.register_blueprint(connections_bp)
 
+    from backend.security_guard import install_local_guard
+    install_local_guard(app_instance)
+
     @app_instance.route("/")
     def index():
         return render_template("index.html")
+
+    @app_instance.route("/healthz")
+    def healthz():
+        """Unauthenticated liveness probe for the launcher (returns no data)."""
+        return jsonify({"status": "ok"})
 
     @app_instance.errorhandler(404)
     def handle_404(e):
@@ -162,14 +206,26 @@ def create_app():
 
     @app_instance.errorhandler(500)
     def handle_500(e):
+        error_id = new_error_id()
+        log.error("HTTP 500 [%s] %s %s: %s", error_id, request.method, request.path, e)
         if request.path.startswith("/api/"):
-            return jsonify({"success": False, "available": False, "error": "Internal Server Error", "message": str(e)}), 500
+            return jsonify({"success": False, "available": False, "error": "Internal Server Error",
+                            "message": f"Unexpected server error (ref {error_id}). See the application log.",
+                            "error_id": error_id}), 500
         return "Internal Server Error", 500
 
     @app_instance.errorhandler(Exception)
     def handle_global_exception(e):
+        from werkzeug.exceptions import HTTPException
+        if isinstance(e, HTTPException):
+            return e
+        error_id = new_error_id()
+        log.exception("Unhandled exception [%s] %s %s", error_id, request.method, request.path)
         if request.path.startswith("/api/"):
-            return jsonify({"success": False, "available": False, "error": type(e).__name__, "message": str(e)}), 500
+            # Detail stays in the log; the client gets a reference id only (no internal paths).
+            return jsonify({"success": False, "available": False, "error": type(e).__name__,
+                            "message": f"Unexpected server error (ref {error_id}). See the application log.",
+                            "error_id": error_id}), 500
         raise e
 
     return app_instance
@@ -195,11 +251,20 @@ def find_available_port(start_port=5000, max_tries=20):
     return start_port
 
 
+def enable_local_guard(port):
+    """Turns on Host/Origin/session-token enforcement for the real server (tests leave it off unless asked)."""
+    app.config["ENFORCE_LOCAL_GUARD"] = True
+    app.config["LOCAL_GUARD_PORT"] = int(port)
+    from backend.engine.ai import egress
+    egress.ENFORCE = True  # remote LLM hosts need one-time user approval in the shipped app
+
+
 def start_server(port=5000, open_browser=True, server="waitress", threads=8):
     import webbrowser
     import threading
 
     actual_port = find_available_port(port)
+    enable_local_guard(actual_port)
 
     def open_web():
         import time

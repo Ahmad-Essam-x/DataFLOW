@@ -117,6 +117,10 @@ class WorkflowManager:
 
             clean_nodes.append(node.model_dump())
 
+        # Never persist LLM API keys: move them to the credential store before anything reaches disk.
+        from backend.engine.ai.secrets import scrub_workflow
+        scrub_workflow({"nodes": clean_nodes})
+
         normalized["nodes"] = clean_nodes
         valid_node_ids = {n["id"] for n in clean_nodes}
 
@@ -229,10 +233,8 @@ class WorkflowManager:
                 warnings.append(f"Could not create backup snapshot: {str(e)}")
 
         # Write workflow file atomically
-        temp_path = f"{target_path}.tmp"
-        with open(temp_path, "w", encoding="utf-8") as f:
-            json.dump(normalized, f, indent=2)
-        shutil.move(temp_path, target_path)
+        from backend.fileio import atomic_write_json
+        atomic_write_json(target_path, normalized, ensure_ascii=True)
 
         # Synchronize into workspace workflows folder if saved externally
         workspace_copy_path = os.path.join(self.workflows_dir, target_filename)
@@ -750,8 +752,8 @@ class WorkflowManager:
             "iso_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-        with open(target_path, "w", encoding="utf-8") as f:
-            json.dump(normalized, f, indent=2)
+        from backend.fileio import atomic_write_json
+        atomic_write_json(target_path, normalized, ensure_ascii=True)
 
         return {
             "success": True,

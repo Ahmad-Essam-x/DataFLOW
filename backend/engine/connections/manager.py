@@ -65,8 +65,8 @@ class ConnectionManager:
             return {}
 
     def _save_all(self, connections: Dict[str, Dict[str, Any]]) -> None:
-        with open(self._connections_file, "w", encoding="utf-8") as f:
-            json.dump(connections, f, indent=2)
+        from backend.fileio import atomic_write_json
+        atomic_write_json(self._connections_file, connections)
 
     def _store_secret(self, conn_id: str, password: str) -> None:
         if HAS_KEYRING:

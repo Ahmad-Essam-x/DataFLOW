@@ -3864,6 +3864,16 @@ class Canvas {
         if (!cols.length) return '';
         return trunc(cols.length === 1 ? `[${cols[0]}]` : `${cols.length} key fields`);
       }
+      case 'running_total': {
+        const rt = cfg.running_total_fields || [];
+        return rt.length ? trunc(rt.length === 1 ? `Σ [${rt[0]}]` : `Σ ${rt.length} fields`) : '';
+      }
+      case 'dynamic_rename': {
+        const m = cfg.rename_mode || 'firstrow';
+        if (m === 'prefix') return cfg.prefix ? trunc(`prefix ${cfg.prefix}`) : '';
+        if (m === 'suffix') return cfg.suffix ? trunc(`suffix ${cfg.suffix}`) : '';
+        return 'first row → headers';
+      }
       case 'record_id':
         // cfg.column_name is the correct key
         return (cfg.column_name || cfg.field_name) ? trunc(`→ [${cfg.column_name || cfg.field_name}]`) : '';

@@ -23,14 +23,25 @@ bp = Blueprint("workflow", __name__)
 @bp.route("/api/app-info", methods=["GET"])
 def get_app_info():
     """Returns application runtime metadata and directory paths."""
+    from backend._version import APP_NAME, __version__
     return jsonify({
-        "app_name": "Antigravity DataFlow",
-        "version": "2.1.0",
+        "app_name": APP_NAME,
+        "version": __version__,
         "frozen": getattr(sys, "frozen", False),
         "data_dir": ext.DATA_DIR,
         "workflows_dir": ext.WORKFLOWS_DIR,
         "base_dir": ext.BASE_DIR
     })
+
+
+@bp.route("/api/diagnostics/export", methods=["GET"])
+def export_diagnostics():
+    """Downloads a support bundle (logs, version, redacted settings). Contains no workflows, data or secrets."""
+    from backend.diagnostics_bundle import build_bundle
+    from datetime import datetime
+    buf = build_bundle(settings_file=ext.USER_SETTINGS_FILE, data_root=ext.BASE_DIR)
+    name = f"dataflow_support_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    return send_file(buf, mimetype="application/zip", as_attachment=True, download_name=name)
 
 
 @bp.route("/api/initial-workflow", methods=["GET"])
@@ -327,6 +338,9 @@ def save_template():
     workflow["description"] = description
     workflow["category"] = category
     workflow["tags"] = tags if isinstance(tags, list) else []
+
+    from backend.engine.ai.secrets import scrub_workflow
+    scrub_workflow(workflow)  # templates are shared; never include API keys
 
     safe_stem = re.sub(r"[^a-z0-9_]+", "_", name.lower()).strip("_")[:60]
     if not safe_stem:

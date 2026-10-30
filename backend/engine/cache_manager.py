@@ -243,7 +243,14 @@ class SpillableRunDataCache(collections.abc.MutableMapping):
                             p_meta["file_path"] = file_path
                             p_meta.pop("in_memory_val", None)
                         except Exception:
+                            # Disk full / unwritable: keep the data in memory rather than lose it,
+                            # and remove any truncated file left behind by the failed write.
                             p_meta["in_memory_val"] = val
+                            try:
+                                if os.path.exists(file_path):
+                                    os.remove(file_path)
+                            except OSError:
+                                pass
                 else:
                     p_meta["in_memory_val"] = val
             else:

@@ -1,6 +1,8 @@
 """
 Unit and Integration Tests for Antigravity DataFlow SQL Compiler & Execution Parity.
 """
+import os
+import shutil
 import sqlite3
 import pandas as pd
 import pytest
@@ -390,3 +392,75 @@ def test_api_to_sql_endpoints():
     assert dl_res.status_code == 200
     assert b"cte_sales_raw" in dl_res.data
 
+
+@pytest.fixture
+def frozen_ctx(tmp_path):
+    """Executor context whose persisted locked-node cache lives in a throwaway folder."""
+    from backend.app import DATA_DIR
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    src = os.path.join(DATA_DIR, "sales_orders.csv")
+    shutil.copy2(src, data_dir / "sales_orders.csv")
+    return {"data_dir": str(data_dir)}
+
+
+def test_duckdb_fast_path_select_honors_ui_field_keys(frozen_ctx):
+    """Select configs saved by the UI use `original`/`keep`; the DuckDB fast path must rename and drop like pandas."""
+    def build():
+        return {
+            "nodes": [
+                {"id": "sel_in", "type": "input_data", "name": "in",
+                 "config": {"source_type": "file", "file_path": "sales_orders.csv"}},
+                {"id": "sel_out", "type": "select", "name": "sel", "config": {"fields": [
+                    {"original": "OrderID", "keep": True, "rename": "OrderID", "type": "none"},
+                    {"original": "CustomerID", "keep": True, "rename": "Account_ID", "type": "none"},
+                    {"original": "Discount", "keep": False, "rename": "Discount", "type": "none"},
+                ]}},
+            ],
+            "connections": [{"source": "sel_in", "sourceHandle": "O", "target": "sel_out", "targetHandle": "I"}],
+        }
+
+    fast = WorkflowExecutor(context=frozen_ctx).run(build())
+    assert fast.success, fast.error
+    assert any("DuckDB fast-path" in log["message"] for log in fast.logs)
+    assert fast.node_results["sel_out"]["columns"]["O"] == ["OrderID", "Account_ID"]
+
+    # Same workflow forced through the pandas engine (cached node) must agree.
+    wf = build()
+    wf["cached_node_ids"] = ["sel_out"]
+    pandas_run = WorkflowExecutor(context=frozen_ctx).run(wf)
+    assert pandas_run.success, pandas_run.error
+    assert pandas_run.node_results["sel_out"]["columns"]["O"] == fast.node_results["sel_out"]["columns"]["O"]
+
+
+@pytest.mark.parametrize("keep_unknown", [True, False])
+def test_duckdb_fast_path_select_star_unknown_matches_pandas(keep_unknown, frozen_ctx):
+    """UI Selects end with a `*Unknown` row; unlisted columns follow it, and renames/drops still apply."""
+    def build():
+        return {
+            "nodes": [
+                {"id": "sel_in", "type": "input_data", "name": "in",
+                 "config": {"source_type": "file", "file_path": "sales_orders.csv"}},
+                {"id": "sel_out", "type": "select", "name": "sel", "config": {"fields": [
+                    {"original": "OrderID", "keep": True, "rename": "OrderID", "type": "none"},
+                    {"original": "CustomerID", "keep": True, "rename": "Account_ID", "type": "none"},
+                    {"original": "Discount", "keep": False, "rename": "Discount", "type": "none"},
+                    {"original": "*Unknown", "keep": keep_unknown, "rename": "*Unknown", "type": "none", "isUnknown": True},
+                ]}},
+            ],
+            "connections": [{"source": "sel_in", "sourceHandle": "O", "target": "sel_out", "targetHandle": "I"}],
+        }
+
+    fast = WorkflowExecutor(context=frozen_ctx).run(build())
+    assert fast.success, fast.error
+    assert any("DuckDB fast-path" in log["message"] for log in fast.logs)
+
+    wf = build()
+    wf["cached_node_ids"] = ["sel_out"]
+    pandas_run = WorkflowExecutor(context=frozen_ctx).run(wf)
+    assert pandas_run.success, pandas_run.error
+
+    fast_cols = fast.node_results["sel_out"]["columns"]["O"]
+    assert fast_cols == pandas_run.node_results["sel_out"]["columns"]["O"]
+    assert "Account_ID" in fast_cols and "CustomerID" not in fast_cols and "Discount" not in fast_cols
+    assert ("CustomerName" in fast_cols) is keep_unknown

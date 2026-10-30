@@ -21,7 +21,7 @@ if getattr(sys, 'frozen', False):
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from backend.app import app, set_initial_workflow, find_available_port
+from backend.app import app, set_initial_workflow, find_available_port, enable_local_guard
 from desktop.diagnostics import (
     setup_persistent_logger,
     run_system_diagnostics,
@@ -32,10 +32,46 @@ from desktop.diagnostics import (
 )
 
 
+_instance_mutex = None  # keep a reference so the mutex lives for the whole process
+
+
+SINGLE_INSTANCE_MUTEX = "Local\\AntigravityDataFlow.SingleInstance"
+
+
+def acquire_single_instance(name: str = None) -> bool:
+    """Returns False if another DataFlow desktop process already holds the per-user mutex (Windows only)."""
+    global _instance_mutex
+    if sys.platform != "win32":
+        return True
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        _instance_mutex = kernel32.CreateMutexW(None, False, name or SINGLE_INSTANCE_MUTEX)
+        return kernel32.GetLastError() != 183  # ERROR_ALREADY_EXISTS
+    except Exception:
+        return True
+
+
+def install_crash_hooks() -> None:
+    """Log uncaught exceptions (main thread and worker threads) instead of dying silently in windowed mode."""
+    def _log_exc(exc_type, exc, tb):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc, tb)
+            return
+        logger.critical("Uncaught exception", exc_info=(exc_type, exc, tb))
+
+    def _log_thread_exc(args):
+        logger.critical("Uncaught exception in thread %s", getattr(args.thread, "name", "?"),
+                        exc_info=(args.exc_type, args.exc_value, args.exc_traceback))
+
+    sys.excepthook = _log_exc
+    threading.excepthook = _log_thread_exc
+
+
 def wait_for_server(port: int, timeout: float = 10.0) -> bool:
     """Waits until the backend server responds to HTTP requests."""
     start = time.time()
-    url = f"http://127.0.0.1:{port}/api/tools"
+    url = f"http://127.0.0.1:{port}/healthz"
     while time.time() - start < timeout:
         try:
             with urllib.request.urlopen(url, timeout=1.0) as response:
@@ -136,6 +172,7 @@ def main() -> int:
 
     # 1. Initialize persistent launch logger
     log_file = setup_persistent_logger(args.log_file)
+    install_crash_hooks()
     logger.info("=" * 60)
     logger.info("Antigravity DataFlow Desktop Shell starting...")
     logger.info(f"Executable: {sys.executable} (Frozen: {getattr(sys, 'frozen', False)})")
@@ -165,6 +202,12 @@ def main() -> int:
         print(f"Start Menu shortcut: {'OK' if start_ok else 'Failed'}")
         return 0 if (desktop_ok and start_ok) else 1
 
+    # 3b. Only one desktop window per Windows user (headless/browser modes may run alongside)
+    if not (args.headless or args.browser) and not acquire_single_instance():
+        logger.info("Another DataFlow window is already running; exiting.")
+        show_native_error_dialog("Antigravity DataFlow", "DataFlow is already running. Switch to the existing window.", log_file)
+        return 0
+
     # 4. Configure initial workflow to open
     target_wf = args.open_workflow or args.workflow_pos
     if target_wf:
@@ -174,6 +217,7 @@ def main() -> int:
     # 5. Find available port
     target_port = args.port if args.port > 0 else find_available_port(start_port=5000)
     logger.info(f"Assigned local port: {target_port}")
+    enable_local_guard(target_port)
 
     # 6. Start Waitress production WSGI server in background daemon thread
     server = None
@@ -335,4 +379,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    # Required so multiprocessing 'spawn' children (Schema Fit sandbox) work inside a PyInstaller EXE.
+    import multiprocessing
+    multiprocessing.freeze_support()
     sys.exit(main())

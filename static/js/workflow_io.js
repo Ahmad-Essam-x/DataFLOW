@@ -390,8 +390,16 @@ export async function importYxmdWorkflow(file) {
       handleWorkflowLoaded(json.workflow, json.filename || file.name.replace(/\.yxmd$/i, ''));
       const stats = json.stats || {};
       const coverage = stats.coverage_pct !== undefined ? `${stats.coverage_pct}%` : '100%';
+      const substituted = stats.substituted_tools || [];
       const msg = `Mapped ${stats.mapped_tools || 0} tools (${stats.fallback_tools || 0} fallbacks). Coverage: ${coverage}`;
-      window.showToast('success', 'Alteryx Workflow Imported', msg);
+      if (substituted.length === 0) {
+        window.showToast('success', 'Alteryx Workflow Imported', msg);
+      } else {
+        // Placeholders pass data through unchanged, which silently changes results: say so clearly and keep it on screen.
+        const names = [...new Set(substituted.map(t => t.tool))].join(', ');
+        window.showToast('warning', `Imported with ${substituted.length} unsupported tool${substituted.length === 1 ? '' : 's'}`,
+          `${names} cannot run in DataFlow and now pass data through unchanged. Results may differ from Alteryx - review these tools before relying on the output.`, 20000);
+      }
       await window.refreshSavedWorkflows?.();
     } else {
       throw new Error('No valid workflow definition returned.');

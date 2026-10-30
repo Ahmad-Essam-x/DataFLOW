@@ -37,6 +37,17 @@ class YxmdParseResult:
                 "fallback_tools": self.fallback_tools,
                 "containers_count": self.containers_count,
                 "comments_count": self.comments_count,
-                "coverage_pct": round((self.mapped_tools / max(1, self.total_tools)) * 100, 1)
+                "coverage_pct": round((self.mapped_tools / max(1, self.total_tools)) * 100, 1),
+                "substituted_tools": self.substituted_tools()
             }
         }
+
+    def substituted_tools(self) -> List[Dict[str, Any]]:
+        """Tools DataFlow could not convert. They pass data through unchanged, so results can differ from Alteryx."""
+        out = []
+        for node in self.workflow.get("nodes", []):
+            if node.get("type") == "unsupported_tool":
+                cfg = node.get("config") or {}
+                out.append({"node_id": node.get("id"), "tool_id": cfg.get("tool_id"),
+                            "tool": cfg.get("original_tool") or "Unknown tool"})
+        return out

@@ -615,7 +615,12 @@ class SortNode(BaseNode):
         if not columns:
             return {"O": df.copy()}
 
-        sorted_df = sorted_df.sort_values(by=columns, ascending=ascending)
+        # Alteryx puts nulls first when ascending and last when descending, and equal keys keep input order.
+        # pandas takes a single na_position for all keys, so sort one key at a time, least significant first,
+        # with a stable sort.
+        for col, asc in reversed(list(zip(columns, ascending))):
+            sorted_df = sorted_df.sort_values(by=col, ascending=asc, kind="stable",
+                                              na_position="first" if asc else "last")
         if temp_sort_cols:
             sorted_df = sorted_df.drop(columns=temp_sort_cols)
 

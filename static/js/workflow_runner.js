@@ -221,7 +221,18 @@ export function handleStreamEventForTab(ev, targetTab) {
           window.showToast('success', 'Workflow Succeeded', `Completed all ${Object.keys(ev.node_results || {}).length} tools in ${ev.total_duration_ms}ms.`);
         } else {
           const diag = ev.diagnostic;
-          if (diag) {
+          const egressMatch = /\[egress:([^\]\s]+)\]/.exec(`${ev.error || ''} ${(diag && diag.message) || ''}`);
+          if (egressMatch) {
+            // LLM tool would send data to a remote host the user has not approved yet: ask once, then re-run.
+            const host = egressMatch[1];
+            if (window.confirm(`This workflow will send data (cell values) to:\n\n    ${host}\n\nOnly approve hosts you trust. Approve and run again?`)) {
+              fetch('/api/ai/approve-host', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ host })
+              }).then(() => runWorkflow());
+            } else {
+              window.showToast('warning', 'Not approved', `${host} was not approved, so the AI tool did not run.`);
+            }
+          } else if (diag) {
             window.showToast('error', diag.title, diag.message);
             if (resultsPanel) resultsPanel.switchToTab('messages-view');
             if (diag.node_id) targetCanvas.highlightErrorNode(diag.node_id);
