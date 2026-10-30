@@ -25,34 +25,10 @@ import pandas as pd
 from .base import BaseNode, NodeExecutionError, sanitize_dataframe, infer_alteryx_type
 from backend.engine.ai.provider_base import LLMConfig
 from backend.engine.ai.provider_registry import get_provider
+from backend.engine.sandbox import run_pandas_code
+from backend.engine.ai.egress import EgressNotApproved
 
 
-# Safe builtins for Python code sandboxing
-SAFE_BUILTINS = {
-    "abs": abs,
-    "all": all,
-    "any": any,
-    "bool": bool,
-    "dict": dict,
-    "enumerate": enumerate,
-    "float": float,
-    "int": int,
-    "isinstance": isinstance,
-    "len": len,
-    "list": list,
-    "max": max,
-    "min": min,
-    "range": range,
-    "round": round,
-    "set": set,
-    "str": str,
-    "sum": sum,
-    "tuple": tuple,
-    "zip": zip,
-    "True": True,
-    "False": False,
-    "None": None,
-}
 
 
 def _normalize_name(name: str) -> str:
@@ -124,7 +100,7 @@ class SchemaFitNode(BaseNode):
                     "model": settings_dict.get("Model", ""),
                     "connection": {
                         "base_url": settings_dict.get("Base URL", ""),
-                        "api_key": "" if settings_dict.get("API Key") in ("None", "***") else settings_dict.get("API Key", "")
+                        "api_key": ""  # resolved from the credential store by get_provider()
                     }
                 }
 
@@ -185,6 +161,8 @@ class SchemaFitNode(BaseNode):
                     steps = ai_steps
                     df_transformed = ai_df
                     used_ai = True
+            except EgressNotApproved:
+                raise  # consent is a hard stop; do not silently fall back
             except Exception as e:
                 self.messages.append(f"Schema Fit: LLM synthesis notice: {e}. Utilizing deterministic schema matcher.")
 
@@ -376,22 +354,8 @@ class SchemaFitNode(BaseNode):
     # Helper: Safe Sandboxed Python Execution
     # ---------------------------------------------------------------------- #
     def _run_sandbox(self, df_input: pd.DataFrame, code_str: str) -> Tuple[pd.DataFrame, Optional[str]]:
-        env_globals = {
-            "pd": pd,
-            "np": np,
-            "re": re,
-            "datetime": datetime,
-            "__builtins__": SAFE_BUILTINS,
-        }
-        env_locals = {"df": df_input.copy()}
-        try:
-            exec(code_str, env_globals, env_locals)
-            out_df = env_locals.get("df")
-            if not isinstance(out_df, pd.DataFrame):
-                return df_input, "Transformation code did not result in a valid Pandas DataFrame named `df`."
-            return out_df, None
-        except Exception as e:
-            return df_input, str(e)
+        """Static AST gate + isolated child process with a time limit (see backend/engine/sandbox.py)."""
+        return run_pandas_code(df_input, code_str)
 
     # ---------------------------------------------------------------------- #
     # Helper: Deterministic Heuristic Schema Matcher (Zero-Token Offline)

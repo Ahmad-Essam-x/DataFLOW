@@ -4,6 +4,7 @@ Uses the google-generativeai SDK when available, falls back to REST API via requ
 """
 import time
 import requests
+from backend.engine.ai import http as llm_http
 from typing import List, Optional
 
 from .provider_base import (
@@ -26,11 +27,15 @@ class GeminiProvider(LLMProvider):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
 
+    def _headers(self) -> dict:
+        """API key goes in a header, never the URL (URLs end up in logs and error messages)."""
+        return {"x-goog-api-key": self.api_key} if self.api_key else {}
+
     def generate(self, system_prompt: str, user_prompt: str, config: LLMConfig) -> LLMResponse:
         start_time = time.time()
         model = config.model or "gemini-2.0-flash"
 
-        url = f"{self.base_url}/v1beta/models/{model}:generateContent?key={self.api_key}"
+        url = f"{self.base_url}/v1beta/models/{model}:generateContent"
 
         # Build contents array
         contents = []
@@ -58,7 +63,7 @@ class GeminiProvider(LLMProvider):
         }
 
         try:
-            response = requests.post(url, json=payload, timeout=config.timeout_seconds)
+            response = llm_http.post(url, json=payload, headers=self._headers(), timeout=config.timeout_seconds)
             latency_ms = (time.time() - start_time) * 1000
 
             if response.status_code != 200:
@@ -121,8 +126,8 @@ class GeminiProvider(LLMProvider):
 
     def test_connection(self) -> ConnectionTestResult:
         try:
-            url = f"{self.base_url}/v1beta/models?key={self.api_key}"
-            response = requests.get(url, timeout=10)
+            url = f"{self.base_url}/v1beta/models"
+            response = llm_http.get(url, headers=self._headers(), timeout=10)
             if response.status_code == 200:
                 models = response.json().get("models", [])
                 return ConnectionTestResult(
@@ -155,8 +160,8 @@ class GeminiProvider(LLMProvider):
 
     def list_models(self) -> List[ModelInfo]:
         try:
-            url = f"{self.base_url}/v1beta/models?key={self.api_key}"
-            response = requests.get(url, timeout=10)
+            url = f"{self.base_url}/v1beta/models"
+            response = llm_http.get(url, headers=self._headers(), timeout=10)
             if response.status_code != 200:
                 return []
 

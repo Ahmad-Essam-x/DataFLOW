@@ -18,6 +18,7 @@ from typing import Dict, Any, List, Optional, Union
 from .base import BaseNode, NodeExecutionError, sanitize_dataframe
 from backend.engine.ai.provider_base import LLMConfig, LLMResponse
 from backend.engine.ai.provider_registry import get_provider
+from backend.engine.ai.egress import EgressNotApproved
 from backend.engine.ai.prompt_renderer import (
     render_template,
     extract_column_references,
@@ -126,6 +127,8 @@ class LLMProcessNode(BaseNode):
         # ------------------------------------------------------------------ #
         try:
             provider = get_provider(provider_type, connection)
+        except EgressNotApproved as e:
+            raise NodeExecutionError(f"LLM Process: {e}")
         except Exception as e:
             raise NodeExecutionError(
                 f"LLM Process: Failed to initialise {provider_type} provider: {e}"

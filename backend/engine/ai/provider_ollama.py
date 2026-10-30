@@ -1,5 +1,6 @@
 import time
 import requests
+from backend.engine.ai import http as llm_http
 from typing import List, Optional
 
 from .provider_base import (
@@ -37,7 +38,7 @@ class OllamaProvider(LLMProvider):
         }
         
         try:
-            response = requests.post(url, json=payload, timeout=config.timeout_seconds)
+            response = llm_http.post(url, json=payload, timeout=config.timeout_seconds)
             latency_ms = (time.time() - start_time) * 1000
             
             if response.status_code != 200:
@@ -101,7 +102,7 @@ class OllamaProvider(LLMProvider):
     def test_connection(self) -> ConnectionTestResult:
         try:
             url = f"{self.base_url}/api/tags"
-            response = requests.get(url, timeout=5)
+            response = llm_http.get(url, timeout=5)
             
             if response.status_code == 200:
                 models = response.json().get("models", [])
@@ -132,7 +133,7 @@ class OllamaProvider(LLMProvider):
     def list_models(self) -> List[ModelInfo]:
         try:
             url = f"{self.base_url}/api/tags"
-            response = requests.get(url, timeout=10)
+            response = llm_http.get(url, timeout=10)
             
             if response.status_code != 200:
                 return []

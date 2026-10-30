@@ -1,5 +1,6 @@
 import time
 import requests
+from backend.engine.ai import http as llm_http
 from typing import List, Optional
 from urllib.parse import urlparse, parse_qs
 
@@ -11,6 +12,16 @@ from .provider_base import (
     ConnectionTestResult
 )
 
+def _is_azure_host(base_url: str) -> bool:
+    """True when the endpoint's host (not any part of the URL) is an Azure OpenAI resource."""
+    from backend.engine.ai.egress import host_of, InvalidEndpoint
+    try:
+        host = host_of(base_url)
+    except InvalidEndpoint:
+        return False
+    return host == "openai.azure.com" or host.endswith(".openai.azure.com")
+
+
 class OpenAICompatProvider(LLMProvider):
     provider_name = "openai_compat"
     requires_api_key = True
@@ -21,7 +32,7 @@ class OpenAICompatProvider(LLMProvider):
         self.api_key = api_key
         self.default_model = default_model
         
-        self.is_azure = "openai.azure.com" in self.base_url.lower()
+        self.is_azure = _is_azure_host(self.base_url)
         
     def _get_headers(self) -> dict:
         headers = {
@@ -69,7 +80,7 @@ class OpenAICompatProvider(LLMProvider):
             }
         
         try:
-            response = requests.post(
+            response = llm_http.post(
                 url, 
                 json=payload, 
                 headers=self._get_headers(),
@@ -168,7 +179,7 @@ class OpenAICompatProvider(LLMProvider):
                 if 'api-version' not in query_params:
                     url += "?api-version=2024-02-15-preview"
                     
-            response = requests.get(
+            response = llm_http.get(
                 url, 
                 headers=self._get_headers(),
                 timeout=10
@@ -209,7 +220,7 @@ class OpenAICompatProvider(LLMProvider):
                 if 'api-version' not in query_params:
                     url += "?api-version=2024-02-15-preview"
                     
-            response = requests.get(
+            response = llm_http.get(
                 url, 
                 headers=self._get_headers(),
                 timeout=10

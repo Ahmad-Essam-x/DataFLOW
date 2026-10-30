@@ -26,6 +26,25 @@ def api_ai_providers():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@bp.route("/api/ai/approved-hosts", methods=["GET"])
+def api_ai_approved_hosts():
+    """Remote LLM hosts the user has approved to receive workflow data."""
+    from backend.engine.ai import egress
+    return jsonify({"success": True, "hosts": egress.approved_hosts()})
+
+
+@bp.route("/api/ai/approve-host", methods=["POST", "DELETE"])
+def api_ai_approve_host():
+    """Approve (POST) or revoke (DELETE) a remote LLM host. Body: {"host": "api.openai.com"} or {"base_url": "..."}."""
+    from backend.engine.ai import egress
+    data = request.get_json(silent=True) or {}
+    host = (data.get("host") or egress.host_of(data.get("base_url", ""))).strip().lower()
+    if not host:
+        return jsonify({"success": False, "error": "A host or base_url is required."}), 400
+    hosts = egress.revoke_host(host) if request.method == "DELETE" else egress.approve_host(host)
+    return jsonify({"success": True, "hosts": hosts})
+
+
 @bp.route("/api/ai/test-connection", methods=["POST"])
 def api_ai_test_connection():
     """Tests connection to an LLM provider (Ollama, OpenAI, Gemini, etc.)."""
@@ -60,10 +79,8 @@ def api_ai_models():
             connection = data.get("connection", {})
         else:
             provider_type = request.args.get("provider", "ollama")
-            connection = {
-                "base_url": request.args.get("base_url", ""),
-                "api_key": request.args.get("api_key", ""),
-            }
+            # Secrets never travel in a query string (they end up in logs and history); the stored key is used.
+            connection = {"base_url": request.args.get("base_url", "")}
         provider = get_provider(provider_type, connection)
         models = provider.list_models()
         return jsonify({

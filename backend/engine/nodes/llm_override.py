@@ -29,6 +29,11 @@ class LLMOverrideNode(BaseNode):
         conn = cfg.get("connection", {})
         base_url = conn.get("base_url", "")
         api_key = conn.get("api_key", "")
+        from backend.engine.ai.secrets import resolve_api_key, store_api_key
+        if api_key:
+            store_api_key(provider_type, base_url, api_key)  # downstream tools resolve it from the store
+        else:
+            api_key = resolve_api_key(provider_type, base_url)
         temperature = cfg.get("temperature", 0.3)
         max_tokens = cfg.get("max_tokens", 1024)
         top_p = cfg.get("top_p", 1.0)
@@ -38,9 +43,11 @@ class LLMOverrideNode(BaseNode):
         llm_config_payload = {
             "provider_type": provider_type,
             "model": model,
+            # The key is deliberately NOT carried in the DataFrame: df.attrs is written to cache files on spill/lock.
+            # Downstream tools get it from the credential store via get_provider().
             "connection": {
                 "base_url": base_url,
-                "api_key": api_key,
+                "api_key": "",
             },
             "temperature": float(temperature) if temperature is not None else 0.3,
             "max_tokens": int(max_tokens) if max_tokens is not None else 1024,
@@ -49,7 +56,7 @@ class LLMOverrideNode(BaseNode):
         }
 
         # Build summary metadata DataFrame for display on port M
-        masked_key = (api_key[:4] + "..." + api_key[-4:]) if len(api_key) > 8 else ("***" if api_key else "None")
+        masked_key = "stored" if api_key else "None"  # never echo any part of the key into output data
         summary_rows = [
             {"Setting": "Provider", "Value": str(provider_type)},
             {"Setting": "Model", "Value": str(model or "Default")},

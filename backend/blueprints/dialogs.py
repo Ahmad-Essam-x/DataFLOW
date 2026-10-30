@@ -435,7 +435,8 @@ def handle_open_in_explorer():
         system = platform.system()
         if system == "Windows":
             if os.path.isfile(resolved):
-                subprocess.Popen(f'explorer /select,"{resolved}"')
+                # List form: no shell/quoting involved, so odd characters in a file name cannot alter the command.
+                subprocess.Popen(["explorer", f"/select,{resolved}"])
             elif os.path.isdir(resolved):
                 os.startfile(resolved)
             else:

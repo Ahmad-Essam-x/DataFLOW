@@ -51,11 +51,26 @@ def get_provider(provider_type: str, connection_config: Dict[str, Any]) -> LLMPr
         raise ValueError(f"Unknown provider type '{provider_type}'. Available: {available}")
 
     cls = PROVIDER_REGISTRY[provider_type]
-    cfg = dict(connection_config)
+    cfg = dict(connection_config or {})
 
     # Fill in default base_url if not specified
     if not cfg.get("base_url") and provider_type in _DEFAULT_URLS:
         cfg["base_url"] = _DEFAULT_URLS[provider_type]
+
+    # Validate the endpoint with the same parser the HTTP client uses (rejects ambiguous URLs), and require
+    # one-time user approval before row data is sent to a non-local host.
+    from backend.engine.ai import egress
+    egress.parse_endpoint(cfg.get("base_url", ""))
+    if egress.ENFORCE:
+        egress.require_approval(cfg.get("base_url", ""))
+
+    # Keys are not kept in workflow files: remember a supplied key, or look up the stored one.
+    # A stored key is never sent in cleartext to a remote host.
+    from backend.engine.ai.secrets import resolve_api_key, store_api_key
+    if cfg.get("api_key"):
+        store_api_key(provider_type, cfg.get("base_url", ""), cfg["api_key"])
+    elif not egress.is_cleartext_remote(cfg.get("base_url", "")):
+        cfg["api_key"] = resolve_api_key(provider_type, cfg.get("base_url", ""))
 
     # Instantiate based on provider class type
     if cls is OllamaProvider:
