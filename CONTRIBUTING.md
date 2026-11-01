@@ -48,8 +48,15 @@ When you add a tool: write the node (`backend/engine/nodes/`), add it to `NODE_M
 - Never write an API key to a file; use `backend/engine/ai/secrets.py`.
 - New API routes live under `/api/` so the local-API guard applies.
 
-## Release
+## Shipping a fix to teammates
 
-The build ships only files tracked by git under `static`, `templates`, `data`, `workflows` and `assets`, so `git add` any new file in those folders before building.
+1. Make the change, run the tests, commit.
+2. Raise the number in `backend/_version.py` (for example `2.1.0` to `2.1.1`) and rename the `Unreleased` section in `CHANGELOG.md` to `2.1.1` with a one-line summary. Commit and push the branch.
+3. Check everything without publishing: `py scripts/publish_release.py`. It refuses if there are uncommitted changes, the tag exists, the changelog has no section for this version, commits are unpushed, or tests fail.
+4. Publish: `py scripts/publish_release.py --push`. This tags `v2.1.1` and pushes the tag.
+5. GitHub Actions builds the app and installer (about 15 minutes) and attaches them to a Release. Watch the **Actions** tab.
+6. Tell teammates. They open **Help > Check for Updates**, which opens the Releases page, and install the newest version.
 
-See "Building a release" in [DISTRIBUTION_GUIDE.md](DISTRIBUTION_GUIDE.md). Update `backend/_version.py` and `CHANGELOG.md` first.
+The build ships only files tracked by git under `static`, `templates`, `data`, `workflows` and `assets`, so `git add` any new file in those folders first.
+
+See "Building a release" in [DISTRIBUTION_GUIDE.md](DISTRIBUTION_GUIDE.md) for building locally without CI. Teammates need read access to this private repository to download releases.

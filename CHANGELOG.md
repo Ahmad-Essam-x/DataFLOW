@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 - 2026-11-01
 ### Security
 - Schema Fit generated code runs in an isolated process with an allowlist check, scrubbed environment, time limit and memory cap (the previous in-process check could be bypassed).
 - The local server rejects requests with an unexpected Host or Origin and requires a per-launch session cookie, so web pages in your browser cannot call it.
@@ -9,6 +9,7 @@
 - Gemini keys are sent in a header instead of the URL; API errors no longer expose internal paths.
 
 ### Added
+- Help > Check for Updates opens the Releases page; `scripts/publish_release.py` tags and publishes a release (CI builds the installer).
 - Running Total and Dynamic Rename are now available in the tool palette with configuration panels.
 - Help > Export Support Bundle (logs, version, redacted settings; never workflows, data or keys). About shows the real version.
 - Installer (per-user, no administrator rights), build script with version stamp, EXE smoke test, CI build and release jobs.

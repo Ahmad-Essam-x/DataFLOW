@@ -34,12 +34,9 @@ jobs:
           if [ "$RUNNER_OS" = "Windows" ]; then
             pip install -r requirements-dev.txt pytest-cov flake8
           else
-            # pywebview (desktop window) and PyInstaller are Windows-only concerns
-            grep -v '^pywebview' requirements-dev.txt > /tmp/req-linux.txt || true
-            grep -v '^pywebview' requirements.txt > /tmp/req-base.txt
-            sed -i 's#^-r requirements-optional.txt#-r /tmp/req-opt.txt#' /tmp/req-linux.txt
-            printf -- '-r /tmp/req-base.txt\n' > /tmp/req-opt.txt
-            grep -vE '^(-r|#|pyinstaller)' requirements-optional.txt >> /tmp/req-opt.txt
+            # Linux runs the tests only: no desktop window (pywebview) and no PyInstaller. Flatten the -r includes.
+            cat requirements.txt requirements-optional.txt requirements-dev.txt \
+              | grep -vE "^(-r|#|pywebview|pyinstaller)|^$" | sort -u > /tmp/req-linux.txt
             pip install -r /tmp/req-linux.txt pytest-cov flake8
           fi
 
@@ -51,7 +48,17 @@ jobs:
         run: flake8 backend tests desktop --count --select=E9,F63,F7,F82 --show-source --statistics
 
       - name: Test suite with coverage
-        run: pytest tests -v --ignore=tests/verify_desktop_exe.py --cov=backend --cov-report=term --cov-report=xml
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            pytest tests -v --cov=backend --cov-report=term --cov-report=xml
+          else
+            # Linux covers the portable engine/API tests. The desktop shell, shortcuts, Edge/WebView2 diagnostics and
+            # browser tests are Windows features and run on the Windows leg.
+            pytest tests -v --cov=backend --cov-report=term --cov-report=xml \
+              --ignore=tests/test_desktop_diagnostics.py --ignore=tests/test_desktop_packaging.py \
+              --ignore=tests/test_e2e_browser.py --ignore=tests/test_exe_smoke.py --ignore=tests/test_native_dialogs.py
+          fi
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

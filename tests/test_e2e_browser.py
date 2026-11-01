@@ -1845,7 +1845,10 @@ def test_e2e_running_total_and_dynamic_rename_are_usable(live_server, browser_co
     # Run end-to-end: group-wise cumulative sums, then the rename
     page.evaluate("() => { window.appLastResult = null; }")
     page.click("#btn-run")
-    page.wait_for_function("() => window.appLastResult !== null", timeout=30000)
+    # Wait for the finished run (it carries per-tool results), not just any non-null progress object.
+    page.wait_for_function(
+        "() => window.appLastResult && window.appLastResult.node_results && Object.keys(window.appLastResult.node_results).length >= 4",
+        timeout=60000)
     result = page.evaluate("""() => {
         const r = window.appLastResult;
         const dr = window.appCanvas.nodes.find(n => n.type === 'dynamic_rename');  // ids change when a workflow is reloaded

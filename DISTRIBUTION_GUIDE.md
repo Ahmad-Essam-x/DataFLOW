@@ -21,6 +21,14 @@ For people who install and support DataFlow on Windows, and for whoever builds a
 **Upgrade:** run the newer installer. It replaces the program files and keeps your workflows and settings.
 **Uninstall:** Settings > Apps > Antigravity DataFlow > Uninstall. You are asked whether to also delete your data; the default is to keep it.
 
+### Getting updates
+
+New versions are published on the repository's **Releases** page (you need read access to the private repository and must be signed in to GitHub).
+
+1. In DataFlow choose **Help > Check for Updates**. Your browser opens the Releases page.
+2. Compare the newest version there with the one in **Help > About**.
+3. If it is higher, download `AntigravityDataFlow_Setup_<version>.exe` (or the `.zip`), close DataFlow, and run it. Your workflows and settings are kept.
+
 ### Where things are stored
 | What | Where |
 |---|---|

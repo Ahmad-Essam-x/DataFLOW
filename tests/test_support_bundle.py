@@ -89,3 +89,45 @@ def test_log_files_in_the_bundle_are_scrubbed(tmp_path, monkeypatch):
     with zipfile.ZipFile(db.build_bundle()) as zf:
         text = zf.read("logs/app.log").decode()
     assert "secretpw" not in text and "sk-live-1234567890" not in text and "api.example.com" in text
+
+
+# ---- update path: Help > Check for Updates / publish script ----
+def test_releases_url_is_fixed_and_exposed():
+    from backend._version import RELEASES_URL
+    info = app.test_client().get("/api/app-info").get_json()
+    assert info["releases_url"] == RELEASES_URL and RELEASES_URL.startswith("https://github.com/")
+
+
+def test_open_releases_opens_only_the_fixed_url():
+    from backend._version import RELEASES_URL
+    opened = []
+    app.config["OPEN_URL_HANDLER"] = opened.append
+    try:
+        c = app.test_client()
+        r = c.post("/api/open-releases", json={"url": "https://evil.example/"})
+        assert r.get_json()["success"] is True
+        assert opened == [RELEASES_URL]  # a caller-supplied URL is ignored
+        assert c.get("/api/open-releases").status_code == 405
+    finally:
+        app.config.pop("OPEN_URL_HANDLER", None)
+
+
+def test_help_menu_has_check_for_updates():
+    import os
+    root = os.path.dirname(os.path.dirname(__file__))
+    html = open(os.path.join(root, "templates", "index.html"), encoding="utf-8").read()
+    js = open(os.path.join(root, "static", "js", "app.js"), encoding="utf-8").read()
+    assert 'data-action="help:check-updates"' in html and "case 'help:check-updates'" in js
+
+
+def test_publish_script_refuses_when_not_ready():
+    import subprocess
+    import sys
+    import os
+    root = os.path.dirname(os.path.dirname(__file__))
+    src = open(os.path.join(root, "scripts", "publish_release.py"), encoding="utf-8").read()
+    for guard in ("uncommitted changes", "already exists", "CHANGELOG.md has no", "not pushed yet", "Tests failed"):
+        assert guard in src
+    out = subprocess.run([sys.executable, os.path.join(root, "scripts", "publish_release.py"), "--skip-tests"],
+                         cwd=root, capture_output=True, text=True)
+    assert "--push" not in out.stdout  # default is a dry run; it never tags unless asked

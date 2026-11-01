@@ -8,7 +8,7 @@ import sys
 import json
 import re
 import time
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, current_app
 
 import backend.extensions as ext
 from backend.engine.security import (
@@ -23,15 +23,29 @@ bp = Blueprint("workflow", __name__)
 @bp.route("/api/app-info", methods=["GET"])
 def get_app_info():
     """Returns application runtime metadata and directory paths."""
-    from backend._version import APP_NAME, __version__
+    from backend._version import APP_NAME, __version__, RELEASES_URL
     return jsonify({
         "app_name": APP_NAME,
         "version": __version__,
+        "releases_url": RELEASES_URL,
         "frozen": getattr(sys, "frozen", False),
         "data_dir": ext.DATA_DIR,
         "workflows_dir": ext.WORKFLOWS_DIR,
         "base_dir": ext.BASE_DIR
     })
+
+
+@bp.route("/api/open-releases", methods=["POST"])
+def open_releases_page():
+    """Opens the releases page in the default browser. The URL is fixed on the server, so callers cannot pick one."""
+    import webbrowser
+    from backend._version import RELEASES_URL
+    try:
+        opener = current_app.config.get("OPEN_URL_HANDLER") or webbrowser.open
+        opener(RELEASES_URL)
+    except Exception:
+        return jsonify({"success": False, "url": RELEASES_URL, "error": "Could not open the browser."}), 500
+    return jsonify({"success": True, "url": RELEASES_URL})
 
 
 @bp.route("/api/diagnostics/export", methods=["GET"])

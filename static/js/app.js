@@ -1548,6 +1548,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (window.appMenuBar) window.appMenuBar.openModal('modal-about');
           break;
 
+        case 'help:check-updates':
+          // New versions are published on the Releases page; the server opens the fixed URL in the default browser.
+          fetch('/api/open-releases', { method: 'POST' }).then(r => r.json()).then(res => {
+            if (res && res.success) window.showToast('info', 'Check for Updates', 'The releases page opened in your browser. Install the newest version if it is higher than the one in Help > About.');
+            else window.showToast('warning', 'Check for Updates', `Open ${(res && res.url) || 'the Releases page on GitHub'} in your browser.`);
+          }).catch(() => window.showToast('warning', 'Check for Updates', 'Could not open the browser. Open the Releases page on GitHub manually.'));
+          break;
+
         case 'help:export-diagnostics':
           // Logs + version + redacted settings only; never workflows, data or keys.
           if (window.safeDownloadFile) window.safeDownloadFile('/api/diagnostics/export', 'dataflow_support_bundle.zip');
